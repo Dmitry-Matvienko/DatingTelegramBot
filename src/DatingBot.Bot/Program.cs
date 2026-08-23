@@ -14,13 +14,16 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 
+// Предотвращение сбоев FileSystemWatcher (inotify / SIGSEGV 139) в Linux Docker контейнерах
+Environment.SetEnvironmentVariable("DOTNET_USE_POLLING_FILE_WATCHER", "true");
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Настройка источников конфигурации
 builder.Configuration.SetBasePath(AppContext.BaseDirectory);
-builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
-builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: false);
+builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false);
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: false);
 
 // Резервный поиск appsettings.Local.json в текущем каталоге и подпапке src/DatingBot.Bot (при запуске через dotnet run)
 if (!string.Equals(Directory.GetCurrentDirectory(), AppContext.BaseDirectory, StringComparison.OrdinalIgnoreCase))
@@ -28,13 +31,13 @@ if (!string.Equals(Directory.GetCurrentDirectory(), AppContext.BaseDirectory, St
     var localInCurrentDir = Path.Combine(Directory.GetCurrentDirectory(), "appsettings.Local.json");
     if (File.Exists(localInCurrentDir))
     {
-        builder.Configuration.AddJsonFile(localInCurrentDir, optional: true, reloadOnChange: true);
+        builder.Configuration.AddJsonFile(localInCurrentDir, optional: true, reloadOnChange: false);
     }
 
     var localInBotDir = Path.Combine(Directory.GetCurrentDirectory(), "src", "DatingBot.Bot", "appsettings.Local.json");
     if (File.Exists(localInBotDir))
     {
-        builder.Configuration.AddJsonFile(localInBotDir, optional: true, reloadOnChange: true);
+        builder.Configuration.AddJsonFile(localInBotDir, optional: true, reloadOnChange: false);
     }
 }
 

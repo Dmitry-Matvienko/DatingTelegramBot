@@ -3,6 +3,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
 EXPOSE 8080
 ENV ASPNETCORE_HTTP_PORTS=8080
+ENV DOTNET_USE_POLLING_FILE_WATCHER=true
+ENV DOTNET_EnableDiagnostics=0
 
 # 2. SDK Build Image (.NET 9 SDK)
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
