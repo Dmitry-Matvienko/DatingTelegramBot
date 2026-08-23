@@ -13,9 +13,9 @@
 ```csharp
 public interface IModerationService
 {
-    Task<Result> BanUserByReportAsync(long adminTelegramId, Guid reportId, CancellationToken cancellationToken = default);
-    Task<Result> DeleteProfileByReportAsync(long adminTelegramId, Guid reportId, CancellationToken cancellationToken = default);
-    Task<Result> IgnoreReportAsync(long adminTelegramId, Guid reportId, CancellationToken cancellationToken = default);
+    Task<Result<ModerationActionResult>> BanUserByReportAsync(Guid reportId, CancellationToken cancellationToken = default);
+    Task<Result<ModerationActionResult>> DeleteProfileByReportAsync(Guid reportId, CancellationToken cancellationToken = default);
+    Task<Result> IgnoreReportAsync(Guid reportId, CancellationToken cancellationToken = default);
 }
 ```
 
@@ -25,12 +25,16 @@ public interface IModerationService
 public interface IAdminService
 {
     bool IsAdmin(long telegramId);
-    Task<AdminStatsDto> GetStatsAsync(CancellationToken cancellationToken = default);
-    Task<AdminCityStatsDto> GetCityStatsAsync(string cityName, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<ProfileReport>> GetUnresolvedReportsAsync(CancellationToken cancellationToken = default);
-    Task<UserProfileDto?> GetNextCandidateForAdminAsync(long adminTelegramId, Gender? targetGender, CancellationToken cancellationToken = default);
-    Task<Result> BanUserAsync(long adminTelegramId, long targetTelegramId, CancellationToken cancellationToken = default);
-    Task<Result> DeleteUserProfileAsync(long adminTelegramId, long targetTelegramId, CancellationToken cancellationToken = default);
+    Task<AdminStatsDto> GetOverallStatsAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<AdminCityStatsDto>> GetTopCitiesStatsAsync(int count = 10, CancellationToken cancellationToken = default);
+    Task<AdminCityStatsDto?> GetCityStatsAsync(string cityName, CancellationToken cancellationToken = default);
+    Task<int> GetBroadcastAudienceCountAsync(AdminBroadcastFilterDto filter, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<long>> GetBroadcastRecipientTelegramIdsAsync(AdminBroadcastFilterDto filter, CancellationToken cancellationToken = default);
+    Task<int> GetPendingReportsCountAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<AdminPendingReportDto>> GetPendingReportsAsync(int skip = 0, int take = 10, CancellationToken cancellationToken = default);
+    Task<(UserProfileDto? Profile, int TotalCount, int CurrentIndex)> GetAdminProfileByGenderAsync(Gender gender, int offset, CancellationToken cancellationToken = default);
+    Task<Result<AdminModerationActionResult>> BanUserDirectlyAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<Result<AdminModerationActionResult>> DeleteUserProfileDirectlyAsync(Guid userId, CancellationToken cancellationToken = default);
 }
 ```
 
