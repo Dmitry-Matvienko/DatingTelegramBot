@@ -1,33 +1,34 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 23
+state_version: 24
 updated: 2026-08-24
 
 ---
 
 ## Сейчас
-- **Фаза**: Подготовка к облачному развертыванию на **Render** с поддержкой **HTTP Keep-Alive (cron-job.org)** и безопасной конфигурации через **Environment Variables**:
-  1. **Web Host на ASP.NET Core (`Microsoft.NET.Sdk.Web`)**: Проект `DatingBot.Bot` переведен на Web-хост с Kestrel Minimal API. Бот продолжает работать в режиме Long Polling через `IHostedService` (`TelegramBotWorker`, `MatchmakingNotificationWorker`, `InactivityNotificationWorker`).
-  2. **Keep-Alive & Health Check эндпоинты**:
-     - `GET /` — JSON-статус сервиса (`{"service": "DatingBot", "status": "running", "serverTimeUtc": "..."}`).
-     - `GET /ping` — текстовый ответ `pong` с минимальным оверхедом (идеально для пинга с cron-job.org каждые 5–10 мин против засыпания бесплатного инстанса Render).
-     - `GET /health` и `GET /healthz` — health check эндпоинты со статусом `{"status": "Healthy"}`.
-  3. **Исправление сбоя FileSystemWatcher (status 139 / inotify) в Linux-контейнерах**:
-     - В `Program.cs` и `Dockerfile` добавлен `DOTNET_USE_POLLING_FILE_WATCHER=true` и `DOTNET_EnableDiagnostics=0`.
-     - Все `reloadOnChange` переведены в `false` для статической контейнерной среды.
-  4. **Надежное определение строки подключения (`DependencyInjection.ResolveConnectionString`)**:
-     - Приоритет переменных окружения: `DEFAULT_CONNECTION` -> `DATABASE_URL` -> `ConnectionStrings:DefaultConnection`.
-     - `appsettings.json` очищен от хардкода `(localdb)`, исключено маскирование переменных окружения.
-     - Добавлена валидация платформы: при запуске на Linux без удаленной БД выдается понятное сообщение с инструкцией по настройке переменных в Render вместо сбоя LocalDB (`PlatformNotSupportedException`).
-  5. **Поддержка динамического порта Render**: Автоматическое считывание переменной `PORT` (`http://0.0.0.0:${PORT}`).
-  6. **Универсальные Environment Variables**:
-     - `BOT_TOKEN` или `BotConfiguration__BotToken` (токен бота).
-     - `DEFAULT_CONNECTION` или `ConnectionStrings__DefaultConnection` (строка подключения к SmarterASP.NET MS SQL).
-     - `ADMIN_IDS` или `BotConfiguration__AdminIds` (список ID админов, поддерживает как массив, так и разделение через запятую: `"123456, 789012"`).
-     - `BotConfiguration__UnbanPriceStars` (цена платного разбана).
-     - `BotConfiguration__InactivityReminderDays` (порог неактивности).
-  7. **Production Dockerfile и .dockerignore**: Создан легковесный multi-stage Dockerfile для сборки и запуска .NET 9 на Render.
-  8. **Тесты и верификация**: Добавлены тесты `ConnectionStringResolutionTests`, `HttpKeepAliveEndpointTests`, `AdminSettingsTests` и `BotSetupTests`. Все 326 тестов пройдены (100% green).
+- **Фаза**: Реализация **отказоустойчивой системы инициализации и автоматического самовосстановления (Self-Healing Architecture)** для бота:
+  1. **Координатор жизненного цикла (`IBotLifecycleCoordinator` / `BotLifecycleCoordinator`)**:
+     - Потокобезопасный `Singleton`, отслеживающий состояние готовности базы данных (`IsDatabaseReady`), активность опроса Telegram Long Polling (`IsTelegramPollingActive`), количество попыток подключения к БД (`DatabaseRetryCount`), количество перезапусков Telegram (`TelegramRestartCount`), время запуска, аптайм и текст последних ошибок.
+     - Асинхронное ожидание готовности базы (`WaitForDatabaseReadyAsync`) через `TaskCompletionSource` для зависимых служб.
+  2. **Неблокирующая фоновая инициализация БД (`DatabaseBootstrapWorker`)**:
+     - Миграции EF Core и сидирование 100k+ городов вынесены из блокирующего `Program.cs` в фоновый воркер (`BackgroundService`).
+     - При холодном старте, задержках удаленной СУБД (SmarterASP.NET / Azure SQL) или сетевых сбоях веб-сервер Kestrel остается онлайн, отвечает на Keep-Alive пинги (`/ping`, `/health`), а воркер повторяет попытки подключения с экспоненциальным backoff (3s -> 5s -> 10s -> 30s) до успешного завершения.
+  3. **Супервизорный цикл опроса и изоляция ошибок (`TelegramBotWorker`)**:
+     - Запуск опроса ожидает готовности БД, после чего запускает `botClient.ReceiveAsync` внутри защищенного супервизорного цикла `while (!stoppingToken.IsCancellationRequested)`.
+     - При любых сбоях сети, таймаутах или ошибках Telegram API воркер автоматически перезапускает сессию опроса с backoff-задержкой.
+     - Метод `ProcessUpdateSafeAsync` изолирует ошибки обработки входящих апдейтов отдельных пользователей — сбой на одном сообщении никогда не ломает сессию бота для остальных пользователей.
+  4. **Защита хоста от падений воркеров**:
+     - `HostOptions.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore` в `Program.cs` исключает аварийную остановку всего хоста .NET при непредвиденных исключениях в фоновых задачах.
+     - Добавлены глобальные обработчики `AppDomain.CurrentDomain.UnhandledException` и `TaskScheduler.UnobservedTaskException`.
+  5. **Координация фоновых сервисов уведомлений**:
+     - `MatchmakingNotificationWorker` и `InactivityNotificationWorker` безопасно ожидают готовности базы через `WaitForDatabaseReadyAsync` перед выполнением периодических запросов.
+  6. **Расширенная телеметрия здоровья и статуса**:
+     - `GET /` — детальный JSON-статус с аптаймом, `status` ("running" / "bootstrapping"), `isDatabaseReady`, `isTelegramPollingActive`, `databaseRetryCount`, `telegramRestartCount`, `lastDatabaseError`, `lastTelegramError`.
+     - `GET /health` — `{"status": "Healthy" / "Degraded", "isDatabaseReady": ..., "isTelegramPollingActive": ...}`.
+     - `GET /ping` — `pong` (Keep-Alive для cron-job.org / Render).
+  7. **Тесты и верификация**:
+     - Добавлены `BotLifecycleCoordinatorTests`, `DatabaseBootstrapWorkerTests`, `SelfHealingTelegramBotWorkerTests`.
+     - Все 337 тестов успешно пройдены (100% green, 0 warnings).
 - **Далее**: Деплой на Render с указанием `DEFAULT_CONNECTION` в Environment Variables.
 
 ---
@@ -45,6 +46,7 @@ updated: 2026-08-24
 | База данных и репозитории (`Infrastructure`) | ✅ Готово | 100% |
 | Локальный AI-векторизатор (`LocalAiEmbeddingService`) | ✅ Готово | 100% |
 | Датасет городов (100k+ gzip) (`CityDatabaseSeeder`) | ✅ Готово | 100% |
+| Отказоустойчивая инициализация и Self-Healing (`BotLifecycleCoordinator`, `DatabaseBootstrapWorker`) | ✅ Готово | 100% |
 | Презентационный слой, Web-хост и Keep-Alive (`Bot`, Minimal API) | ✅ Готово | 100% |
 | Многоязычность (6 языков) (`LocalizationService`) | ✅ Готово | 100% |
 | Развертывание (Render Dockerfile, Env Vars) | ✅ Готово | 100% |
@@ -57,7 +59,7 @@ updated: 2026-08-24
 - [x] 4-уровневый каскадный скоринг Matchmaking (AI -> Интересы -> Город -> Соседние города до 500 км).
 - [x] 10-балльная система рейтинга и детекция взаимной симпатии (6+).
 - [x] Полная мультиязычность для 6 языков (RU, UK, EN, HI, PT, ID).
-- [x] Покрытие тестами (322 теста успешно пройдены).
+- [x] Покрытие тестами (337 тестов успешно пройдены).
 - [x] Перевод управляющего слоя на стандарт Standing Orders / SDD.
 - [x] Добавление кнопки и функционала публичного «Приветствия» в профиль пользователя и карточки выдачи кандидатов.
 - [x] Интерактивная обработка жалоб модераторами с кнопками («Заблокировать», «Удалить анкету», «Проигнорировать») и мультиязычными уведомлениями.
@@ -76,6 +78,7 @@ updated: 2026-08-24
 - [x] Перевод `DatingBot.Bot` на Web-хост с Keep-Alive HTTP эндпоинтами (`/`, `/ping`, `/health`) для Render и cron-job.org.
 - [x] Поддержка удобного конфигурирования через Environment Variables (`BOT_TOKEN`, `DEFAULT_CONNECTION`, `ADMIN_IDS`).
 - [x] Создание Multi-stage Dockerfile и .dockerignore для сборки и развертывания .NET 9.
+- [x] Отказоустойчивая система инициализации и автоматического самовосстановления бота (`IBotLifecycleCoordinator`, `DatabaseBootstrapWorker`, `TelegramBotWorker` polling loop retry, `HostOptions` failure isolation).
 
 ---
 
