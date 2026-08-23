@@ -60,6 +60,7 @@ var builder = Host.CreateDefaultBuilder(args)
         // 5. Фоновые сервисы
         services.AddHostedService<TelegramBotWorker>();
         services.AddHostedService<MatchmakingNotificationWorker>();
+        services.AddHostedService<InactivityNotificationWorker>();
     });
 
 var app = builder.Build();

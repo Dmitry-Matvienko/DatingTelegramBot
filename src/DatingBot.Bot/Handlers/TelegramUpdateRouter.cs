@@ -378,6 +378,33 @@ public class TelegramUpdateRouter(
                     return;
                 }
 
+                // Обработка кнопки "🔍 Начать поиск" из напоминания о неактивности
+                if (callbackQuery.Data == "inactivity_search")
+                {
+                    await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: cancellationToken);
+
+                    var profile = await registrationService.GetProfileDtoAsync(telegramId, cancellationToken);
+                    if (profile is null || !profile.IsCompleted)
+                    {
+                        await registrationPromptService.SendPromptForStateAsync(
+                            callbackQuery.Message?.Chat.Id ?? telegramId,
+                            user.State,
+                            user.LastBotMessageId,
+                            loc.Get(user.Language, "Search_MustCompleteProfile"),
+                            cancellationToken
+                        );
+                        return;
+                    }
+
+                    user.State = UserState.Searching;
+                    await searchCallbackHandler.ShowNextCandidateOrIncomingAsync(
+                        callbackQuery.Message?.Chat.Id ?? telegramId,
+                        telegramId,
+                        cancellationToken
+                    );
+                    return;
+                }
+
                 // 2. Проверяем обработчик поиска и оценок
                 var isSearchCallback = await searchCallbackHandler.HandleSearchCallbackQueryAsync(user, callbackQuery, cancellationToken);
                 if (isSearchCallback)

@@ -43,6 +43,16 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.CreatedAt)
             .IsRequired();
 
+        builder.Property(u => u.LastActiveAt)
+            .IsRequired()
+            .HasDefaultValueSql("GETUTCDATE()");
+
+        builder.Property(u => u.LastInactivityReminderSentAt)
+            .IsRequired(false);
+
+        builder.HasIndex(u => new { u.LastActiveAt, u.LastInactivityReminderSentAt })
+            .HasDatabaseName("IX_Users_LastActive_LastReminder");
+
         builder.HasOne(u => u.Profile)
             .WithOne(p => p.User)
             .HasForeignKey<UserProfile>(p => p.UserId)

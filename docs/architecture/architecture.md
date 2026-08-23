@@ -55,8 +55,8 @@
 - **Зависимости:** 0 внешних пакетов.
 
 ### 3.2. `DatingBot.Application` (Бизнес-сценарии)
-- Абстракции хранилищ (`IUserRepository`, `IUserProfileRepository`, `ICityRepository`, `IInterestRepository`, `IProfileRatingRepository`, `IProfileReportRepository`, `IUnitOfWork`).
-- Бизнес-сервисы (`IRegistrationService`, `IProfileEditingService`, `IMatchmakingService`, `ISearchService`, `ILocalizationService`, `IAiEmbeddingService`).
+- Абстракции хранилищ (`IUserRepository`, `IUserProfileRepository`, `ICityRepository`, `IInterestRepository`, `IProfileRatingRepository`, `IProfileReportRepository`, `IPaymentTransactionRepository`, `IUnitOfWork`).
+- Бизнес-сервисы (`IRegistrationService`, `IProfileEditingService`, `IMatchmakingService`, `ISearchService`, `ILocalizationService`, `IAiEmbeddingService`, `IAdminService`, `IModerationService`, `IInactivityReminderService`).
 - DTO (Data Transfer Objects) и маппинг.
 - Валидаторы входных данных на FluentValidation.
 - Шаблон возврата результатов `Result` / `Result<T>`.
@@ -73,10 +73,10 @@
 ### 3.4. `DatingBot.Bot` (Презентационный слой Telegram)
 - Точка входа `Program.cs`, конфигурация DI и Generic Host.
 - `TelegramUpdateRouter` — диспетчер сообщений и callback-запросов.
-- Обработчики FSM (`RegistrationMessageHandler`, `RegistrationCallbackHandler`, `ProfileEditMessageHandler`, `ProfileEditCallbackHandler`, `SearchCallbackHandler`).
-- Фабрики инлайн- и reply-клавиатур (`LanguageKeyboards`, `MainMenuKeyboards`, `ProfileKeyboards`, `RegistrationKeyboards`, `SearchKeyboards`).
-- Сервисы формирования визуальных карточек (`ProfilePromptService`, `SearchPromptService`, `RegistrationPromptService`).
-- Фоновые воркеры (`TelegramBotWorker`, `MatchmakingNotificationWorker`).
+- Обработчики FSM (`RegistrationMessageHandler`, `RegistrationCallbackHandler`, `ProfileEditMessageHandler`, `ProfileEditCallbackHandler`, `SearchCallbackHandler`, `AdminCallbackHandler`, `AdminMessageHandler`, `AdminModerationCallbackHandler`).
+- Фабрики инлайн- и reply-клавиатур (`LanguageKeyboards`, `MainMenuKeyboards`, `ProfileKeyboards`, `RegistrationKeyboards`, `SearchKeyboards`, `AdminKeyboards`, `PaymentKeyboards`).
+- Сервисы формирования визуальных карточек (`ProfilePromptService`, `SearchPromptService`, `RegistrationPromptService`, `AdminPromptService`, `AdminBroadcastService`).
+- Фоновые воркеры (`TelegramBotWorker`, `MatchmakingNotificationWorker`, `InactivityNotificationWorker`).
 - **Зависимости:** `Application`, `Infrastructure`, `Telegram.Bot`.
 
 ---

@@ -28,4 +28,39 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
     {
         dbContext.Users.Update(user);
     }
+
+    public async Task<IReadOnlyList<User>> GetInactiveUsersAsync(DateTime cutoffDate, int limit = 100, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Users
+            .Include(u => u.Profile)
+            .Where(u => u.State != Domain.Enums.UserState.Banned
+                     && u.Profile != null
+                     && u.Profile.IsCompleted
+                     && u.LastActiveAt <= cutoffDate
+                     && (u.LastInactivityReminderSentAt == null || u.LastInactivityReminderSentAt <= cutoffDate))
+            .OrderBy(u => u.LastInactivityReminderSentAt ?? DateTime.MinValue)
+            .ThenBy(u => u.LastActiveAt)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task MarkInactivityReminderSentAsync(Guid userId, DateTime sentAt, CancellationToken cancellationToken = default)
+    {
+        var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (user is not null)
+        {
+            user.LastInactivityReminderSentAt = sentAt;
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    public async Task UpdateLastActiveAtAsync(long telegramId, DateTime activeAt, CancellationToken cancellationToken = default)
+    {
+        var user = await dbContext.Users.FirstOrDefaultAsync(u => u.TelegramId == telegramId, cancellationToken);
+        if (user is not null)
+        {
+            user.LastActiveAt = activeAt;
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+    }
 }

@@ -14,6 +14,8 @@ public class User
     public Guid? CurrentCandidateProfileId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
+    public DateTime LastActiveAt { get; set; } = DateTime.UtcNow;
+    public DateTime? LastInactivityReminderSentAt { get; set; }
 
     public UserProfile? Profile { get; set; }
 }

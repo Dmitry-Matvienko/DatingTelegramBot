@@ -34,7 +34,8 @@ public class RegistrationService(
                 Username = username,
                 FirstName = firstName,
                 State = UserState.None,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                LastActiveAt = DateTime.UtcNow
             };
 
             await userRepository.AddAsync(user, cancellationToken);
@@ -58,9 +59,11 @@ public class RegistrationService(
                 user.Username = username;
                 user.FirstName = firstName;
                 user.UpdatedAt = DateTime.UtcNow;
-                userRepository.Update(user);
-                await unitOfWork.SaveChangesAsync(cancellationToken);
             }
+
+            user.LastActiveAt = DateTime.UtcNow;
+            userRepository.Update(user);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         return user;

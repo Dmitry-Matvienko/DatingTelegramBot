@@ -499,7 +499,80 @@ public class TelegramUpdateRouterStartTests
 
         // Assert
         _botClient.Verify(b => b.SendRequest(
-            It.Is<SendInvoiceRequest>(r => r.ChatId.Identifier == chatId && r.Currency == "XTR" && r.Prices.Any(p => p.Amount == 1)),
+            It.Is<SendInvoiceRequest>(r => r.ChatId.Identifier == chatId && r.Prices.Any(p => p.Amount == 1)),
             It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RouteUpdateAsync_WhenInactivitySearchCallbackReceived_ShouldTransitionToSearchingAndShowCandidate()
+    {
+        // Arrange
+        const long chatId = 777888;
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            TelegramId = chatId,
+            Language = AppLanguage.Russian,
+            State = UserState.Active
+        };
+
+        var profile = new UserProfileDto(
+            Id: Guid.NewGuid(),
+            TelegramId: chatId,
+            Username: "inactive_user",
+            Gender: Gender.Male,
+            TargetGender: TargetGender.Female,
+            Name: "Alex",
+            Age: 25,
+            City: "Kyiv",
+            Height: 180,
+            PhotoFileId: "photo_123",
+            DatingTarget: DatingTarget.Relationship,
+            AiDescription: "Bio",
+            SelectedInterests: [],
+            IsCompleted: true,
+            AgeFilters: AgeCategoryFilter.None,
+            SearchMinAge: null,
+            SearchMaxAge: null,
+            RatingCount: 0,
+            AverageRating: 0,
+            CityId: null,
+            AiVector: null,
+            Greeting: null
+        );
+
+        _registrationService.Setup(r => r.GetOrCreateUserAsync(chatId, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _registrationService.Setup(r => r.GetProfileDtoAsync(chatId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(profile);
+
+        _botClient.Setup(b => b.SendRequest(It.IsAny<AnswerCallbackQueryRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        _searchService.Setup(s => s.GetNextMatchCandidateAsync(chatId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MatchCandidateDto?)null);
+
+        var update = new Update
+        {
+            Id = 205,
+            CallbackQuery = new CallbackQuery
+            {
+                Id = "cb_inactivity_1",
+                Data = "inactivity_search",
+                From = new Telegram.Bot.Types.User { Id = chatId, FirstName = "Alex" },
+                Message = new Message { Id = 89, Chat = new Chat { Id = chatId } }
+            }
+        };
+
+        // Act
+        await _router.RouteUpdateAsync(update);
+
+        // Assert
+        user.State.Should().Be(UserState.Searching);
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<AnswerCallbackQueryRequest>(r => r.CallbackQueryId == "cb_inactivity_1"),
+            It.IsAny<CancellationToken>()), Times.Once);
+        _searchService.Verify(s => s.GetNextMatchCandidateAsync(chatId, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

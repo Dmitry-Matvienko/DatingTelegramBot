@@ -14,6 +14,7 @@ public static class DependencyInjection
         services.AddScoped<ISearchService, SearchService>();
         services.AddScoped<IModerationService, ModerationService>();
         services.AddScoped<IAdminService, AdminService>();
+        services.AddScoped<IInactivityReminderService, InactivityReminderService>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
         return services;
     }

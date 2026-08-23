@@ -220,4 +220,26 @@ public class LocalizationTests
         var text = _loc.Get(language, key);
         text.Should().Contain(expectedSubstring);
     }
+
+    [Theory]
+    [InlineData(AppLanguage.Russian)]
+    [InlineData(AppLanguage.Ukrainian)]
+    [InlineData(AppLanguage.English)]
+    [InlineData(AppLanguage.Hindi)]
+    [InlineData(AppLanguage.Portuguese)]
+    [InlineData(AppLanguage.Indonesian)]
+    public void InactivityReminders_AllTenKeysAndButton_ShouldBeTranslatedAndNonEmpty(AppLanguage language)
+    {
+        var searchBtn = _loc.Get(language, "Btn_Inactivity_StartSearch");
+        searchBtn.Should().NotBeNullOrWhiteSpace();
+        searchBtn.Should().NotBe("Btn_Inactivity_StartSearch");
+
+        for (var i = 1; i <= 10; i++)
+        {
+            var key = $"Notification_Inactivity_{i}";
+            var message = _loc.Get(language, key);
+            message.Should().NotBeNullOrWhiteSpace();
+            message.Should().NotBe(key);
+        }
+    }
 }

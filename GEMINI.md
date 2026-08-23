@@ -64,20 +64,21 @@ DatingBot/                                # Корень проекта == BASE_
 │           ├── admin_and_moderation.md   # Панель админа, модерация, медиакит-аналитика, рассылки
 │           ├── database_persistence.md   # Схема БД, Fluent API, индексы, сидирование городов
 │           ├── ai_embeddings.md          # Локальная SIMD-векторизация описаний и косинусное сходство
-│           └── localization_ui.md        # Словарь на 6 языков, грамматические падежи, UI-клавиатуры
+│           ├── localization_ui.md        # Словарь на 6 языков, грамматические падежи, UI-клавиатуры
+│           └── inactivity_reminders.md   # Заманчивые напоминания неактивным пользователям
 │
 ├── src/                                  # [Уровень 5] Исходный код реализации (.NET 9 / C# 13)
 │   │
 │   ├── DatingBot.Domain/                 # Ядро: 0 внешних зависимостей
-│   │   ├── Entities/                     # Сущности (User, UserProfile, City, Interest, Rating, Report)
-│   │   ├── Enums/                        # Перечисления (UserState, AppLanguage, Gender, TargetGender...)
+│   │   ├── Entities/                     # Сущности (User, UserProfile, City, Interest, Rating, Report, PaymentTransaction)
+│   │   ├── Enums/                        # Перечисления (UserState, AppLanguage, Gender, TargetGender, PaymentType...)
 │   │   └── Exceptions/                   # Доменные исключения (DomainException)
 │   │
 │   ├── DatingBot.Application/            # Сценарии использования и бизнес-сервисы
 │   │   ├── Common/                       # Result Pattern (Result, Result<T>)
-│   │   ├── DTOs/                         # Модели передачи данных (UserProfileDto, MatchCandidateDto...)
+│   │   ├── DTOs/                         # Модели передачи данных (UserProfileDto, MatchCandidateDto, AdminStatsDto...)
 │   │   ├── Interfaces/                   # Интерфейсы репозиториев и сервисов
-│   │   ├── Services/                     # Бизнес-сервисы (Registration, ProfileEditing, Matchmaking, Search, Loc)
+│   │   ├── Services/                     # Бизнес-сервисы (Registration, ProfileEditing, Matchmaking, Search, Loc, Inactivity)
 │   │   └── Validators/                   # FluentValidation валидаторы (Name, Age, City, Height, AiBio)
 │   │
 │   ├── DatingBot.Infrastructure/         # Инфраструктура, MS SQL Server и EF Core
@@ -92,13 +93,13 @@ DatingBot/                                # Корень проекта == BASE_
 │   │
 │   └── DatingBot.Bot/                    # Презентационный слой Telegram (Telegram.Bot)
 │       ├── Handlers/                     # TelegramUpdateRouter, FSM хэндлеры сообщений и кнопок
-│       ├── Keyboards/                    # Фабрики инлайн- и reply-клавиатур
-│       ├── Services/                     # TelegramBotWorker, Prompt-сервисы формирования карточек, BotSetup
-│       ├── Workers/                      # MatchmakingNotificationWorker
-│       ├── appsettings.json              # Базовая конфигурация (BotToken, AdminIds, ConnectionStrings)
+│       ├── Keyboards/                    # Фабрики инлайн- и reply-клавиатур (MainMenu, Profile, Payment, Admin...)
+│       ├── Services/                     # TelegramBotWorker, Prompt-сервисы формирования карточек, AdminBroadcast, BotSetup
+│       ├── Workers/                      # MatchmakingNotificationWorker, InactivityNotificationWorker
+│       ├── appsettings.json              # Базовая конфигурация (BotToken, AdminIds, InactivityReminderDays...)
 │       └── Program.cs                    # Точка входа DI и Generic Host
 │
-├── tests/                                # Модульные и интеграционные тесты (298 тестов)
+├── tests/                                # Модульные и интеграционные тесты (313 тестов)
 │   ├── DatingBot.UnitTests/              # xUnit модульные тесты сервисов, алгоритмов и валидаторов
 │   └── DatingBot.IntegrationTests/       # Интеграционные тесты сидера БД и сценариев
 │

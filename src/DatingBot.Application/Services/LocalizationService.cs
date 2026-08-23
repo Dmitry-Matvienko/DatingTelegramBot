@@ -1527,6 +1527,105 @@ public class LocalizationService : ILocalizationService
             [AppLanguage.Hindi] = "<i>अभी तक कोई लेनदेन नहीं हुआ है।</i>",
             [AppLanguage.Portuguese] = "<i>Nenhuma transação realizada ainda.</i>",
             [AppLanguage.Indonesian] = "<i>Belum ada transaksi yang selesai.</i>"
+        },
+        ["Btn_Inactivity_StartSearch"] = new()
+        {
+            [AppLanguage.Russian] = "🔍 Начать поиск",
+            [AppLanguage.Ukrainian] = "🔍 Почати пошук",
+            [AppLanguage.English] = "🔍 Start searching",
+            [AppLanguage.Hindi] = "🔍 खोजना शुरू करें",
+            [AppLanguage.Portuguese] = "🔍 Começar a busca",
+            [AppLanguage.Indonesian] = "🔍 Mulai mencari"
+        },
+        ["Notification_Inactivity_1"] = new()
+        {
+            [AppLanguage.Russian] = "🔥 <b>Кто-то прямо сейчас просматривает анкеты в твоем городе!</b>\n\nЗагляни в бот, возможно, тебя уже кто-то ждет!",
+            [AppLanguage.Ukrainian] = "🔥 <b>Хтось просто зараз переглядає анкети у твоєму місті!</b>\n\nЗавітай у бот, можливо, на тебе вже хтось чекає!",
+            [AppLanguage.English] = "🔥 <b>Someone is browsing profiles in your city right now!</b>\n\nCheck out the bot, maybe someone is already waiting for you!",
+            [AppLanguage.Hindi] = "🔥 <b>कोई अभी आपके शहर में प्रोफाइल देख रहा है!</b>\n\nबॉट खोलें, शायद कोई आपका इंतज़ार कर रहा हो!",
+            [AppLanguage.Portuguese] = "🔥 <b>Alguém está visualizando perfis na sua cidade agora mesmo!</b>\n\nDê uma olhada no bot, talvez alguém já esteja esperando por você!",
+            [AppLanguage.Indonesian] = "🔥 <b>Seseorang sedang melihat-lihat profil di kotamu sekarang!</b>\n\nBuka bot, mungkin ada yang sedang menunggumu!"
+        },
+        ["Notification_Inactivity_2"] = new()
+        {
+            [AppLanguage.Russian] = "❤️ <b>Найди свою любовь!</b>\n\nНовые анкеты уже ждут твоей оценки. Сделай первый шаг!",
+            [AppLanguage.Ukrainian] = "❤️ <b>Знайди своє кохання!</b>\n\nНові анкети вже чекають на твою оцінку. Зроби перший крок!",
+            [AppLanguage.English] = "❤️ <b>Find your true love!</b>\n\nNew profiles are waiting for your rating. Take the first step!",
+            [AppLanguage.Hindi] = "❤️ <b>अपना सच्चा प्यार पाएं!</b>\n\nनए प्रोफाइल आपकी रेटिंग का इंतज़ार कर रहे हैं। पहला कदम बढ़ाएं!",
+            [AppLanguage.Portuguese] = "❤️ <b>Encontre o seu amor!</b>\n\nNovos perfis estão esperando pela sua avaliação. Dê o primeiro passo!",
+            [AppLanguage.Indonesian] = "❤️ <b>Temukan cinta sejatimu!</b>\n\nProfil baru sedang menunggu penilaianmu. Ambil langkah pertama!"
+        },
+        ["Notification_Inactivity_3"] = new()
+        {
+            [AppLanguage.Russian] = "👥 <b>Ищешь новых друзей и интересное общение?</b>\n\nТысячи классных людей вокруг готовы познакомиться прямо сейчас!",
+            [AppLanguage.Ukrainian] = "👥 <b>Шукаєш нових друзів та цікаве спілкування?</b>\n\nТисячі класних людей навколо готові познайомитися просто зараз!",
+            [AppLanguage.English] = "👥 <b>Looking for new friends and engaging chats?</b>\n\nThousands of great people around you are ready to connect right now!",
+            [AppLanguage.Hindi] = "👥 <b>नए दोस्तों और दिलचस्प बातचीत की तलाश है?</b>\n\nहजारों लोग आपसे जुड़ने के लिए तैयार हैं!",
+            [AppLanguage.Portuguese] = "👥 <b>Procurando novos amigos e boas conversas?</b>\n\nMilhares de pessoas incríveis ao seu redor estão prontas para se conectar!",
+            [AppLanguage.Indonesian] = "👥 <b>Mencari teman baru dan obrolan seru?</b>\n\nRibuan orang hebat di sekitarmu siap berkenalan sekarang!"
+        },
+        ["Notification_Inactivity_4"] = new()
+        {
+            [AppLanguage.Russian] = "💌 <b>С тобой хотят познакомиться!</b>\n\nНе упусти возможность завести приятное знакомство прямо сегодня.",
+            [AppLanguage.Ukrainian] = "💌 <b>З тобою хочуть познайомитися!</b>\n\nНе втрачай можливість завести приємне знайомство просто сьогодні.",
+            [AppLanguage.English] = "💌 <b>Someone wants to get to know you!</b>\n\nDon't miss the chance to start an exciting conversation today.",
+            [AppLanguage.Hindi] = "💌 <b>कोई आपसे मिलना चाहता है!</b>\n\nआज ही एक सुखद परिचय शुरू करने का मौका न चूकें।",
+            [AppLanguage.Portuguese] = "💌 <b>Alguém quer te conhecer!</b>\n\nNão perca a chance de iniciar uma conversa incrível hoje mesmo.",
+            [AppLanguage.Indonesian] = "💌 <b>Ada yang ingin berkenalan denganmu!</b>\n\nJangan lewatkan kesempatan untuk memulai perkenalan yang menyenangkan hari ini."
+        },
+        ["Notification_Inactivity_5"] = new()
+        {
+            [AppLanguage.Russian] = "✨ <b>Твоя идеальная пара может быть совсем рядом!</b>\n\nНаш ИИ подобрал для тебя новые классные анкеты с высоким совпадением.",
+            [AppLanguage.Ukrainian] = "✨ <b>Твоя ідеальна пара може бути зовсім поруч!</b>\n\nНаш ШІ підібрав для тебе нові класні анкети з високим збігом.",
+            [AppLanguage.English] = "✨ <b>Your perfect match might be right around the corner!</b>\n\nOur AI has found great new profiles with high compatibility for you.",
+            [AppLanguage.Hindi] = "✨ <b>आपका आदर्श साथी आपके बहुत करीब हो सकता है!</b>\n\nहमारे AI ने आपके लिए उच्च अनुकूलता वाले नए प्रोफाइल चुने हैं।",
+            [AppLanguage.Portuguese] = "✨ <b>Seu par ideal pode estar muito perto de você!</b>\n\nNossa IA selecionou ótimos novos perfis com alta compatibilidade para você.",
+            [AppLanguage.Indonesian] = "✨ <b>Pasangan idealmu mungkin ada di dekatmu!</b>\n\nAI kami telah memilih profil baru yang sangat cocok untukmu."
+        },
+        ["Notification_Inactivity_6"] = new()
+        {
+            [AppLanguage.Russian] = "💬 <b>Тебе скучно?</b>\n\nОткрой поиск анкет в DatingBot и начни увлекательный диалог прямо сейчас!",
+            [AppLanguage.Ukrainian] = "💬 <b>Тобі нудно?</b>\n\nВідкрий пошук анкет у DatingBot та почни захоплюючий діалог просто зараз!",
+            [AppLanguage.English] = "💬 <b>Feeling bored?</b>\n\nOpen profile search in DatingBot and start an exciting conversation right now!",
+            [AppLanguage.Hindi] = "💬 <b>क्या आप बोर हो रहे हैं?</b>\n\nDatingBot में प्रोफाइल खोजें और अभी एक रोमांचक बातचीत शुरू करें!",
+            [AppLanguage.Portuguese] = "💬 <b>Está entediado?</b>\n\nAbra a busca de perfis no DatingBot e comece um bate-papo incrível agora mesmo!",
+            [AppLanguage.Indonesian] = "💬 <b>Merasa bosan?</b>\n\nBuka pencarian profil di DatingBot dan mulai obrolan seru sekarang juga!"
+        },
+        ["Notification_Inactivity_7"] = new()
+        {
+            [AppLanguage.Russian] = "🎯 <b>Твоя судьба в твоих руках!</b>\n\nЗайди в бот и оцени свежие анкеты людей поблизости.",
+            [AppLanguage.Ukrainian] = "🎯 <b>Твоя доля у твоїх руках!</b>\n\nЗавітай у бот та оціни свіжі анкети людей поблизу.",
+            [AppLanguage.English] = "🎯 <b>Your destiny is in your hands!</b>\n\nJump into the bot and check out fresh profiles of people near you.",
+            [AppLanguage.Hindi] = "🎯 <b>आपकी किस्मत आपके हाथों में है!</b>\n\nबॉट में जाएं और अपने आस-पास के लोगों के नए प्रोफाइल देखें।",
+            [AppLanguage.Portuguese] = "🎯 <b>O seu destino está em suas mãos!</b>\n\nEntre no bot e avalie perfis recentes de pessoas perto de você.",
+            [AppLanguage.Indonesian] = "🎯 <b>Takdirmu ada di tanganmu!</b>\n\nBuka bot dan nilai profil terbaru dari orang-orang di dekatmu."
+        },
+        ["Notification_Inactivity_8"] = new()
+        {
+            [AppLanguage.Russian] = "🌟 <b>Кто-то ждет именно тебя!</b>\n\nПоставь оценку новым анкетам и узнай, совпали ли ваши симпатии.",
+            [AppLanguage.Ukrainian] = "🌟 <b>Хтось чекає саме на тебе!</b>\n\nПостав оцінку новим анкетам і дізнайся, чи збіглися ваші симпатії.",
+            [AppLanguage.English] = "🌟 <b>Someone is waiting just for you!</b>\n\nRate new profiles and see if you have a mutual match.",
+            [AppLanguage.Hindi] = "🌟 <b>कोई सिर्फ आपका इंतज़ार कर रहा है!</b>\n\nनए प्रोफाइल को रेट करें और देखें कि क्या आपकी पसंद मेल खाती है।",
+            [AppLanguage.Portuguese] = "🌟 <b>Alguém está esperando por você!</b>\n\nAvalie novos perfis e descubra se vocês têm afinidade mútua.",
+            [AppLanguage.Indonesian] = "🌟 <b>Ada yang sedang menunggumu!</b>\n\nBeri nilai pada profil baru dan cari tahu apakah kalian saling cocok."
+        },
+        ["Notification_Inactivity_9"] = new()
+        {
+            [AppLanguage.Russian] = "🚀 <b>Свежие анкеты уже в поиске!</b>\n\nПосмотри, кто недавно присоединился к DatingBot в твоем регионе.",
+            [AppLanguage.Ukrainian] = "🚀 <b>Свіжі анкети вже в пошуку!</b>\n\nПодивись, хто нещодавно приєднався до DatingBot у твоєму регіоні.",
+            [AppLanguage.English] = "🚀 <b>Fresh profiles are waiting in search!</b>\n\nCheck out who has recently joined DatingBot in your area.",
+            [AppLanguage.Hindi] = "🚀 <b>नए प्रोफाइल खोज में उपलब्ध हैं!</b>\n\nदेखें कि आपके क्षेत्र में हाल ही में DatingBot से कौन जुड़ा है।",
+            [AppLanguage.Portuguese] = "🚀 <b>Novos perfis já estão disponíveis na busca!</b>\n\nVeja quem se juntou recentemente ao DatingBot na sua região.",
+            [AppLanguage.Indonesian] = "🚀 <b>Profil baru sudah tersedia di pencarian!</b>\n\nLihat siapa saja yang baru bergabung dengan DatingBot di wilayahmu."
+        },
+        ["Notification_Inactivity_10"] = new()
+        {
+            [AppLanguage.Russian] = "💖 <b>Любовь не ждет!</b>\n\nЗагляни в бот и найди человека, с которым захочется пойти на свидание.",
+            [AppLanguage.Ukrainian] = "💖 <b>Кохання не чекає!</b>\n\nЗавітай у бот і знайди людину, з якою захочеться піти на побачення.",
+            [AppLanguage.English] = "💖 <b>Love doesn't wait!</b>\n\nCheck out the bot and find someone you'd love to go on a date with.",
+            [AppLanguage.Hindi] = "💖 <b>प्यार इंतज़ार नहीं करता!</b>\n\nबॉट पर आएं और किसी ऐसे व्यक्ति को खोजें जिसके साथ आप डेट पर जाना चाहें।",
+            [AppLanguage.Portuguese] = "💖 <b>O amor não espera!</b>\n\nDê uma passada no bot e encontre alguém especial para sair em um encontro.",
+            [AppLanguage.Indonesian] = "💖 <b>Cinta tak menunggu!</b>\n\nBuka bot dan temukan seseorang yang ingin kamu ajak berkencan."
         }
     };
 
