@@ -371,6 +371,7 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
             .GroupBy(p => p.CityRef!.Country!)
             .Select(g => new { Country = g.Key, Count = g.Count() })
             .OrderByDescending(c => c.Count)
+            .ThenBy(c => c.Country)
             .Take(5)
             .ToListAsync(cancellationToken);
 
@@ -408,6 +409,7 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
             .GroupBy(p => p.City!)
             .Select(g => new { CityName = g.Key, UserCount = g.Count() })
             .OrderByDescending(x => x.UserCount)
+            .ThenBy(x => x.CityName)
             .Take(count)
             .ToListAsync(cancellationToken);
 

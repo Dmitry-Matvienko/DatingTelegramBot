@@ -44,6 +44,7 @@ public class ProfileReportRepository(AppDbContext dbContext) : IProfileReportRep
                     .ThenInclude(p => p!.Interests)
             .Where(r => !r.IsResolved)
             .OrderByDescending(r => r.CreatedAt)
+            .ThenBy(r => r.Id)
             .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken);

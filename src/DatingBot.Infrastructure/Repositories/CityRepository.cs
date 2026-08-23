@@ -73,6 +73,8 @@ public class CityRepository(AppDbContext context) : ICityRepository
         var prefixMatches = await context.Cities
             .AsNoTracking()
             .Where(c => c.Name.StartsWith(cleanQuery))
+            .OrderBy(c => c.Name)
+            .ThenBy(c => c.Id)
             .Take(limit)
             .ToListAsync(cancellationToken);
 
@@ -89,6 +91,8 @@ public class CityRepository(AppDbContext context) : ICityRepository
         var substringMatches = await context.Cities
             .AsNoTracking()
             .Where(c => c.Name.Contains(cleanQuery) && !seenIds.Contains(c.Id))
+            .OrderBy(c => c.Name)
+            .ThenBy(c => c.Id)
             .Take(remaining)
             .ToListAsync(cancellationToken);
 
@@ -105,6 +109,8 @@ public class CityRepository(AppDbContext context) : ICityRepository
             var candidates = await context.Cities
                 .AsNoTracking()
                 .Where(c => c.Name.StartsWith(prefix2))
+                .OrderBy(c => c.Name)
+                .ThenBy(c => c.Id)
                 .Take(50)
                 .ToListAsync(cancellationToken);
 
