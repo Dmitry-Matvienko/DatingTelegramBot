@@ -1,0 +1,62 @@
+## .NET Core & C#
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.userprefs
+
+## Visual Studio
+.vs/
+.vscode/
+*.DotSettings.user
+.idea/
+
+## Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## User-specific / Local Configuration & Secrets
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.local.json
+appsettings.*.Local.json
+*.local.json
+*.secrets.json
+.env
+*.env
+secrets/
+
+## Test Results & Coverage
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+## Database files
+*.mdf
+*.ldf
+*.ndf
+
+## Git Worktrees & Scratch
+.worktrees/
+worktrees/
+scratch/
+
+## OS generated
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
