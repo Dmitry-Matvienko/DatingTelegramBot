@@ -9,12 +9,14 @@ public static class PaymentKeyboards
 {
     private static readonly ILocalizationService Loc = new LocalizationService();
 
-    public static InlineKeyboardMarkup GetUnbanKeyboard(AppLanguage language = AppLanguage.Russian, ILocalizationService? loc = null)
+    public static InlineKeyboardMarkup GetUnbanKeyboard(AppLanguage language = AppLanguage.Russian, ILocalizationService? loc = null, int priceStars = 100)
     {
         var localizer = loc ?? Loc;
+        var template = localizer.Get(language, "Btn_PayUnbanStars");
+        var buttonText = string.Format(template, priceStars);
         return new InlineKeyboardMarkup([
             [
-                InlineKeyboardButton.WithCallbackData(localizer.Get(language, "Btn_PayUnban100Stars"), "pay_unban")
+                InlineKeyboardButton.WithCallbackData(buttonText, "pay_unban")
             ]
         ]);
     }

@@ -139,6 +139,7 @@ public class TelegramUpdateRouterStartTests
             _userRepository.Object,
             _unitOfWork.Object,
             _loc,
+            config,
             adminCbLogger.Object
         );
 
@@ -159,6 +160,7 @@ public class TelegramUpdateRouterStartTests
             _adminService.Object,
             _moderationService.Object,
             _loc,
+            config,
             regMsgHandler,
             regCbHandler,
             registrationPromptService,
@@ -404,6 +406,100 @@ public class TelegramUpdateRouterStartTests
         // Assert
         _botClient.Verify(b => b.SendRequest(
             It.Is<SendInvoiceRequest>(r => r.ChatId.Identifier == chatId && r.Currency == "XTR" && r.Payload == $"unban:{userId}"),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RouteUpdateAsync_WhenCustomPriceConfigured_ShouldUseConfiguredPriceInInvoice()
+    {
+        // Arrange
+        const long chatId = 333444;
+        var userId = Guid.NewGuid();
+        var user = new User
+        {
+            Id = userId,
+            TelegramId = chatId,
+            Language = AppLanguage.Russian,
+            State = UserState.Banned
+        };
+
+        var customConfig = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BotConfiguration:UnbanPriceStars"] = "1"
+            })
+            .Build();
+
+        var regPromptLogger = new Mock<ILogger<RegistrationPromptService>>();
+        var profilePromptLogger = new Mock<ILogger<ProfilePromptService>>();
+        var searchPromptLogger = new Mock<ILogger<SearchPromptService>>();
+        var adminPromptLogger = new Mock<ILogger<AdminPromptService>>();
+        var adminCbLogger = new Mock<ILogger<AdminCallbackHandler>>();
+        var adminBroadcastLogger = new Mock<ILogger<AdminBroadcastService>>();
+        var routerLogger = new Mock<ILogger<TelegramUpdateRouter>>();
+
+        var regPromptService = new RegistrationPromptService(_botClient.Object, _registrationService.Object, _userRepository.Object, _loc, regPromptLogger.Object);
+        var profPromptService = new ProfilePromptService(_botClient.Object, _registrationService.Object, _userRepository.Object, _loc, regPromptService, profilePromptLogger.Object);
+        var searchPromptService = new SearchPromptService(_botClient.Object, _registrationService.Object, _userRepository.Object, _loc, customConfig, searchPromptLogger.Object);
+        var adminPromptService = new AdminPromptService(_botClient.Object, _adminService.Object, _registrationService.Object, _userRepository.Object, _loc, adminPromptLogger.Object);
+        var adminBroadcastService = new AdminBroadcastService(_botClient.Object, _adminService.Object, adminBroadcastLogger.Object);
+
+        var regMsgHandler = new RegistrationMessageHandler(_botClient.Object, _registrationService.Object, _cityRepository.Object, regPromptService, _loc);
+        var regCbHandler = new RegistrationCallbackHandler(_botClient.Object, _registrationService.Object, _cityRepository.Object, regPromptService, _loc);
+        var editMsgHandler = new ProfileEditMessageHandler(_botClient.Object, _editingService.Object, _registrationService.Object, _cityRepository.Object, profPromptService, regPromptService, _loc);
+        var editCbHandler = new ProfileEditCallbackHandler(_botClient.Object, _editingService.Object, _registrationService.Object, _cityRepository.Object, profPromptService, _loc);
+        var searchCbHandler = new SearchCallbackHandler(_botClient.Object, _searchService.Object, searchPromptService, profPromptService, regPromptService, _loc);
+        var adminCbHandler = new AdminCallbackHandler(_botClient.Object, _adminService.Object, _moderationService.Object, adminPromptService, adminBroadcastService, _userRepository.Object, _unitOfWork.Object, _loc, customConfig, adminCbLogger.Object);
+        var adminMsgHandler = new AdminMessageHandler(_botClient.Object, _adminService.Object, adminPromptService, adminBroadcastService, _userRepository.Object, _unitOfWork.Object, _loc);
+
+        var customRouter = new TelegramUpdateRouter(
+            _botClient.Object,
+            _registrationService.Object,
+            _searchService.Object,
+            _adminService.Object,
+            _moderationService.Object,
+            _loc,
+            customConfig,
+            regMsgHandler,
+            regCbHandler,
+            regPromptService,
+            profPromptService,
+            editMsgHandler,
+            editCbHandler,
+            searchPromptService,
+            searchCbHandler,
+            adminPromptService,
+            adminCbHandler,
+            adminMsgHandler,
+            routerLogger.Object
+        );
+
+        _registrationService.Setup(r => r.GetOrCreateUserAsync(chatId, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _botClient.Setup(b => b.SendRequest(It.IsAny<AnswerCallbackQueryRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _botClient.Setup(b => b.SendRequest(It.IsAny<SendInvoiceRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Message { Id = 80, Chat = new Chat { Id = chatId } });
+
+        var update = new Update
+        {
+            Id = 204,
+            CallbackQuery = new CallbackQuery
+            {
+                Id = "cb_unban_custom",
+                Data = "pay_unban",
+                From = new Telegram.Bot.Types.User { Id = chatId, FirstName = "Test" },
+                Message = new Message { Id = 79, Chat = new Chat { Id = chatId } }
+            }
+        };
+
+        // Act
+        await customRouter.RouteUpdateAsync(update);
+
+        // Assert
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<SendInvoiceRequest>(r => r.ChatId.Identifier == chatId && r.Currency == "XTR" && r.Prices.Any(p => p.Amount == 1)),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 }

@@ -1051,14 +1051,23 @@ public class LocalizationService : ILocalizationService
             [AppLanguage.Portuguese] = "⛔ <b>Sua conta foi banida por violação dos termos de serviço.</b>",
             [AppLanguage.Indonesian] = "⛔ <b>Akun Anda telah diblokir karena melanggar ketentuan layanan.</b>"
         },
+        ["Btn_PayUnbanStars"] = new()
+        {
+            [AppLanguage.Russian] = "⭐ Разблокировать за {0} ⭐",
+            [AppLanguage.Ukrainian] = "⭐ Розблокувати за {0} ⭐",
+            [AppLanguage.English] = "⭐ Unban for {0} ⭐",
+            [AppLanguage.Hindi] = "⭐ {0} ⭐ में अनब्लॉक करें",
+            [AppLanguage.Portuguese] = "⭐ Desbloquear por {0} ⭐",
+            [AppLanguage.Indonesian] = "⭐ Buka blokir seharga {0} ⭐"
+        },
         ["Btn_PayUnban100Stars"] = new()
         {
-            [AppLanguage.Russian] = "⭐ Разблокировать за 100 звёзд",
-            [AppLanguage.Ukrainian] = "⭐ Розблокувати за 100 зірок",
-            [AppLanguage.English] = "⭐ Unban for 100 Stars",
-            [AppLanguage.Hindi] = "⭐ 100 स्टार्स में अनब्लॉक करें",
-            [AppLanguage.Portuguese] = "⭐ Desbloquear por 100 Estrelas",
-            [AppLanguage.Indonesian] = "⭐ Buka blokir seharga 100 Bintang"
+            [AppLanguage.Russian] = "⭐ Разблокировать за {0} ⭐",
+            [AppLanguage.Ukrainian] = "⭐ Розблокувати за {0} ⭐",
+            [AppLanguage.English] = "⭐ Unban for {0} ⭐",
+            [AppLanguage.Hindi] = "⭐ {0} ⭐ में अनब्लॉक करें",
+            [AppLanguage.Portuguese] = "⭐ Desbloquear por {0} ⭐",
+            [AppLanguage.Indonesian] = "⭐ Buka blokir seharga {0} ⭐"
         },
         ["Payment_Unban_Title"] = new()
         {

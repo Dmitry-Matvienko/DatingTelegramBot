@@ -184,12 +184,13 @@ public class AdminModerationCallbackHandler(
     {
         try
         {
+            var unbanPrice = GetUnbanPriceStars();
             var message = loc.Get(language, "Notification_ViolatorBanned");
             await botClient.SendMessage(
                 chatId: violatorTelegramId,
                 text: message,
                 parseMode: ParseMode.Html,
-                replyMarkup: DatingBot.Bot.Keyboards.PaymentKeyboards.GetUnbanKeyboard(language, loc),
+                replyMarkup: DatingBot.Bot.Keyboards.PaymentKeyboards.GetUnbanKeyboard(language, loc, unbanPrice),
                 cancellationToken: cancellationToken
             );
         }
@@ -198,6 +199,9 @@ public class AdminModerationCallbackHandler(
             logger.LogWarning("Не удалось отправить уведомление о бане нарушителю {ViolatorTelegramId}: {ErrorMessage}", violatorTelegramId, ex.Message);
         }
     }
+
+    private int GetUnbanPriceStars() =>
+        int.TryParse(configuration["BotConfiguration:UnbanPriceStars"], out var price) && price > 0 ? price : 100;
 
     private async Task NotifyViolatorProfileDeletedSafeAsync(long violatorTelegramId, Domain.Enums.AppLanguage language, CancellationToken cancellationToken)
     {

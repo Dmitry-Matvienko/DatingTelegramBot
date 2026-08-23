@@ -5,6 +5,7 @@ using DatingBot.Bot.Services;
 using DatingBot.Domain.Entities;
 using DatingBot.Domain.Enums;
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Telegram.Bot;
@@ -51,6 +52,8 @@ public class AdminRoutingAndCallbackTests
             new Mock<ILogger<AdminBroadcastService>>().Object
         );
 
+        var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder().AddInMemoryCollection().Build();
+
         _callbackHandler = new AdminCallbackHandler(
             _botClient.Object,
             _adminService.Object,
@@ -60,6 +63,7 @@ public class AdminRoutingAndCallbackTests
             _userRepo.Object,
             _unitOfWork.Object,
             _loc,
+            config,
             new Mock<ILogger<AdminCallbackHandler>>().Object
         );
 

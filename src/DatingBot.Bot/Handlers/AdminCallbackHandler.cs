@@ -3,6 +3,7 @@ using DatingBot.Application.Interfaces;
 using DatingBot.Bot.Keyboards;
 using DatingBot.Bot.Services;
 using DatingBot.Domain.Enums;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -20,6 +21,7 @@ public class AdminCallbackHandler(
     IUserRepository userRepository,
     IUnitOfWork unitOfWork,
     ILocalizationService loc,
+    IConfiguration configuration,
     ILogger<AdminCallbackHandler> logger)
 {
     public async Task<bool> HandleAdminCallbackQueryAsync(DbUser user, CallbackQuery callbackQuery, CancellationToken cancellationToken = default)
@@ -526,12 +528,13 @@ public class AdminCallbackHandler(
     {
         try
         {
+            var unbanPrice = GetUnbanPriceStars();
             var message = loc.Get(language, "Notification_ViolatorBanned");
             await botClient.SendMessage(
                 chatId: violatorTelegramId,
                 text: message,
                 parseMode: ParseMode.Html,
-                replyMarkup: PaymentKeyboards.GetUnbanKeyboard(language, loc),
+                replyMarkup: PaymentKeyboards.GetUnbanKeyboard(language, loc, unbanPrice),
                 cancellationToken: cancellationToken
             );
         }
@@ -540,6 +543,9 @@ public class AdminCallbackHandler(
             logger.LogWarning("Не удалось отправить уведомление о бане нарушителю {ViolatorTelegramId}: {ErrorMessage}", violatorTelegramId, ex.Message);
         }
     }
+
+    private int GetUnbanPriceStars() =>
+        int.TryParse(configuration["BotConfiguration:UnbanPriceStars"], out var price) && price > 0 ? price : 100;
 
     private async Task NotifyViolatorProfileDeletedSafeAsync(long violatorTelegramId, AppLanguage language, CancellationToken cancellationToken)
     {

@@ -2,6 +2,7 @@ using DatingBot.Application.Interfaces;
 using DatingBot.Bot.Keyboards;
 using DatingBot.Bot.Services;
 using DatingBot.Domain.Enums;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -17,6 +18,7 @@ public class TelegramUpdateRouter(
     IAdminService adminService,
     IModerationService moderationService,
     ILocalizationService loc,
+    IConfiguration configuration,
     RegistrationMessageHandler registrationMessageHandler,
     RegistrationCallbackHandler registrationCallbackHandler,
     RegistrationPromptService registrationPromptService,
@@ -96,11 +98,12 @@ public class TelegramUpdateRouter(
                 // Блокировка заблокированных пользователей
                 if (user.State == UserState.Banned)
                 {
+                    var unbanPrice = GetUnbanPriceStars();
                     await botClient.SendMessage(
                         chatId: message.Chat.Id,
                         text: loc.Get(lang, "Account_Banned"),
                         parseMode: ParseMode.Html,
-                        replyMarkup: PaymentKeyboards.GetUnbanKeyboard(lang, loc),
+                        replyMarkup: PaymentKeyboards.GetUnbanKeyboard(lang, loc, unbanPrice),
                         cancellationToken: cancellationToken
                     );
                     return;
@@ -336,13 +339,16 @@ public class TelegramUpdateRouter(
                 {
                     await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: cancellationToken);
 
+                    var unbanPrice = GetUnbanPriceStars();
+                    var priceLabel = string.Format(loc.Get(user.Language, "Payment_Unban_PriceLabel"), unbanPrice);
+
                     await botClient.SendInvoice(
                         chatId: callbackQuery.Message?.Chat.Id ?? callbackQuery.From.Id,
                         title: loc.Get(user.Language, "Payment_Unban_Title"),
                         description: loc.Get(user.Language, "Payment_Unban_Description"),
                         payload: $"unban:{user.Id}",
                         currency: "XTR",
-                        prices: [new LabeledPrice(loc.Get(user.Language, "Payment_Unban_PriceLabel"), 100)],
+                        prices: [new LabeledPrice(priceLabel, unbanPrice)],
                         cancellationToken: cancellationToken
                     );
                     return;
@@ -433,4 +439,7 @@ public class TelegramUpdateRouter(
 
         return false;
     }
+
+    private int GetUnbanPriceStars() =>
+        int.TryParse(configuration["BotConfiguration:UnbanPriceStars"], out var price) && price > 0 ? price : 100;
 }
