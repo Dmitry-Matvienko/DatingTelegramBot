@@ -531,6 +531,7 @@ public class AdminCallbackHandler(
                 chatId: violatorTelegramId,
                 text: message,
                 parseMode: ParseMode.Html,
+                replyMarkup: PaymentKeyboards.GetUnbanKeyboard(language, loc),
                 cancellationToken: cancellationToken
             );
         }

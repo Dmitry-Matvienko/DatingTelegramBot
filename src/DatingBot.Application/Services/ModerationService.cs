@@ -125,4 +125,62 @@ public class ModerationService(
 
         return Result.Success();
     }
+
+    public async Task<Result<UnbanActionResult>> UnbanUserAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var user = await userRepository.GetByIdAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return Result<UnbanActionResult>.Failure("Пользователь не найден.");
+        }
+
+        return await ExecuteUnbanAsync(user, cancellationToken);
+    }
+
+    public async Task<Result<UnbanActionResult>> UnbanUserByTelegramIdAsync(long telegramId, CancellationToken cancellationToken = default)
+    {
+        var user = await userRepository.GetByTelegramIdAsync(telegramId, cancellationToken);
+        if (user is null)
+        {
+            return Result<UnbanActionResult>.Failure("Пользователь не найден.");
+        }
+
+        return await ExecuteUnbanAsync(user, cancellationToken);
+    }
+
+    private async Task<Result<UnbanActionResult>> ExecuteUnbanAsync(Domain.Entities.User user, CancellationToken cancellationToken)
+    {
+        var profile = await userProfileRepository.GetByUserIdAsync(user.Id, cancellationToken);
+
+        var hasValidProfile = profile is not null
+            && !string.IsNullOrWhiteSpace(profile.Name)
+            && profile.CityId.HasValue
+            && profile.Gender.HasValue
+            && profile.TargetGender.HasValue
+            && profile.Age.HasValue
+            && !string.IsNullOrWhiteSpace(profile.PhotoFileId);
+
+        if (hasValidProfile)
+        {
+            profile!.IsCompleted = true;
+            profile.UpdatedAt = DateTime.UtcNow;
+            userProfileRepository.Update(profile);
+            user.State = UserState.Active;
+        }
+        else
+        {
+            user.State = UserState.Registration_SelectingLanguage;
+        }
+
+        user.UpdatedAt = DateTime.UtcNow;
+        userRepository.Update(user);
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result<UnbanActionResult>.Success(new UnbanActionResult(
+            user.TelegramId,
+            user.Language,
+            hasValidProfile
+        ));
+    }
 }

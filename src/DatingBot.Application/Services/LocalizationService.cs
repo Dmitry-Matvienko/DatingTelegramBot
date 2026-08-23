@@ -1051,6 +1051,51 @@ public class LocalizationService : ILocalizationService
             [AppLanguage.Portuguese] = "⛔ <b>Sua conta foi banida por violação dos termos de serviço.</b>",
             [AppLanguage.Indonesian] = "⛔ <b>Akun Anda telah diblokir karena melanggar ketentuan layanan.</b>"
         },
+        ["Btn_PayUnban100Stars"] = new()
+        {
+            [AppLanguage.Russian] = "⭐ Разблокировать за 100 звёзд",
+            [AppLanguage.Ukrainian] = "⭐ Розблокувати за 100 зірок",
+            [AppLanguage.English] = "⭐ Unban for 100 Stars",
+            [AppLanguage.Hindi] = "⭐ 100 स्टार्स में अनब्लॉक करें",
+            [AppLanguage.Portuguese] = "⭐ Desbloquear por 100 Estrelas",
+            [AppLanguage.Indonesian] = "⭐ Buka blokir seharga 100 Bintang"
+        },
+        ["Payment_Unban_Title"] = new()
+        {
+            [AppLanguage.Russian] = "Разблокировка аккаунта",
+            [AppLanguage.Ukrainian] = "Розблокування акаунта",
+            [AppLanguage.English] = "Account Unban",
+            [AppLanguage.Hindi] = "खाता अनब्लॉक",
+            [AppLanguage.Portuguese] = "Desbloqueio de Conta",
+            [AppLanguage.Indonesian] = "Buka Blokir Akun"
+        },
+        ["Payment_Unban_Description"] = new()
+        {
+            [AppLanguage.Russian] = "Снятие блокировки и полное восстановление доступа к сервису DatingBot.",
+            [AppLanguage.Ukrainian] = "Зняття блокування та повне відновлення доступу до сервісу DatingBot.",
+            [AppLanguage.English] = "Lifting the ban and full restoration of access to DatingBot.",
+            [AppLanguage.Hindi] = "प्रतिबंध हटाना और DatingBot सेवा तक पहुंच की पूरी बहाली।",
+            [AppLanguage.Portuguese] = "Remoção do banimento e restauração completa do acesso ao DatingBot.",
+            [AppLanguage.Indonesian] = "Membuka blokir dan memulihkan akses penuh ke layanan DatingBot."
+        },
+        ["Payment_Unban_PriceLabel"] = new()
+        {
+            [AppLanguage.Russian] = "Разбан (100 звёзд)",
+            [AppLanguage.Ukrainian] = "Розбан (100 зірок)",
+            [AppLanguage.English] = "Unban (100 Stars)",
+            [AppLanguage.Hindi] = "अनब्लॉक (100 स्टार्स)",
+            [AppLanguage.Portuguese] = "Desbloqueio (100 Estrelas)",
+            [AppLanguage.Indonesian] = "Buka Blokir (100 Bintang)"
+        },
+        ["Notification_UnbanSuccessful"] = new()
+        {
+            [AppLanguage.Russian] = "🎉 <b>Оплата получена! Ваш аккаунт успешно разблокирован.</b>\n\nПриятных знакомств! Нажмите кнопку ниже для перехода в главное меню.",
+            [AppLanguage.Ukrainian] = "🎉 <b>Оплату отримано! Ваш акаунт успішно розблоковано.</b>\n\nПриємних знайомств! Натисніть кнопку нижче для переходу в головне меню.",
+            [AppLanguage.English] = "🎉 <b>Payment received! Your account has been successfully unbanned.</b>\n\nEnjoy dating! Tap the button below to go to the main menu.",
+            [AppLanguage.Hindi] = "🎉 <b>भुगतान प्राप्त हुआ! आपका खाता सफलतापूर्वक अनब्लॉक कर दिया गया है।</b>\n\nशुभकामनाएं! मुख्य मेनू पर जाने के लिए नीचे दिए गए बटन पर टैप करें।",
+            [AppLanguage.Portuguese] = "🎉 <b>Pagamento recebido! Sua conta foi desbloqueada com sucesso.</b>\n\nBons encontros! Toque no botão abaixo para ir ao menu principal.",
+            [AppLanguage.Indonesian] = "🎉 <b>Pembayaran diterima! Akun Anda berhasil dibuka blokirnya.</b>\n\nSelamat berkenalan! Ketuk tombol di bawah untuk kembali ke menu utama."
+        },
         ["Admin_Welcome"] = new()
         {
             [AppLanguage.Russian] = "👋 Здравствуйте, <b>Администратор</b>!\n\nИспользуйте кнопки внизу:\n• 👤 <b>Мой профиль</b> — панель управления, медиакит рекламодателям, рассылки и жалобы\n• 🔍 <b>Искать анкеты</b> — сквозной просмотр и модерация всех анкет базы",

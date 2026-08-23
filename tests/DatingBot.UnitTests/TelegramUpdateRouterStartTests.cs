@@ -12,6 +12,7 @@ using Telegram.Bot;
 using Telegram.Bot.Requests;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.Payments;
 using Xunit;
 using User = DatingBot.Domain.Entities.User;
 
@@ -156,6 +157,7 @@ public class TelegramUpdateRouterStartTests
             _registrationService.Object,
             _searchService.Object,
             _adminService.Object,
+            _moderationService.Object,
             _loc,
             regMsgHandler,
             regCbHandler,
@@ -233,5 +235,175 @@ public class TelegramUpdateRouterStartTests
         _botClient.Verify(b => b.SendRequest(
             It.Is<DeleteMessageRequest>(r => r.ChatId.Identifier == chatId && r.MessageId == startMessageId),
             It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RouteUpdateAsync_WhenPreCheckoutQueryForUnban_ShouldAnswerOk()
+    {
+        // Arrange
+        var queryId = "pcq_12345";
+        var update = new Update
+        {
+            Id = 200,
+            PreCheckoutQuery = new PreCheckoutQuery
+            {
+                Id = queryId,
+                InvoicePayload = "unban:00000000-0000-0000-0000-000000000001",
+                Currency = "XTR",
+                TotalAmount = 100,
+                From = new Telegram.Bot.Types.User { Id = 12345, FirstName = "Test" }
+            }
+        };
+
+        _botClient.Setup(b => b.SendRequest(It.IsAny<AnswerPreCheckoutQueryRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        // Act
+        await _router.RouteUpdateAsync(update);
+
+        // Assert
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<AnswerPreCheckoutQueryRequest>(r => r.PreCheckoutQueryId == queryId && r.Ok),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RouteUpdateAsync_WhenSuccessfulPaymentForUnban_ShouldUnbanAndSendSuccessMessage()
+    {
+        // Arrange
+        const long chatId = 888123;
+        var userId = Guid.NewGuid();
+        var user = new User
+        {
+            Id = userId,
+            TelegramId = chatId,
+            Language = AppLanguage.Russian,
+            State = UserState.Banned
+        };
+
+        _userRepository.Setup(r => r.GetByTelegramIdAsync(chatId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        _registrationService.Setup(r => r.GetOrCreateUserAsync(chatId, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _moderationService.Setup(m => m.UnbanUserAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DatingBot.Application.Common.Result<UnbanActionResult>.Success(new UnbanActionResult(chatId, AppLanguage.Russian, true)));
+
+        var update = new Update
+        {
+            Id = 201,
+            Message = new Message
+            {
+                Id = 50,
+                Chat = new Chat { Id = chatId },
+                From = new Telegram.Bot.Types.User { Id = chatId, FirstName = "Test" },
+                SuccessfulPayment = new SuccessfulPayment
+                {
+                    Currency = "XTR",
+                    TotalAmount = 100,
+                    InvoicePayload = $"unban:{userId}",
+                    TelegramPaymentChargeId = "charge_123",
+                    ProviderPaymentChargeId = "prov_123"
+                }
+            }
+        };
+
+        _botClient.Setup(b => b.SendRequest(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Message { Id = 51, Chat = new Chat { Id = chatId } });
+
+        // Act
+        await _router.RouteUpdateAsync(update);
+
+        // Assert
+        _moderationService.Verify(m => m.UnbanUserAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<SendMessageRequest>(r => r.ChatId.Identifier == chatId && r.Text.Contains("успешно разблокирован")),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RouteUpdateAsync_WhenBannedUserSendsMessage_ShouldSendBanNotificationWithUnbanKeyboard()
+    {
+        // Arrange
+        const long chatId = 999123;
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            TelegramId = chatId,
+            Language = AppLanguage.Russian,
+            State = UserState.Banned
+        };
+
+        _userRepository.Setup(r => r.GetByTelegramIdAsync(chatId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        _registrationService.Setup(r => r.GetOrCreateUserAsync(chatId, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        var update = new Update
+        {
+            Id = 202,
+            Message = new Message
+            {
+                Id = 60,
+                Chat = new Chat { Id = chatId },
+                From = new Telegram.Bot.Types.User { Id = chatId, FirstName = "Test" },
+                Text = "Hello"
+            }
+        };
+
+        _botClient.Setup(b => b.SendRequest(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Message { Id = 61, Chat = new Chat { Id = chatId } });
+
+        // Act
+        await _router.RouteUpdateAsync(update);
+
+        // Assert
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<SendMessageRequest>(r => r.ChatId.Identifier == chatId && r.ReplyMarkup != null),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RouteUpdateAsync_WhenPayUnbanCallbackReceived_ShouldSendInvoice()
+    {
+        // Arrange
+        const long chatId = 111222;
+        var userId = Guid.NewGuid();
+        var user = new User
+        {
+            Id = userId,
+            TelegramId = chatId,
+            Language = AppLanguage.Russian,
+            State = UserState.Banned
+        };
+
+        _registrationService.Setup(r => r.GetOrCreateUserAsync(chatId, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _botClient.Setup(b => b.SendRequest(It.IsAny<AnswerCallbackQueryRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        _botClient.Setup(b => b.SendRequest(It.IsAny<SendInvoiceRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Message { Id = 70, Chat = new Chat { Id = chatId } });
+
+        var update = new Update
+        {
+            Id = 203,
+            CallbackQuery = new CallbackQuery
+            {
+                Id = "cb_unban_1",
+                Data = "pay_unban",
+                From = new Telegram.Bot.Types.User { Id = chatId, FirstName = "Test" },
+                Message = new Message { Id = 69, Chat = new Chat { Id = chatId } }
+            }
+        };
+
+        // Act
+        await _router.RouteUpdateAsync(update);
+
+        // Assert
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<SendInvoiceRequest>(r => r.ChatId.Identifier == chatId && r.Currency == "XTR" && r.Payload == $"unban:{userId}"),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 }

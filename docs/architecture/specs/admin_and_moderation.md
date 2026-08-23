@@ -11,11 +11,29 @@
 ### 2.1. `IModerationService`
 
 ```csharp
+public record ModerationActionResult(
+    Guid ReportId,
+    long ReporterTelegramId,
+    AppLanguage ReporterLanguage,
+    long ReportedTelegramId,
+    AppLanguage ReportedLanguage,
+    string? ReportedName,
+    bool ShouldNotifyReporter
+);
+
+public record UnbanActionResult(
+    long TelegramId,
+    AppLanguage Language,
+    bool HasCompletedProfile
+);
+
 public interface IModerationService
 {
     Task<Result<ModerationActionResult>> BanUserByReportAsync(Guid reportId, CancellationToken cancellationToken = default);
     Task<Result<ModerationActionResult>> DeleteProfileByReportAsync(Guid reportId, CancellationToken cancellationToken = default);
     Task<Result> IgnoreReportAsync(Guid reportId, CancellationToken cancellationToken = default);
+    Task<Result<UnbanActionResult>> UnbanUserAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<Result<UnbanActionResult>> UnbanUserByTelegramIdAsync(long telegramId, CancellationToken cancellationToken = default);
 }
 ```
 
@@ -71,6 +89,16 @@ public interface IAdminService
 - Непрерывный просмотр всех анкет базы выбранного пола (без ограничений категорий целей и скоринга).
 - Отображение скрытого AI-описания (`AiDescription`), публичного приветствия (`Greeting`), рейтинга и прямой ссылки на Telegram-аккаунт.
 - Прямые кнопки бана и удаления анкеты с экрана просмотра.
+
+### 3.5. Платная система автоматического разбана (Telegram Stars)
+- К каждому уведомлению о блокировке нарушителя (`Notification_ViolatorBanned`) и экрану заблокированного пользователя прикрепляется инлайн-кнопка **«⭐ Разблокировать за 100 звёзд»** (`pay_unban`).
+- При нажатии бот отправляет нативный инвойс Telegram Stars (`SendInvoice`):
+  - Валюта: `XTR` (Telegram Stars).
+  - Стоимость: `100` звёзд.
+  - Защищенный payload: `unban:{userId}`.
+- Обработка жизненного цикла платежа:
+  - `UpdateType.PreCheckoutQuery`: бот валидирует payload и подтверждает заказ (`AnswerPreCheckoutQueryAsync(ok: true)`).
+  - `SuccessfulPayment`: бот вызывает `IModerationService.UnbanUserAsync(userId)`, возвращает пользователя в `UserState.Active` (с восстановлением `IsCompleted = true`), отправляет уведомление `Notification_UnbanSuccessful` и reply-клавиатуру главного меню.
 
 ---
 

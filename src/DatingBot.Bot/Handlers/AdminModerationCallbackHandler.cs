@@ -189,6 +189,7 @@ public class AdminModerationCallbackHandler(
                 chatId: violatorTelegramId,
                 text: message,
                 parseMode: ParseMode.Html,
+                replyMarkup: DatingBot.Bot.Keyboards.PaymentKeyboards.GetUnbanKeyboard(language, loc),
                 cancellationToken: cancellationToken
             );
         }

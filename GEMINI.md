@@ -98,7 +98,7 @@ DatingBot/                                # Корень проекта == BASE_
 │       ├── appsettings.json              # Базовая конфигурация (BotToken, AdminIds, ConnectionStrings)
 │       └── Program.cs                    # Точка входа DI и Generic Host
 │
-├── tests/                                # Модульные и интеграционные тесты (266 тестов)
+├── tests/                                # Модульные и интеграционные тесты (274 теста)
 │   ├── DatingBot.UnitTests/              # xUnit модульные тесты сервисов, алгоритмов и валидаторов
 │   └── DatingBot.IntegrationTests/       # Интеграционные тесты сидера БД и сценариев
 │

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.Payments;
 
 namespace DatingBot.Bot.Handlers;
 
@@ -14,6 +15,7 @@ public class TelegramUpdateRouter(
     IRegistrationService registrationService,
     ISearchService searchService,
     IAdminService adminService,
+    IModerationService moderationService,
     ILocalizationService loc,
     RegistrationMessageHandler registrationMessageHandler,
     RegistrationCallbackHandler registrationCallbackHandler,
@@ -32,6 +34,27 @@ public class TelegramUpdateRouter(
     {
         try
         {
+            if (update.Type == UpdateType.PreCheckoutQuery && update.PreCheckoutQuery is { } preCheckoutQuery)
+            {
+                var payload = preCheckoutQuery.InvoicePayload ?? string.Empty;
+                if (payload.StartsWith("unban:") || payload.StartsWith("unban_"))
+                {
+                    await botClient.AnswerPreCheckoutQuery(
+                        preCheckoutQueryId: preCheckoutQuery.Id,
+                        cancellationToken: cancellationToken
+                    );
+                }
+                else
+                {
+                    await botClient.AnswerPreCheckoutQuery(
+                        preCheckoutQueryId: preCheckoutQuery.Id,
+                        errorMessage: "Invalid invoice",
+                        cancellationToken: cancellationToken
+                    );
+                }
+                return;
+            }
+
             if (update.Type == UpdateType.Message && update.Message is { } message)
             {
                 var telegramId = message.From?.Id ?? message.Chat.Id;
@@ -44,6 +67,32 @@ public class TelegramUpdateRouter(
                 var lang = user.Language;
                 var isAdmin = adminService.IsAdmin(telegramId);
 
+                // Обработка успешного платежа через Telegram Stars
+                if (message.SuccessfulPayment is { } successfulPayment)
+                {
+                    var payload = successfulPayment.InvoicePayload ?? string.Empty;
+                    if (payload.StartsWith("unban:") || payload.StartsWith("unban_"))
+                    {
+                        var idPart = payload.Contains(':') ? payload.Split(':')[1] : payload["unban_".Length..];
+                        if (Guid.TryParse(idPart, out var targetUserId))
+                        {
+                            var unbanResult = await moderationService.UnbanUserAsync(targetUserId, cancellationToken);
+                            if (unbanResult.IsSuccess && unbanResult.Value is not null)
+                            {
+                                var userLang = unbanResult.Value.Language;
+                                await botClient.SendMessage(
+                                    chatId: message.Chat.Id,
+                                    text: loc.Get(userLang, "Notification_UnbanSuccessful"),
+                                    parseMode: ParseMode.Html,
+                                    replyMarkup: MainMenuKeyboards.GetMainMenuReplyKeyboard(userLang),
+                                    cancellationToken: cancellationToken
+                                );
+                                return;
+                            }
+                        }
+                    }
+                }
+
                 // Блокировка заблокированных пользователей
                 if (user.State == UserState.Banned)
                 {
@@ -51,6 +100,7 @@ public class TelegramUpdateRouter(
                         chatId: message.Chat.Id,
                         text: loc.Get(lang, "Account_Banned"),
                         parseMode: ParseMode.Html,
+                        replyMarkup: PaymentKeyboards.GetUnbanKeyboard(lang, loc),
                         cancellationToken: cancellationToken
                     );
                     return;
@@ -278,6 +328,23 @@ public class TelegramUpdateRouter(
                 var isAdminCallback = await adminCallbackHandler.HandleAdminCallbackQueryAsync(user, callbackQuery, cancellationToken);
                 if (isAdminCallback)
                 {
+                    return;
+                }
+
+                // Обработка кнопки разбана за звёзды
+                if (callbackQuery.Data == "pay_unban")
+                {
+                    await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: cancellationToken);
+
+                    await botClient.SendInvoice(
+                        chatId: callbackQuery.Message?.Chat.Id ?? callbackQuery.From.Id,
+                        title: loc.Get(user.Language, "Payment_Unban_Title"),
+                        description: loc.Get(user.Language, "Payment_Unban_Description"),
+                        payload: $"unban:{user.Id}",
+                        currency: "XTR",
+                        prices: [new LabeledPrice(loc.Get(user.Language, "Payment_Unban_PriceLabel"), 100)],
+                        cancellationToken: cancellationToken
+                    );
                     return;
                 }
 
