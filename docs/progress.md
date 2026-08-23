@@ -1,19 +1,16 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 16
+state_version: 17
 updated: 2026-08-23
 
 ---
 
 ## Сейчас
-- **Фаза**: Реализована система платного автоматического разбана через Telegram Stars с возможностью гибкой настройки стоимости в конфигурации:
-  1. **Конфигурация (`appsettings.json` / `appsettings.Local.json`)**: Добавлен параметр `BotConfiguration:UnbanPriceStars` (по умолчанию `100`, для локальных тестов можно выставить `1`).
-  2. **Application & Loc**: Ключи локализации обновлены для поддержки динамической подстановки цены (`Btn_PayUnbanStars`, `Payment_Unban_PriceLabel`).
-  3. **Презентационный слой (Bot)**:
-     - `PaymentKeyboards.cs` формирует инлайн-кнопку разбана с динамической ценой из конфигурации.
-     - `TelegramUpdateRouter`, `AdminModerationCallbackHandler` и `AdminCallbackHandler` считывают `UnbanPriceStars` из `IConfiguration` для генерации инвойсов и отображения кнопок.
-  4. **Тестирование и верификация**: Добавлены модульные тесты проверки кастомной цены. Все 275 тестов успешно пройдены (100% green).
-- **Далее**: Ожидание новых задач, доработок или требований от пользователя.
+- **Фаза**: Исправлена доставка технического запроса `PreCheckoutQuery` в TelegramBotWorker:
+  1. **Первопричина**: В `ReceiverOptions.AllowedUpdates` были указаны только `[UpdateType.Message, UpdateType.CallbackQuery]`. Из-за этого Telegram API фильтровал и не доставлял боту апдейты типа `UpdateType.PreCheckoutQuery`, что приводило к таймауту оплаты на стороне Telegram («The bot didn't respond in time»).
+  2. **Решение**: В `TelegramBotWorker.cs` в список `AllowedUpdates` добавлен `UpdateType.PreCheckoutQuery`. Теперь бот мгновенно получает запрос и подтверждает оплату `AnswerPreCheckoutQuery(ok: true)`.
+  3. **Верификация**: Все 275 тестов успешно пройдены (100% green).
+- **Далее**: Тестирование оплаты Telegram Stars пользователем.
 
 ---
 

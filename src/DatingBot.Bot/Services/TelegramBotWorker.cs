@@ -29,7 +29,7 @@ public class TelegramBotWorker(
 
         var receiverOptions = new ReceiverOptions
         {
-            AllowedUpdates = [UpdateType.Message, UpdateType.CallbackQuery],
+            AllowedUpdates = [UpdateType.Message, UpdateType.CallbackQuery, UpdateType.PreCheckoutQuery],
             DropPendingUpdates = true
         };
 
