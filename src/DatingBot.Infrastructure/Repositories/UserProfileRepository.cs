@@ -119,6 +119,7 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
 
         return await query
             .OrderByDescending(p => p.UpdatedAt ?? p.CreatedAt)
+            .ThenBy(p => p.Id)
             .FirstOrDefaultAsync(cancellationToken);
     }
 
