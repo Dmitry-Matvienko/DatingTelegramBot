@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 
 var builder = Host.CreateDefaultBuilder(args)
@@ -18,13 +19,19 @@ var builder = Host.CreateDefaultBuilder(args)
         config.AddJsonFile($"appsettings.{hostingContext.HostingEnvironment.EnvironmentName}.json", optional: true, reloadOnChange: true);
         config.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
-        // Резервный поиск appsettings.Local.json в текущем каталоге (при запуске через dotnet run)
+        // Резервный поиск appsettings.Local.json в текущем каталоге и подпапке src/DatingBot.Bot (при запуске через dotnet run)
         if (!string.Equals(Directory.GetCurrentDirectory(), AppContext.BaseDirectory, StringComparison.OrdinalIgnoreCase))
         {
             var localInCurrentDir = Path.Combine(Directory.GetCurrentDirectory(), "appsettings.Local.json");
             if (File.Exists(localInCurrentDir))
             {
                 config.AddJsonFile(localInCurrentDir, optional: true, reloadOnChange: true);
+            }
+
+            var localInBotDir = Path.Combine(Directory.GetCurrentDirectory(), "src", "DatingBot.Bot", "appsettings.Local.json");
+            if (File.Exists(localInBotDir))
+            {
+                config.AddJsonFile(localInBotDir, optional: true, reloadOnChange: true);
             }
         }
 
@@ -68,6 +75,17 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<DatingBot.Infrastructure.Data.AppDbContext>();
+    var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+    var loggerFactory = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Logging.ILoggerFactory>();
+    var logger = loggerFactory.CreateLogger("DatabaseBootstrap");
+
+    var connString = config.GetConnectionString("DefaultConnection") ?? string.Empty;
+    var builderInfo = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(connString);
+    logger.LogInformation("Подключение к БД: Сервер='{Server}', База='{Database}', Пользователь='{User}'",
+        builderInfo.DataSource,
+        builderInfo.InitialCatalog,
+        string.IsNullOrEmpty(builderInfo.UserID) ? "WindowsAuth" : builderInfo.UserID);
+
     await dbContext.Database.MigrateAsync();
 
     var seeder = scope.ServiceProvider.GetRequiredService<DatingBot.Application.Interfaces.ICityDatabaseSeeder>();
