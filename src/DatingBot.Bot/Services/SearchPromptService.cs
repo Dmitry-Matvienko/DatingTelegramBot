@@ -70,22 +70,24 @@ public class SearchPromptService(
 
         Message sentMessage = null!;
         var photoSent = false;
-        if (!string.IsNullOrEmpty(candidate.PhotoFileId))
+        var cardText = sb.ToString();
+        if (!string.IsNullOrEmpty(candidate.PhotoFileId) && cardText.Length <= 1024)
         {
             try
             {
                 sentMessage = await botClient.SendPhoto(
                     chatId: chatId,
                     photo: InputFile.FromFileId(candidate.PhotoFileId),
-                    caption: sb.ToString(),
+                    caption: cardText,
                     parseMode: ParseMode.Html,
                     replyMarkup: SearchKeyboards.GetRatingReplyKeyboard(lang),
                     cancellationToken: cancellationToken
                 );
                 photoSent = true;
             }
-            catch
+            catch (Exception ex)
             {
+                logger.LogWarning("Не удалось отправить фото кандидата {PhotoFileId} пользователю {ChatId}: {ErrorMessage}", candidate.PhotoFileId, chatId, ex.Message);
                 sentMessage = null!;
             }
         }
@@ -94,7 +96,7 @@ public class SearchPromptService(
         {
             sentMessage = await botClient.SendMessage(
                 chatId: chatId,
-                text: sb.ToString(),
+                text: cardText,
                 parseMode: ParseMode.Html,
                 replyMarkup: SearchKeyboards.GetRatingReplyKeyboard(lang),
                 cancellationToken: cancellationToken
@@ -136,22 +138,24 @@ public class SearchPromptService(
 
         Message sentMessage = null!;
         var photoSent = false;
-        if (!string.IsNullOrEmpty(candidate.PhotoFileId))
+        var candidateText = sb.ToString();
+        if (!string.IsNullOrEmpty(candidate.PhotoFileId) && candidateText.Length <= 1024)
         {
             try
             {
                 sentMessage = await botClient.SendPhoto(
                     chatId: chatId,
                     photo: InputFile.FromFileId(candidate.PhotoFileId),
-                    caption: sb.ToString(),
+                    caption: candidateText,
                     parseMode: ParseMode.Html,
                     replyMarkup: SearchKeyboards.GetRatingReplyKeyboard(lang),
                     cancellationToken: cancellationToken
                 );
                 photoSent = true;
             }
-            catch
+            catch (Exception ex)
             {
+                logger.LogWarning("Не удалось отправить фото кандидата {PhotoFileId} пользователю {ChatId}: {ErrorMessage}", candidate.PhotoFileId, chatId, ex.Message);
                 sentMessage = null!;
             }
         }
@@ -160,7 +164,7 @@ public class SearchPromptService(
         {
             sentMessage = await botClient.SendMessage(
                 chatId: chatId,
-                text: sb.ToString(),
+                text: candidateText,
                 parseMode: ParseMode.Html,
                 replyMarkup: SearchKeyboards.GetRatingReplyKeyboard(lang),
                 cancellationToken: cancellationToken
@@ -207,22 +211,24 @@ public class SearchPromptService(
 
         Message sentMessage = null!;
         var photoSent = false;
-        if (!string.IsNullOrEmpty(rater.PhotoFileId))
+        var raterText = sb.ToString();
+        if (!string.IsNullOrEmpty(rater.PhotoFileId) && raterText.Length <= 1024)
         {
             try
             {
                 sentMessage = await botClient.SendPhoto(
                     chatId: chatId,
                     photo: InputFile.FromFileId(rater.PhotoFileId),
-                    caption: sb.ToString(),
+                    caption: raterText,
                     parseMode: ParseMode.Html,
                     replyMarkup: SearchKeyboards.GetRatingReplyKeyboard(lang),
                     cancellationToken: cancellationToken
                 );
                 photoSent = true;
             }
-            catch
+            catch (Exception ex)
             {
+                logger.LogWarning("Не удалось отправить фото оценившего {PhotoFileId} пользователю {ChatId}: {ErrorMessage}", rater.PhotoFileId, chatId, ex.Message);
                 sentMessage = null!;
             }
         }
@@ -231,7 +237,7 @@ public class SearchPromptService(
         {
             sentMessage = await botClient.SendMessage(
                 chatId: chatId,
-                text: sb.ToString(),
+                text: raterText,
                 parseMode: ParseMode.Html,
                 replyMarkup: SearchKeyboards.GetRatingReplyKeyboard(lang),
                 cancellationToken: cancellationToken
@@ -308,14 +314,15 @@ public class SearchPromptService(
             }
 
             var photoSent = false;
-            if (!string.IsNullOrEmpty(partner.PhotoFileId))
+            var matchText = sb.ToString();
+            if (!string.IsNullOrEmpty(partner.PhotoFileId) && matchText.Length <= 1024)
             {
                 try
                 {
                     await botClient.SendPhoto(
                         chatId: recipientTelegramId,
                         photo: InputFile.FromFileId(partner.PhotoFileId),
-                        caption: sb.ToString(),
+                        caption: matchText,
                         parseMode: ParseMode.Html,
                         cancellationToken: cancellationToken
                     );
@@ -323,7 +330,7 @@ public class SearchPromptService(
                 }
                 catch (Exception ex)
                 {
-                    logger.LogWarning(ex, "Не удалось отправить фото при взаимной симпатии {PhotoFileId} пользователю {TelegramId}", partner.PhotoFileId, recipientTelegramId);
+                    logger.LogWarning("Не удалось отправить фото при взаимной симпатии {PhotoFileId} пользователю {TelegramId}: {ErrorMessage}", partner.PhotoFileId, recipientTelegramId, ex.Message);
                 }
             }
 
@@ -331,7 +338,7 @@ public class SearchPromptService(
             {
                 await botClient.SendMessage(
                     chatId: recipientTelegramId,
-                    text: sb.ToString(),
+                    text: matchText,
                     parseMode: ParseMode.Html,
                     cancellationToken: cancellationToken
                 );
@@ -339,7 +346,7 @@ public class SearchPromptService(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Не удалось отправить уведомление о взаимной симпатии пользователю {TelegramId}", recipientTelegramId);
+            logger.LogWarning("Не удалось отправить уведомление о взаимной симпатии пользователю {TelegramId}: {ErrorMessage}", recipientTelegramId, ex.Message);
         }
     }
 
@@ -360,7 +367,7 @@ public class SearchPromptService(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Не удалось отправить уведомление об оценке пользователю {TelegramId}", targetTelegramId);
+            logger.LogWarning("Не удалось отправить уведомление об оценке пользователю {TelegramId}: {ErrorMessage}", targetTelegramId, ex.Message);
         }
     }
 
@@ -458,19 +465,22 @@ public class SearchPromptService(
             reportSb.AppendLine($"\n📝 <b>Комментарий заявителя:</b>\n<i>\"{report.Details}\"</i>");
         }
 
+        var cardText = cardSb.ToString();
+        var reportText = reportSb.ToString();
+
         foreach (var adminId in adminIds)
         {
             try
             {
                 var photoSent = false;
-                if (!string.IsNullOrEmpty(report.ReportedProfile.PhotoFileId))
+                if (!string.IsNullOrEmpty(report.ReportedProfile.PhotoFileId) && cardText.Length <= 1024)
                 {
                     try
                     {
                         await botClient.SendPhoto(
                             chatId: adminId,
                             photo: InputFile.FromFileId(report.ReportedProfile.PhotoFileId),
-                            caption: cardSb.ToString(),
+                            caption: cardText,
                             parseMode: ParseMode.Html,
                             cancellationToken: cancellationToken
                         );
@@ -478,7 +488,7 @@ public class SearchPromptService(
                     }
                     catch (Exception ex)
                     {
-                        logger.LogWarning(ex, "Не удалось отправить фото нарушителя {PhotoFileId} админу {AdminId}", report.ReportedProfile.PhotoFileId, adminId);
+                        logger.LogWarning("Не удалось отправить фото нарушителя {PhotoFileId} админу {AdminId}: {ErrorMessage}", report.ReportedProfile.PhotoFileId, adminId, ex.Message);
                     }
                 }
 
@@ -486,7 +496,7 @@ public class SearchPromptService(
                 {
                     await botClient.SendMessage(
                         chatId: adminId,
-                        text: cardSb.ToString(),
+                        text: cardText,
                         parseMode: ParseMode.Html,
                         cancellationToken: cancellationToken
                     );
@@ -494,7 +504,7 @@ public class SearchPromptService(
 
                 await botClient.SendMessage(
                     chatId: adminId,
-                    text: reportSb.ToString(),
+                    text: reportText,
                     parseMode: ParseMode.Html,
                     replyMarkup: SearchKeyboards.GetAdminModerationKeyboard(report.ReportId),
                     cancellationToken: cancellationToken
@@ -502,7 +512,7 @@ public class SearchPromptService(
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Не удалось отправить отчет о жалобе администратору {AdminId}", adminId);
+                logger.LogWarning("Не удалось отправить отчет о жалобе администратору {AdminId}: {ErrorMessage}", adminId, ex.Message);
             }
         }
     }

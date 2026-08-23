@@ -84,14 +84,15 @@ public class ProfilePromptService(
 
         Message sentMessage = null!;
         var photoSent = false;
-        if (!string.IsNullOrEmpty(profile.PhotoFileId))
+        var cardText = sb.ToString();
+        if (!string.IsNullOrEmpty(profile.PhotoFileId) && cardText.Length <= 1024)
         {
             try
             {
                 sentMessage = await botClient.SendPhoto(
                     chatId: chatId,
                     photo: InputFile.FromFileId(profile.PhotoFileId),
-                    caption: sb.ToString(),
+                    caption: cardText,
                     parseMode: ParseMode.Html,
                     replyMarkup: ProfileKeyboards.GetProfileEditKeyboard(lang),
                     cancellationToken: cancellationToken
@@ -108,7 +109,7 @@ public class ProfilePromptService(
         {
             sentMessage = await botClient.SendMessage(
                 chatId: chatId,
-                text: sb.ToString(),
+                text: cardText,
                 parseMode: ParseMode.Html,
                 replyMarkup: ProfileKeyboards.GetProfileEditKeyboard(lang),
                 cancellationToken: cancellationToken

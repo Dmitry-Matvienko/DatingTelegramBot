@@ -68,7 +68,7 @@ public class AdminBroadcastService(
                 try
                 {
                     var photoSent = false;
-                    if (!string.IsNullOrEmpty(session.PhotoFileId))
+                    if (!string.IsNullOrEmpty(session.PhotoFileId) && (session.Text == null || session.Text.Length <= 1024))
                     {
                         try
                         {
@@ -84,7 +84,7 @@ public class AdminBroadcastService(
                         }
                         catch (Exception ex)
                         {
-                            logger.LogDebug(ex, "Не удалось доставить фото рассылки пользователю {TelegramId}, пробуем текстом", recipientId);
+                            logger.LogDebug("Не удалось доставить фото рассылки пользователю {TelegramId}: {ErrorMessage}, пробуем текстом", recipientId, ex.Message);
                         }
                     }
 

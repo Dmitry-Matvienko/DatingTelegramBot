@@ -202,14 +202,15 @@ public class AdminPromptService(
         var keyboard = AdminKeyboards.GetAdminProfileCardKeyboard(candidate.Id, gender, nextOffset, lang);
 
         var photoSent = false;
-        if (!string.IsNullOrEmpty(candidate.PhotoFileId))
+        var cardText = sb.ToString();
+        if (!string.IsNullOrEmpty(candidate.PhotoFileId) && cardText.Length <= 1024)
         {
             try
             {
                 await botClient.SendPhoto(
                     chatId: chatId,
                     photo: InputFile.FromFileId(candidate.PhotoFileId),
-                    caption: sb.ToString(),
+                    caption: cardText,
                     parseMode: ParseMode.Html,
                     replyMarkup: keyboard,
                     cancellationToken: cancellationToken
@@ -218,7 +219,7 @@ public class AdminPromptService(
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Не удалось отправить фото профиля {PhotoFileId} в админке пользователю {ChatId}", candidate.PhotoFileId, chatId);
+                logger.LogWarning("Не удалось отправить фото профиля {PhotoFileId} в админке пользователю {ChatId}: {ErrorMessage}", candidate.PhotoFileId, chatId, ex.Message);
             }
         }
 
@@ -226,7 +227,7 @@ public class AdminPromptService(
         {
             await botClient.SendMessage(
                 chatId: chatId,
-                text: sb.ToString(),
+                text: cardText,
                 parseMode: ParseMode.Html,
                 replyMarkup: keyboard,
                 cancellationToken: cancellationToken
@@ -287,14 +288,15 @@ public class AdminPromptService(
         var keyboard = AdminKeyboards.GetAdminPendingReportKeyboard(report.ReportId, nextSkip, totalCount, lang);
 
         var reportPhotoSent = false;
-        if (!string.IsNullOrEmpty(report.ReportedProfile.PhotoFileId))
+        var reportCardText = cardSb.ToString();
+        if (!string.IsNullOrEmpty(report.ReportedProfile.PhotoFileId) && reportCardText.Length <= 1024)
         {
             try
             {
                 await botClient.SendPhoto(
                     chatId: chatId,
                     photo: InputFile.FromFileId(report.ReportedProfile.PhotoFileId),
-                    caption: cardSb.ToString(),
+                    caption: reportCardText,
                     parseMode: ParseMode.Html,
                     replyMarkup: keyboard,
                     cancellationToken: cancellationToken
@@ -303,7 +305,7 @@ public class AdminPromptService(
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Не удалось отправить фото нарушителя {PhotoFileId} админу {ChatId}", report.ReportedProfile.PhotoFileId, chatId);
+                logger.LogWarning("Не удалось отправить фото нарушителя {PhotoFileId} админу {ChatId}: {ErrorMessage}", report.ReportedProfile.PhotoFileId, chatId, ex.Message);
             }
         }
 
@@ -311,7 +313,7 @@ public class AdminPromptService(
         {
             await botClient.SendMessage(
                 chatId: chatId,
-                text: cardSb.ToString(),
+                text: reportCardText,
                 parseMode: ParseMode.Html,
                 replyMarkup: keyboard,
                 cancellationToken: cancellationToken
@@ -329,15 +331,15 @@ public class AdminPromptService(
         var confirmKeyboard = AdminKeyboards.GetAdminBroadcastConfirmKeyboard(preview.ButtonText, preview.ButtonUrl, lang);
 
         var previewPhotoSent = false;
-        if (!string.IsNullOrEmpty(preview.PhotoFileId))
+        var captionText = $"{preview.Text}\n\n{reachText}";
+        if (!string.IsNullOrEmpty(preview.PhotoFileId) && captionText.Length <= 1024)
         {
             try
             {
-                var caption = $"{preview.Text}\n\n{reachText}";
                 await botClient.SendPhoto(
                     chatId: chatId,
                     photo: InputFile.FromFileId(preview.PhotoFileId),
-                    caption: caption,
+                    caption: captionText,
                     parseMode: ParseMode.Html,
                     replyMarkup: confirmKeyboard,
                     cancellationToken: cancellationToken
@@ -346,16 +348,15 @@ public class AdminPromptService(
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Не удалось отправить фото предпросмотра рассылки {PhotoFileId} админу {ChatId}", preview.PhotoFileId, chatId);
+                logger.LogWarning("Не удалось отправить фото предпросмотра рассылки {PhotoFileId} админу {ChatId}: {ErrorMessage}", preview.PhotoFileId, chatId, ex.Message);
             }
         }
 
         if (!previewPhotoSent)
         {
-            var text = $"{preview.Text}\n\n{reachText}";
             await botClient.SendMessage(
                 chatId: chatId,
-                text: text,
+                text: captionText,
                 parseMode: ParseMode.Html,
                 replyMarkup: confirmKeyboard,
                 cancellationToken: cancellationToken

@@ -176,7 +176,7 @@ public class AdminModerationCallbackHandler(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Не удалось отправить уведомление заявителю {ReporterTelegramId}", reporterTelegramId);
+            logger.LogWarning("Не удалось отправить уведомление заявителю {ReporterTelegramId}: {ErrorMessage}", reporterTelegramId, ex.Message);
         }
     }
 
@@ -194,7 +194,7 @@ public class AdminModerationCallbackHandler(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Не удалось отправить уведомление о бане нарушителю {ViolatorTelegramId}", violatorTelegramId);
+            logger.LogWarning("Не удалось отправить уведомление о бане нарушителю {ViolatorTelegramId}: {ErrorMessage}", violatorTelegramId, ex.Message);
         }
     }
 
@@ -212,7 +212,7 @@ public class AdminModerationCallbackHandler(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Не удалось отправить уведомление об удалении профиля нарушителю {ViolatorTelegramId}", violatorTelegramId);
+            logger.LogWarning("Не удалось отправить уведомление об удалении профиля нарушителю {ViolatorTelegramId}: {ErrorMessage}", violatorTelegramId, ex.Message);
         }
     }
 }
