@@ -93,12 +93,12 @@ DatingBot/                                # Корень проекта == BASE_
 │   └── DatingBot.Bot/                    # Презентационный слой Telegram (Telegram.Bot)
 │       ├── Handlers/                     # TelegramUpdateRouter, FSM хэндлеры сообщений и кнопок
 │       ├── Keyboards/                    # Фабрики инлайн- и reply-клавиатур
-│       ├── Services/                     # TelegramBotWorker, Prompt-сервисы формирования карточек
+│       ├── Services/                     # TelegramBotWorker, Prompt-сервисы формирования карточек, BotSetup
 │       ├── Workers/                      # MatchmakingNotificationWorker
 │       ├── appsettings.json              # Базовая конфигурация (BotToken, AdminIds, ConnectionStrings)
 │       └── Program.cs                    # Точка входа DI и Generic Host
 │
-├── tests/                                # Модульные и интеграционные тесты (247 тестов)
+├── tests/                                # Модульные и интеграционные тесты (256 тестов)
 │   ├── DatingBot.UnitTests/              # xUnit модульные тесты сервисов, алгоритмов и валидаторов
 │   └── DatingBot.IntegrationTests/       # Интеграционные тесты сидера БД и сценариев
 │

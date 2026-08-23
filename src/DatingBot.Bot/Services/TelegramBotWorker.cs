@@ -24,7 +24,7 @@ public class TelegramBotWorker(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Не удалось подключиться к Telegram при старте. Проверьте BotToken в appsettings.json.");
+            logger.LogWarning(ex, "Не удалось подключиться к Telegram при старте. Проверьте BotToken в appsettings.Local.json или переменных окружения.");
         }
 
         var receiverOptions = new ReceiverOptions

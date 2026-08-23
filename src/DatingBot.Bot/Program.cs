@@ -1,4 +1,5 @@
 using DatingBot.Application;
+using DatingBot.Bot;
 using DatingBot.Bot.Handlers;
 using DatingBot.Bot.Services;
 using DatingBot.Bot.Workers;
@@ -16,6 +17,17 @@ var builder = Host.CreateDefaultBuilder(args)
         config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
         config.AddJsonFile($"appsettings.{hostingContext.HostingEnvironment.EnvironmentName}.json", optional: true, reloadOnChange: true);
         config.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+
+        // Резервный поиск appsettings.Local.json в текущем каталоге (при запуске через dotnet run)
+        if (!string.Equals(Directory.GetCurrentDirectory(), AppContext.BaseDirectory, StringComparison.OrdinalIgnoreCase))
+        {
+            var localInCurrentDir = Path.Combine(Directory.GetCurrentDirectory(), "appsettings.Local.json");
+            if (File.Exists(localInCurrentDir))
+            {
+                config.AddJsonFile(localInCurrentDir, optional: true, reloadOnChange: true);
+            }
+        }
+
         config.AddEnvironmentVariables();
     })
     .ConfigureServices((context, services) =>
@@ -27,9 +39,7 @@ var builder = Host.CreateDefaultBuilder(args)
         services.AddApplicationServices();
 
         // 3. Telegram Bot Client
-        var botToken = context.Configuration["BotConfiguration:BotToken"]
-            ?? throw new InvalidOperationException("BotConfiguration:BotToken не найден в конфигурации.");
-        services.AddSingleton<ITelegramBotClient>(new TelegramBotClient(botToken));
+        services.AddSingleton<ITelegramBotClient>(_ => BotSetup.CreateBotClient(context.Configuration));
 
         // 4. Презентационный слой бота
         services.AddScoped<RegistrationPromptService>();
