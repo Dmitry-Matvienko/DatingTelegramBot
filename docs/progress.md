@@ -1,17 +1,18 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 13
+state_version: 14
 updated: 2026-08-23
 
 ---
 
 ## Сейчас
-- **Фаза**: Исправлена ошибка удаления и блокировки анкет пользователей через панель администратора:
-  1. **Первопричина**: В сквозном поиске анкет администратором (`AdminPromptService.SendAdminCandidateCardAsync`) кнопки блокировки и удаления передавали в callback-данные `candidate.Id` (идентификатор `UserProfile.Id`). Обработчик `AdminCallbackHandler` передавал этот идентификатор в методы `AdminService.DeleteUserProfileDirectlyAsync` и `AdminService.BanUserDirectlyAsync`, которые выполняли поиск строго по `IUserRepository.GetByIdAsync(userId)` (`User.Id != UserProfile.Id`), что приводило к ответу «Пользователь не найден» и всплывающему предупреждению «Ошибка удаления анкеты» / «Ошибка блокировки».
-  2. **Решение в `AdminService`**: Реализована отказоустойчивая двухфазная резолюция идентификаторов (Dual ID Resolution): если сущность `User` не найдена по прямому `User.Id`, сервис автоматически ищет анкету через `IUserProfileRepository.GetByIdAsync(profileId)` и связывает её с родительским пользователем `profile.User`.
-  3. **Локализация и UX**: Добавлены ключи локализации `Admin_Alert_ErrorDeleteProfile` и `Admin_Alert_ErrorBanUser` для всех 6 языков (RU, UK, EN, HI, PT, ID), убран хардкод строк в UI `AdminKeyboards` и `AdminCallbackHandler`, и гарантирован ответ на все Callback-запросы.
-  4. **TDD и тестирование**: Написаны модульные тесты для `AdminService` (`DeleteUserProfileDirectlyAsync_WhenPassedProfileId_ShouldLookupByProfileIdAndResetProfileAndState`, `BanUserDirectlyAsync_WhenPassedProfileId_ShouldLookupByProfileIdAndSetBannedState`) и `AdminRoutingAndCallbackTests` (5 новых тестов).
-  5. Все 266 тестов успешно пройдены (100% green).
+- **Фаза**: Устранено предупреждение EF Core 10102 (`CoreEventId.RowLimitingOperationWithoutOrderByWarning`):
+  1. **Первопричина**: В методе поиска городов `CityRepository.SearchSuggestionsAsync` использовались операторы ограничения выборки `.Take(limit)` / `.Take(50)` без предварительной сортировки `.OrderBy(...)`. В MS SQL Server вызов `TOP` / `OFFSET...FETCH` без `ORDER BY` генерирует недетерминированный результат и вызывает предупреждение EF Core.
+  2. **Решение в репозиториях**:
+     - В `CityRepository.cs`: Для всех запросов префиксного, подстрочного и нечеткого поиска добавлен детерминированный порядок `.OrderBy(c => c.Name).ThenBy(c => c.Id)` перед `.Take(...)`.
+     - В `ProfileReportRepository.cs`: В методе `GetPendingReportsAsync` добавлен вторичный тай-брейкер сортировки `.ThenBy(r => r.Id)` после `.OrderByDescending(r => r.CreatedAt)`.
+     - В `UserProfileRepository.cs`: В агрегациях аналитики топ-стран и топ-городов добавлены вторичные сортировки `.ThenBy(c => c.Country)` и `.ThenBy(x => x.CityName)` перед `.Take(...)`, а также `.ThenBy(p => p.Id)` в `GetNextCandidateForUserAsync`.
+  3. **Верификация и код-ревью**: Независимое ревью `code-reviewer-agent` подтвердило строгое соблюдение детерминизма SQL-запросов и отсутствие предупреждений 10102. Все 266 тестов успешно пройдены (100% green).
 - **Далее**: Ожидание новых задач, доработок или требований от пользователя.
 
 ---
@@ -49,6 +50,7 @@ updated: 2026-08-23
 - [x] Отказоустойчивый fallback при ошибке невалидного/устаревшего `FileId` фото в Telegram API и соблюдение лимитов caption (1024).
 - [x] Автоматическое копирование `appsettings.Local.json` и валидация `BotToken` при старте бота.
 - [x] Устранение ошибки удаления анкеты и бана из админ-панели при передаче `ProfileId` (Dual ID Resolution).
+- [x] Устранение предупреждения EF Core 10102 (Missing OrderBy before Skip/Take).
 
 ---
 
