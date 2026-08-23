@@ -21,6 +21,7 @@ public class ProfilePromptServiceTests
     private readonly Mock<IRegistrationService> _registrationService = new();
     private readonly Mock<IUserRepository> _userRepository = new();
     private readonly Mock<ILogger<ProfilePromptService>> _logger = new();
+    private readonly Mock<ILogger<RegistrationPromptService>> _regLogger = new();
     private readonly ILocalizationService _loc = new DatingBot.Application.Services.LocalizationService();
 
     private readonly RegistrationPromptService _registrationPromptService;
@@ -32,7 +33,8 @@ public class ProfilePromptServiceTests
             _botClient.Object,
             _registrationService.Object,
             _userRepository.Object,
-            _loc
+            _loc,
+            _regLogger.Object
         );
 
         _profilePromptService = new ProfilePromptService(
@@ -40,7 +42,8 @@ public class ProfilePromptServiceTests
             _registrationService.Object,
             _userRepository.Object,
             _loc,
-            _registrationPromptService
+            _registrationPromptService,
+            _logger.Object
         );
     }
 

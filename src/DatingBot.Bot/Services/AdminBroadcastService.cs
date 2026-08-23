@@ -90,9 +90,14 @@ public class AdminBroadcastService(
 
                     if (!photoSent)
                     {
+                        if (string.IsNullOrWhiteSpace(session.Text))
+                        {
+                            throw new InvalidOperationException("Не удалось отправить фото рассылки, а текст сообщения отсутствует.");
+                        }
+
                         await botClient.SendMessage(
                             chatId: recipientId,
-                            text: session.Text ?? string.Empty,
+                            text: session.Text,
                             parseMode: ParseMode.Html,
                             replyMarkup: replyMarkup,
                             cancellationToken: cancellationToken

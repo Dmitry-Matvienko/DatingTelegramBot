@@ -34,6 +34,8 @@ public class TelegramUpdateRouterStartTests
 
     public TelegramUpdateRouterStartTests()
     {
+        var regPromptLogger = new Mock<ILogger<RegistrationPromptService>>();
+        var profilePromptLogger = new Mock<ILogger<ProfilePromptService>>();
         var searchPromptLogger = new Mock<ILogger<SearchPromptService>>();
         var adminPromptLogger = new Mock<ILogger<AdminPromptService>>();
         var adminCbLogger = new Mock<ILogger<AdminCallbackHandler>>();
@@ -46,7 +48,8 @@ public class TelegramUpdateRouterStartTests
             _botClient.Object,
             _registrationService.Object,
             _userRepository.Object,
-            _loc
+            _loc,
+            regPromptLogger.Object
         );
 
         var profilePromptService = new ProfilePromptService(
@@ -54,7 +57,8 @@ public class TelegramUpdateRouterStartTests
             _registrationService.Object,
             _userRepository.Object,
             _loc,
-            registrationPromptService
+            registrationPromptService,
+            profilePromptLogger.Object
         );
 
         var searchPromptService = new SearchPromptService(

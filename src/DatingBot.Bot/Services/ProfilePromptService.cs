@@ -3,6 +3,7 @@ using DatingBot.Application.DTOs;
 using DatingBot.Application.Interfaces;
 using DatingBot.Bot.Keyboards;
 using DatingBot.Domain.Enums;
+using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -14,7 +15,8 @@ public class ProfilePromptService(
     IRegistrationService registrationService,
     IUserRepository userRepository,
     ILocalizationService loc,
-    RegistrationPromptService registrationPromptService)
+    RegistrationPromptService registrationPromptService,
+    ILogger<ProfilePromptService> logger)
 {
     public async Task SendProfileCardAsync(long chatId, UserProfileDto profile, int? previousMessageIdToDelete = null, CancellationToken cancellationToken = default)
     {
@@ -99,8 +101,9 @@ public class ProfilePromptService(
                 );
                 photoSent = true;
             }
-            catch
+            catch (Exception ex)
             {
+                logger.LogWarning("Не удалось отправить фото профиля {PhotoFileId} пользователю {ChatId}: {ErrorMessage}", profile.PhotoFileId, chatId, ex.Message);
                 sentMessage = null!;
             }
         }

@@ -3,6 +3,7 @@ using DatingBot.Application.DTOs;
 using DatingBot.Application.Interfaces;
 using DatingBot.Bot.Keyboards;
 using DatingBot.Domain.Enums;
+using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -13,7 +14,8 @@ public class RegistrationPromptService(
     ITelegramBotClient botClient,
     IRegistrationService registrationService,
     IUserRepository userRepository,
-    ILocalizationService loc)
+    ILocalizationService loc,
+    ILogger<RegistrationPromptService> logger)
 {
     public async Task DeleteMessageSafeAsync(long chatId, int? messageId, CancellationToken cancellationToken = default)
     {
@@ -242,8 +244,9 @@ public class RegistrationPromptService(
                 );
                 photoSent = true;
             }
-            catch
+            catch (Exception ex)
             {
+                logger.LogWarning("Не удалось отправить фото регистрации {PhotoFileId} пользователю {ChatId}: {ErrorMessage}", profile.PhotoFileId, chatId, ex.Message);
                 sentCard = null!;
             }
         }
