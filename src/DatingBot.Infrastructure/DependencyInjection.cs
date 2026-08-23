@@ -12,6 +12,8 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? configuration["DEFAULT_CONNECTION"]
+            ?? configuration["DATABASE_URL"]
             ?? "Server=localhost;Database=DatingBotDb;Trusted_Connection=True;TrustServerCertificate=True;";
 
         services.AddDbContext<AppDbContext>(options =>

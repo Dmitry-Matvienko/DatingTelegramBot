@@ -1,18 +1,27 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 20
+state_version: 21
 updated: 2026-08-24
 
 ---
 
 ## Сейчас
-- **Фаза**: Подключение и верификация удаленной базы данных MS SQL на **SmarterASP.NET**:
-  1. Проверено и настроено подключение к серверу `tcp:sql6031.site4now.net,1433` (база `db_acd9bf_datingdb`).
-  2. Применены все 12 миграций EF Core: создана полная схема таблиц (`Users`, `UserProfiles`, `Cities`, `Interests`, `UserProfileInterests`, `ProfileRatings`, `ProfileReports`, `PaymentTransactions`).
-  3. Проверено наполнение базы: сидированы 133 387 городов мира и 12 категорий интересов.
-  4. Обновлены `Program.cs` и `AppDbContextFactory.cs` для надежного считывания `appsettings.Local.json` и логирования подключения к БД на старте.
-  5. Все 313 модульных и интеграционных тестов пройдены успешно.
-- **Далее**: Ожидание новых задач, доработок или требований от пользователя.
+- **Фаза**: Подготовка к облачному развертыванию на **Render** с поддержкой **HTTP Keep-Alive (cron-job.org)** и безопасной конфигурации через **Environment Variables**:
+  1. **Web Host на ASP.NET Core (`Microsoft.NET.Sdk.Web`)**: Проект `DatingBot.Bot` переведен на Web-хост с Kestrel Minimal API. Бот продолжает работать в режиме Long Polling через `IHostedService` (`TelegramBotWorker`, `MatchmakingNotificationWorker`, `InactivityNotificationWorker`).
+  2. **Keep-Alive & Health Check эндпоинты**:
+     - `GET /` — JSON-статус сервиса (`{"service": "DatingBot", "status": "running", "serverTimeUtc": "..."}`).
+     - `GET /ping` — текстовый ответ `pong` с минимальным оверхедом (идеально для пинга с cron-job.org каждые 5–10 мин против засыпания бесплатного инстанса Render).
+     - `GET /health` и `GET /healthz` — health check эндпоинты со статусом `{"status": "Healthy"}`.
+  3. **Поддержка динамического порта Render**: Автоматическое считывание переменной `PORT` (`http://0.0.0.0:${PORT}`).
+  4. **Универсальные Environment Variables**:
+     - `BOT_TOKEN` или `BotConfiguration__BotToken` (токен бота).
+     - `DEFAULT_CONNECTION` или `ConnectionStrings__DefaultConnection` (строка подключения к SmarterASP.NET MS SQL).
+     - `ADMIN_IDS` или `BotConfiguration__AdminIds` (список ID админов, поддерживает как массив, так и разделение через запятую: `"123456, 789012"`).
+     - `BotConfiguration__UnbanPriceStars` (цена платного разбана).
+     - `BotConfiguration__InactivityReminderDays` (порог неактивности).
+  5. **Production Dockerfile и .dockerignore**: Создан легковесный multi-stage Dockerfile для сборки и запуска .NET 9 на Render.
+  6. **Тесты и верификация**: Добавлены тесты `HttpKeepAliveEndpointTests`, `AdminSettingsTests` и `BotSetupTests`. Все 322 теста пройдены (100% green).
+- **Далее**: Развертывание бота на Render и настройка cron-job.org.
 
 ---
 
@@ -29,8 +38,9 @@ updated: 2026-08-24
 | База данных и репозитории (`Infrastructure`) | ✅ Готово | 100% |
 | Локальный AI-векторизатор (`LocalAiEmbeddingService`) | ✅ Готово | 100% |
 | Датасет городов (100k+ gzip) (`CityDatabaseSeeder`) | ✅ Готово | 100% |
-| Презентационный слой и FSM (`Bot`) | ✅ Готово | 100% (валидация + интеграция) |
-| Многоязычность (6 языков) (`LocalizationService`) | ✅ Готово | 100% (все ключи) |
+| Презентационный слой, Web-хост и Keep-Alive (`Bot`, Minimal API) | ✅ Готово | 100% |
+| Многоязычность (6 языков) (`LocalizationService`) | ✅ Готово | 100% |
+| Развертывание (Render Dockerfile, Env Vars) | ✅ Готово | 100% |
 | Система Standing Orders / SDD | ✅ Внедрено | Полная документация |
 
 ---
@@ -40,7 +50,7 @@ updated: 2026-08-24
 - [x] 4-уровневый каскадный скоринг Matchmaking (AI -> Интересы -> Город -> Соседние города до 500 км).
 - [x] 10-балльная система рейтинга и детекция взаимной симпатии (6+).
 - [x] Полная мультиязычность для 6 языков (RU, UK, EN, HI, PT, ID).
-- [x] Покрытие тестами (275 тестов успешно пройдены).
+- [x] Покрытие тестами (322 теста успешно пройдены).
 - [x] Перевод управляющего слоя на стандарт Standing Orders / SDD.
 - [x] Добавление кнопки и функционала публичного «Приветствия» в профиль пользователя и карточки выдачи кандидатов.
 - [x] Интерактивная обработка жалоб модераторами с кнопками («Заблокировать», «Удалить анкету», «Проигнорировать») и мультиязычными уведомлениями.
@@ -55,6 +65,10 @@ updated: 2026-08-24
 - [x] Реализация системы платного разбана за звёзды (Telegram Stars) с мультиязычностью, авто-разблокировкой при оплате и конфигурацией цены `BotConfiguration:UnbanPriceStars`.
 - [x] Реализация раздела «💰 Доход» в админ-панели: баланс звёзд Telegram Stars, динамика дохода (24ч/7д/30д) и история последних 20 транзакций с отчетом.
 - [x] Реализация заманчивых напоминаний для неактивных пользователей (Inactivity Reminders) с 10 случайными мультиязычными шаблонами, фоновым воркером и настройкой периодичности в конфигурации.
+- [x] Подключение и верификация удаленной базы данных MS SQL на SmarterASP.NET.
+- [x] Перевод `DatingBot.Bot` на Web-хост с Keep-Alive HTTP эндпоинтами (`/`, `/ping`, `/health`) для Render и cron-job.org.
+- [x] Поддержка удобного конфигурирования через Environment Variables (`BOT_TOKEN`, `DEFAULT_CONNECTION`, `ADMIN_IDS`).
+- [x] Создание Multi-stage Dockerfile и .dockerignore для сборки и развертывания .NET 9.
 
 ---
 

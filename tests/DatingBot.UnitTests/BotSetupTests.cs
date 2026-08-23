@@ -96,4 +96,22 @@ public class BotSetupTests
         client.Should().NotBeNull();
         client.Should().BeAssignableTo<ITelegramBotClient>();
     }
+
+    [Fact]
+    public void CreateBotClient_WhenTokenInBotTokenEnvKey_ReturnsTelegramBotClient()
+    {
+        // Arrange
+        var inMemorySettings = new Dictionary<string, string?>
+        {
+            ["BOT_TOKEN"] = "123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ_1234567"
+        };
+        var config = new ConfigurationBuilder().AddInMemoryCollection(inMemorySettings).Build();
+
+        // Act
+        var client = BotSetup.CreateBotClient(config);
+
+        // Assert
+        client.Should().NotBeNull();
+        client.Should().BeAssignableTo<ITelegramBotClient>();
+    }
 }

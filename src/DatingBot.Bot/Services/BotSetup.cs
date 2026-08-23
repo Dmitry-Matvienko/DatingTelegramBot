@@ -22,6 +22,11 @@ public static class BotSetup
         var botToken = configuration["BotConfiguration:BotToken"];
         if (string.IsNullOrWhiteSpace(botToken) || botToken.Trim() == "YOUR_BOT_TOKEN_HERE")
         {
+            botToken = configuration["BOT_TOKEN"];
+        }
+
+        if (string.IsNullOrWhiteSpace(botToken) || botToken.Trim() == "YOUR_BOT_TOKEN_HERE")
+        {
             throw new InvalidOperationException(
                 "BotConfiguration:BotToken не задан или содержит плейсхолдер 'YOUR_BOT_TOKEN_HERE'.\n" +
                 "Пожалуйста, укажите валидный токен Telegram-бота в файле appsettings.Local.json или через переменную окружения 'BotConfiguration__BotToken'.\n" +

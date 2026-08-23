@@ -43,6 +43,8 @@ DatingBot/                                # Корень проекта == BASE_
 ├── GEMINI.md                             # [Уровень 1] Главная точка входа управления (этот файл)
 ├── README.md                             # Общее описание проекта и руководство по запуску
 ├── DatingBot.sln                         # Файл решения Visual Studio / .NET 9
+├── Dockerfile                            # Multi-stage сборка .NET 9 для Render / Docker
+├── .dockerignore                         # Исключения для Docker сборки
 ├── .gitignore                            # Игнорируемые Git файлы (.worktrees, bin, obj)
 │
 ├── docs/                                 # Постоянная память и управляющий слой (Standing Orders)
