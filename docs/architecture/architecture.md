@@ -9,6 +9,7 @@
 - Оценивание анкет по 10-балльной шкале с выявлением взаимных симпатий (Mutual Match).
 - Модерацию и обработку жалоб с оперативным уведомлением администраторов.
 - Поддержку 6 языков (Русский, Украинский, Английский, Хинди, Португальский, Индонезийский) с учетом грамматических форм.
+- Отказоустойчивую самовосстанавливающуюся инициализацию и непрерывную работу (Self-Healing Architecture).
 
 ---
 
@@ -21,7 +22,7 @@
 - **Валидация данных:** `FluentValidation` v11.x
 - **Векторизация и AI:** Встроенный векторный движок с SIMD/AVX аппаратным ускорением (`System.Numerics.Vector<float>`)
 - **Тестирование:** `xUnit`, `FluentAssertions`, `Moq`
-- **Контейнеризация и хостинг:** Generic Host, Docker, Microsoft.Extensions.Hosting
+- **Контейнеризация и хостинг:** Generic Host, Kestrel Web Host, Docker, Microsoft.Extensions.Hosting
 
 ---
 
@@ -49,8 +50,8 @@
 ```
 
 ### 3.1. `DatingBot.Domain` (Ядро)
-- Содержит чистые модели данных (`User`, `UserProfile`, `City`, `Interest`, `ProfileRating`, `ProfileReport`).
-- Перечисления бизнес-домена (`UserState`, `AppLanguage`, `Gender`, `TargetGender`, `DatingTarget`, `InterestType`, `MatchTier`, `ReportReason`, `AgeCategoryFilter`).
+- Содержит чистые модели данных (`User`, `UserProfile`, `City`, `Interest`, `ProfileRating`, `ProfileReport`, `PaymentTransaction`).
+- Перечисления бизнес-домена (`UserState`, `AppLanguage`, `Gender`, `TargetGender`, `DatingTarget`, `InterestType`, `MatchTier`, `ReportReason`, `AgeCategoryFilter`, `PaymentType`).
 - Доменные исключения (`DomainException`).
 - **Зависимости:** 0 внешних пакетов.
 
@@ -70,14 +71,15 @@
 - Локальный сервис AI-векторизации (`LocalAiEmbeddingService`) на базе n-граммного хеширования и SIMD-косинусного сходства.
 - **Зависимости:** `Application`, `Domain`, `Microsoft.EntityFrameworkCore.SqlServer`.
 
-### 3.4. `DatingBot.Bot` (Презентационный слой Telegram)
-- Точка входа `Program.cs`, конфигурация DI и Generic Host.
+### 3.4. `DatingBot.Bot` (Презентационный слой Telegram и Хостинг)
+- Точка входа `Program.cs`, Kestrel Web-хост, конфигурация DI, Keep-Alive эндпоинты (`/`, `/ping`, `/health`, `/healthz`).
+- Координатор жизненного цикла `IBotLifecycleCoordinator` / `BotLifecycleCoordinator`.
 - `TelegramUpdateRouter` — диспетчер сообщений и callback-запросов.
 - Обработчики FSM (`RegistrationMessageHandler`, `RegistrationCallbackHandler`, `ProfileEditMessageHandler`, `ProfileEditCallbackHandler`, `SearchCallbackHandler`, `AdminCallbackHandler`, `AdminMessageHandler`, `AdminModerationCallbackHandler`).
 - Фабрики инлайн- и reply-клавиатур (`LanguageKeyboards`, `MainMenuKeyboards`, `ProfileKeyboards`, `RegistrationKeyboards`, `SearchKeyboards`, `AdminKeyboards`, `PaymentKeyboards`).
 - Сервисы формирования визуальных карточек (`ProfilePromptService`, `SearchPromptService`, `RegistrationPromptService`, `AdminPromptService`, `AdminBroadcastService`).
-- Фоновые воркеры (`TelegramBotWorker`, `MatchmakingNotificationWorker`, `InactivityNotificationWorker`).
-- **Зависимости:** `Application`, `Infrastructure`, `Telegram.Bot`.
+- Фоновые воркеры (`DatabaseBootstrapWorker`, `TelegramBotWorker`, `MatchmakingNotificationWorker`, `InactivityNotificationWorker`).
+- **Зависимости:** `Application`, `Infrastructure`, `Telegram.Bot`, `Microsoft.AspNetCore.App`.
 
 ---
 
@@ -97,8 +99,10 @@
 
 ---
 
-## 5. Стратегия обработки ошибок
+## 5. Стратегия отказоустойчивости и обработки ошибок (Self-Healing)
 
-- **Валидация входных данных**: Перехватывается на уровне слоя `Application` валидаторами FluentValidation и возвращается в виде `Result.Failure(errorMessage)`. Пользователю выводится понятное сообщение об ошибке на его языке без изменения состояния FSM.
-- **Сбои внешних вызовов**: Логируются через `ILogger<T>`. Сетевые исключения Telegram API изолируются в `TelegramBotWorker`.
-- **База данных**: Все модифицирующие операции группируются через репозитории и `IUnitOfWork.SaveChangesAsync()`.
+- **Неблокирующая инициализация БД**: `DatabaseBootstrapWorker` выполняет подключение к БД, миграции и сидирование в фоновом режиме с экспоненциальным backoff. При холодном старте или временной недоступности базы процесс не падает, веб-сервер Kestrel остается онлайн и обслуживает keep-alive пинги.
+- **Супервизорный опрос Telegram API**: `TelegramBotWorker` ожидает готовности БД, после чего запускает опрос в защищенном цикле `while (!stoppingToken.IsCancellationRequested)`. При сетевых дропах, таймаутах или ошибках API опрос автоматически перезапускается с backoff-паузой.
+- **Изоляция сбоев отдельных сообщений**: `ProcessUpdateSafeAsync` перехватывает любые исключения в рамках отдельного запроса пользователя, гарантируя, что ошибка одной анкеты никогда не остановит бота для других пользователей.
+- **Изоляция фоновых служб**: `HostOptions.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore` предотвращает аварийное завершение процесса хоста при исключениях в воркерах.
+- **Глобальные перехватчики**: Обработчики `AppDomain.CurrentDomain.UnhandledException` и `TaskScheduler.UnobservedTaskException` логируют непредвиденные системные сбои.

@@ -1,4 +1,5 @@
 using DatingBot.Application.Interfaces;
+using DatingBot.Bot.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -12,6 +13,7 @@ namespace DatingBot.Bot.Workers;
 public class InactivityNotificationWorker(
     IServiceProvider serviceProvider,
     IConfiguration configuration,
+    IBotLifecycleCoordinator lifecycle,
     ILogger<InactivityNotificationWorker> logger) : BackgroundService
 {
     private int InactivityReminderDays =>
@@ -22,7 +24,18 @@ public class InactivityNotificationWorker(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("InactivityNotificationWorker запущен (периодичность неактивности: {InactivityReminderDays} дн., интервал проверки: {Interval} мин).",
+        logger.LogInformation("InactivityNotificationWorker запущен. Ожидание готовности базы данных...");
+
+        try
+        {
+            await lifecycle.WaitForDatabaseReadyAsync(stoppingToken);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            return;
+        }
+
+        logger.LogInformation("InactivityNotificationWorker активирован (периодичность неактивности: {InactivityReminderDays} дн., интервал проверки: {Interval} мин).",
             InactivityReminderDays, InactivityCheckIntervalMinutes);
 
         while (!stoppingToken.IsCancellationRequested)

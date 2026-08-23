@@ -1,4 +1,5 @@
 using DatingBot.Application.Interfaces;
+using DatingBot.Bot.Services;
 using DatingBot.Bot.Workers;
 using DatingBot.Domain.Entities;
 using DatingBot.Domain.Enums;
@@ -21,6 +22,7 @@ public class InactivityNotificationWorkerTests
     private readonly Mock<IInactivityReminderService> _inactivityReminderServiceMock = new();
     private readonly Mock<ITelegramBotClient> _botClientMock = new();
     private readonly Mock<ILocalizationService> _locMock = new();
+    private readonly Mock<IBotLifecycleCoordinator> _lifecycleMock = new();
     private readonly IConfiguration _configuration;
     private readonly IServiceProvider _serviceProvider;
 
@@ -34,6 +36,9 @@ public class InactivityNotificationWorkerTests
         _configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(inMemorySettings)
             .Build();
+
+        _lifecycleMock.Setup(l => l.WaitForDatabaseReadyAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         var services = new ServiceCollection();
         services.AddScoped(_ => _inactivityReminderServiceMock.Object);
@@ -79,6 +84,7 @@ public class InactivityNotificationWorkerTests
         var worker = new InactivityNotificationWorker(
             _serviceProvider,
             _configuration,
+            _lifecycleMock.Object,
             NullLogger<InactivityNotificationWorker>.Instance
         );
 
@@ -98,6 +104,7 @@ public class InactivityNotificationWorkerTests
         var worker = new InactivityNotificationWorker(
             _serviceProvider,
             _configuration,
+            _lifecycleMock.Object,
             NullLogger<InactivityNotificationWorker>.Instance
         );
 

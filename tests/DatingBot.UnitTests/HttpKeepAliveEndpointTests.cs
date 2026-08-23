@@ -1,5 +1,6 @@
 using System.Net;
 using DatingBot.Application.Interfaces;
+using DatingBot.Bot.Services;
 using DatingBot.Infrastructure.Data;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
@@ -57,6 +58,12 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             var mockBotClient = new Mock<ITelegramBotClient>();
             services.AddSingleton(mockBotClient.Object);
 
+            // Настраиваем координатор жизненного цикла со статусом Ready
+            services.RemoveAll<IBotLifecycleCoordinator>();
+            var coordinator = new BotLifecycleCoordinator();
+            coordinator.MarkDatabaseReady();
+            services.AddSingleton<IBotLifecycleCoordinator>(coordinator);
+
             // Удаляем фоновые сервисы
             var hostedServiceDescriptors = services.Where(d => d.ServiceType == typeof(IHostedService)).ToList();
             foreach (var hosted in hostedServiceDescriptors)
@@ -87,6 +94,7 @@ public class HttpKeepAliveEndpointTests : IClassFixture<CustomWebApplicationFact
         var content = await response.Content.ReadAsStringAsync();
         content.Should().Contain("DatingBot");
         content.Should().Contain("running");
+        content.Should().Contain("isDatabaseReady\":true");
     }
 
     [Fact]
@@ -111,6 +119,7 @@ public class HttpKeepAliveEndpointTests : IClassFixture<CustomWebApplicationFact
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var content = await response.Content.ReadAsStringAsync();
         content.Should().Contain("Healthy");
+        content.Should().Contain("isDatabaseReady\":true");
     }
 
     [Fact]

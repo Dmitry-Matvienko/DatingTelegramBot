@@ -140,3 +140,19 @@
   - В слое `Application`: спроектирован сервис `IInactivityReminderService` / `InactivityReminderService` с генерацией случайного ключа шаблона (1..10) и выборкой неактивных пользователей. В `LocalizationService` добавлены 10 шаблонов и инлайн-кнопка перехода к поиску на 6 языках (RU, UK, EN, HI, PT, ID).
   - В слое `Bot`: создан фоновый сервис `InactivityNotificationWorker` (`BackgroundService`), запускающийся с настраиваемым интервалом `BotConfiguration:InactivityCheckIntervalMinutes` (дефолт 60 мин) и порогом неактивности `BotConfiguration:InactivityReminderDays` (дефолт 3 дня). В `TelegramUpdateRouter` подключена автоматическая фиксация активности при каждом входящем событии и обработка callback-кнопки `inactivity_search`.
 - **Последствия**: Автоматизированное удержание и возвращение пользователей в воронку знакомств без спама и с соблюдением Clean Architecture и мультиязычности.
+
+---
+
+### ADR-012: Отказоустойчивая система инициализации и автоматического самовосстановления (Self-Healing Architecture)
+- **Дата**: 2026-08-24
+- **Статус**: Принято
+- **Контекст**:
+  - При холодном старте в облачных средах (Render, Docker) или сетевых задержках удаленная СУБД (SmarterASP.NET / Azure SQL) может быть кратковременно недоступна. Ранее блокирующий вызов миграций в `Program.cs` приводил к моментальному падению процесса (Crash-Loop) и блокировке Kestrel.
+  - При временных перебоях связи с Telegram API, сетевых дропах, таймаутах или необработанных ошибках обработки апдейтов отдельного пользователя опрос Telegram Long Polling мог остановиться без автоматического восстановления.
+- **Решение**:
+  - Создан координатор состояния `IBotLifecycleCoordinator` / `BotLifecycleCoordinator` (`Singleton`), отслеживающий готовность БД (`IsDatabaseReady`), активность опроса Telegram (`IsTelegramPollingActive`), счетчики повторов и перезапусков, и предоставляющий асинхронную точку ожидания `WaitForDatabaseReadyAsync`.
+  - Создан фоновый сервис неблокирующей инициализации `DatabaseBootstrapWorker` (`BackgroundService`), выполняющий миграции и сидирование с экспоненциальным backoff (3s -> 5s -> 10s -> 30s) без блокировки Kestrel Web-сервера и Keep-Alive пингов.
+  - В `TelegramBotWorker` внедрен супервизорный цикл самовосстановления `while (!stoppingToken.IsCancellationRequested)` с экспоненциальным backoff при сбоях API / сети, изолированной обработкой входящих обновлений `ProcessUpdateSafeAsync` (гарантирующей, что сбой одного сообщения никогда не прервет опрос для остальных), и фиксацией ошибок в телеметрии.
+  - В `Program.cs` настроен `HostOptions.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore` и глобальные перехватчики `AppDomain.CurrentDomain.UnhandledException` / `TaskScheduler.UnobservedTaskException`.
+  - Эндпоинты `/` и `/health` дополнены подробной телеметрией готовности и самовосстановления.
+- **Последствия**: 100% отказоустойчивость: бот самостоятельно восстанавливается после любых сбоев сети, СУБД или Telegram API, не прекращая отвечать на внешние пинги и не требуя ручного перезапуска.

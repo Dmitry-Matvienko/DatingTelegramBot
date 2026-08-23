@@ -96,13 +96,13 @@ DatingBot/                                # Корень проекта == BASE_
 │   └── DatingBot.Bot/                    # Презентационный слой Telegram (Telegram.Bot)
 │       ├── Handlers/                     # TelegramUpdateRouter, FSM хэндлеры сообщений и кнопок
 │       ├── Keyboards/                    # Фабрики инлайн- и reply-клавиатур (MainMenu, Profile, Payment, Admin...)
-│       ├── Services/                     # TelegramBotWorker, Prompt-сервисы формирования карточек, AdminBroadcast, BotSetup
-│       ├── Workers/                      # MatchmakingNotificationWorker, InactivityNotificationWorker
+│       ├── Services/                     # TelegramBotWorker, BotLifecycleCoordinator, IBotLifecycleCoordinator, AdminBroadcast, BotSetup...
+│       ├── Workers/                      # DatabaseBootstrapWorker, TelegramBotWorker, MatchmakingNotificationWorker, InactivityNotificationWorker
 │       ├── appsettings.json              # Базовая конфигурация (BotToken, AdminIds, InactivityReminderDays...)
-│       └── Program.cs                    # Точка входа DI и Generic Host
+│       └── Program.cs                    # Точка входа DI, Web-хост Kestrel и Keep-Alive/Health эндпоинты
 │
-├── tests/                                # Модульные и интеграционные тесты (313 тестов)
-│   ├── DatingBot.UnitTests/              # xUnit модульные тесты сервисов, алгоритмов и валидаторов
+├── tests/                                # Модульные и интеграционные тесты (337 тестов)
+│   ├── DatingBot.UnitTests/              # xUnit модульные тесты сервисов, алгоритмов, воркеров и координатора
 │   └── DatingBot.IntegrationTests/       # Интеграционные тесты сидера БД и сценариев
 │
 └── .agents/                              # Инструменты для ИИ-агентов (скиллы и субагенты)

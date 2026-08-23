@@ -1,24 +1,31 @@
 using DatingBot.Application.Interfaces;
-using DatingBot.Bot.Keyboards;
-using DatingBot.Domain.Enums;
-using Microsoft.EntityFrameworkCore;
+using DatingBot.Bot.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
-using Telegram.Bot.Types.Enums;
 
 namespace DatingBot.Bot.Workers;
 
 public class MatchmakingNotificationWorker(
     IServiceProvider serviceProvider,
+    IBotLifecycleCoordinator lifecycle,
     ILogger<MatchmakingNotificationWorker> logger) : BackgroundService
 {
     private static readonly TimeSpan CheckInterval = TimeSpan.FromHours(1);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("MatchmakingNotificationWorker запущен.");
+        logger.LogInformation("MatchmakingNotificationWorker запущен. Ожидание готовности базы данных...");
+
+        try
+        {
+            await lifecycle.WaitForDatabaseReadyAsync(stoppingToken);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            return;
+        }
 
         while (!stoppingToken.IsCancellationRequested)
         {
