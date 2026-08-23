@@ -21,10 +21,41 @@ public static class AdminKeyboards
                 InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Btn_Broadcast"), "adm_panel:bcast")
             ],
             [
+                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Btn_Revenue"), "adm_panel:revenue"),
                 InlineKeyboardButton.WithCallbackData(reportsText, "adm_panel:reports")
             ],
             [
                 InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Menu_Language"), "adm_panel:lang")
+            ]
+        ]);
+    }
+
+    public static InlineKeyboardMarkup GetAdminRevenueKeyboard(AppLanguage language = AppLanguage.Russian)
+    {
+        return new InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Revenue_Btn_Balance"), "adm_rev:balance"),
+                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Revenue_Btn_History"), "adm_rev:history")
+            ],
+            [
+                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Btn_BackToPanel"), "adm_panel:main")
+            ]
+        ]);
+    }
+
+    public static InlineKeyboardMarkup GetAdminRevenueDetailsKeyboard(AppLanguage language = AppLanguage.Russian, bool isBalanceScreen = true)
+    {
+        var switchButton = isBalanceScreen
+            ? InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Revenue_Btn_History"), "adm_rev:history")
+            : InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Revenue_Btn_Balance"), "adm_rev:balance");
+
+        return new InlineKeyboardMarkup([
+            [
+                switchButton
+            ],
+            [
+                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Btn_Revenue"), "adm_panel:revenue"),
+                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Btn_BackToPanel"), "adm_panel:main")
             ]
         ]);
     }

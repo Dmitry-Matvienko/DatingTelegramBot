@@ -181,4 +181,43 @@ public class LocalizationTests
         var text = _loc.Get(language, key);
         text.Should().Contain(expectedSubstring);
     }
+
+    [Theory]
+    [InlineData(AppLanguage.Russian, "Admin_Btn_Revenue", "Доход")]
+    [InlineData(AppLanguage.Ukrainian, "Admin_Btn_Revenue", "Дохід")]
+    [InlineData(AppLanguage.English, "Admin_Btn_Revenue", "Revenue")]
+    [InlineData(AppLanguage.Hindi, "Admin_Btn_Revenue", "आय")]
+    [InlineData(AppLanguage.Portuguese, "Admin_Btn_Revenue", "Receita")]
+    [InlineData(AppLanguage.Indonesian, "Admin_Btn_Revenue", "Pendapatan")]
+    public void Admin_Btn_Revenue_ShouldBeTranslatedForEachLanguage(AppLanguage language, string key, string expectedSubstring)
+    {
+        var text = _loc.Get(language, key);
+        text.Should().Contain(expectedSubstring);
+    }
+
+    [Theory]
+    [InlineData(AppLanguage.Russian, "Admin_Revenue_Btn_Balance", "Баланс")]
+    [InlineData(AppLanguage.Ukrainian, "Admin_Revenue_Btn_Balance", "Баланс")]
+    [InlineData(AppLanguage.English, "Admin_Revenue_Btn_Balance", "Balance")]
+    [InlineData(AppLanguage.Hindi, "Admin_Revenue_Btn_Balance", "शेष")]
+    [InlineData(AppLanguage.Portuguese, "Admin_Revenue_Btn_Balance", "Saldo")]
+    [InlineData(AppLanguage.Indonesian, "Admin_Revenue_Btn_Balance", "Saldo")]
+    public void Admin_Revenue_Btn_Balance_ShouldBeTranslatedForEachLanguage(AppLanguage language, string key, string expectedSubstring)
+    {
+        var text = _loc.Get(language, key);
+        text.Should().Contain(expectedSubstring);
+    }
+
+    [Theory]
+    [InlineData(AppLanguage.Russian, "Admin_Revenue_Btn_History", "История транзакций")]
+    [InlineData(AppLanguage.Ukrainian, "Admin_Revenue_Btn_History", "Історія транзакцій")]
+    [InlineData(AppLanguage.English, "Admin_Revenue_Btn_History", "Transaction History")]
+    [InlineData(AppLanguage.Hindi, "Admin_Revenue_Btn_History", "लेनदेन इतिहास")]
+    [InlineData(AppLanguage.Portuguese, "Admin_Revenue_Btn_History", "Histórico de Transações")]
+    [InlineData(AppLanguage.Indonesian, "Admin_Revenue_Btn_History", "Riwayat Transaksi")]
+    public void Admin_Revenue_Btn_History_ShouldBeTranslatedForEachLanguage(AppLanguage language, string key, string expectedSubstring)
+    {
+        var text = _loc.Get(language, key);
+        text.Should().Contain(expectedSubstring);
+    }
 }

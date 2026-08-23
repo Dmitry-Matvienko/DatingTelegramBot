@@ -73,6 +73,18 @@ public class TelegramUpdateRouter(
                 if (message.SuccessfulPayment is { } successfulPayment)
                 {
                     var payload = successfulPayment.InvoicePayload ?? string.Empty;
+
+                    await adminService.RecordSuccessfulPaymentAsync(
+                        telegramId: telegramId,
+                        amount: (int)successfulPayment.TotalAmount,
+                        currency: successfulPayment.Currency,
+                        type: payload.StartsWith("unban") ? PaymentType.Unban : PaymentType.Other,
+                        payload: payload,
+                        telegramPaymentChargeId: successfulPayment.TelegramPaymentChargeId,
+                        providerPaymentChargeId: successfulPayment.ProviderPaymentChargeId,
+                        cancellationToken: cancellationToken
+                    );
+
                     if (payload.StartsWith("unban:") || payload.StartsWith("unban_"))
                     {
                         var idPart = payload.Contains(':') ? payload.Split(':')[1] : payload["unban_".Length..];

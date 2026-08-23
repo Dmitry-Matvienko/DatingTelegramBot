@@ -81,3 +81,26 @@ public record AdminModerationActionResult(
     AppLanguage Language,
     string? Name
 );
+
+public record PaymentTransactionDto(
+    Guid Id,
+    long TelegramId,
+    string? Username,
+    string? FirstName,
+    int Amount,
+    string Currency,
+    PaymentType Type,
+    string Payload,
+    string? TelegramPaymentChargeId,
+    DateTime CreatedAt
+);
+
+public record AdminRevenueStatsDto(
+    int TotalEarnedStars,
+    int TotalTransactionsCount,
+    int EarnedLast24Hours,
+    int EarnedLast7Days,
+    int EarnedLast30Days,
+    IReadOnlyList<PaymentTransactionDto> RecentTransactions
+);
+

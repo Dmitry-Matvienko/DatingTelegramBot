@@ -53,6 +53,20 @@ public interface IAdminService
     Task<(UserProfileDto? Profile, int TotalCount, int CurrentIndex)> GetAdminProfileByGenderAsync(Gender gender, int offset, CancellationToken cancellationToken = default);
     Task<Result<AdminModerationActionResult>> BanUserDirectlyAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<Result<AdminModerationActionResult>> DeleteUserProfileDirectlyAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<AdminRevenueStatsDto> GetRevenueStatsAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<PaymentTransactionDto>> GetRecentTransactionsAsync(int count = 20, CancellationToken cancellationToken = default);
+    Task RecordSuccessfulPaymentAsync(long telegramId, int amount, string currency, PaymentType type, string payload, string? telegramPaymentChargeId, string? providerPaymentChargeId, CancellationToken cancellationToken = default);
+}
+```
+
+### 2.3. `IPaymentTransactionRepository`
+
+```csharp
+public interface IPaymentTransactionRepository
+{
+    Task AddAsync(PaymentTransaction transaction, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<PaymentTransactionDto>> GetRecentAsync(int count = 20, CancellationToken cancellationToken = default);
+    Task<AdminRevenueStatsDto> GetRevenueStatsAsync(CancellationToken cancellationToken = default);
 }
 ```
 
@@ -100,9 +114,16 @@ public interface IAdminService
   - `UpdateType.PreCheckoutQuery`: бот валидирует payload и подтверждает заказ (`AnswerPreCheckoutQueryAsync(ok: true)`).
   - `SuccessfulPayment`: бот вызывает `IModerationService.UnbanUserAsync(userId)`, возвращает пользователя в `UserState.Active` (с восстановлением `IsCompleted = true`), отправляет уведомление `Notification_UnbanSuccessful` и reply-клавиатуру главного меню.
 
+### 3.6. Управление доходами и финансами бота
+- **Раздел «💰 Доход» в главной панели**:
+  - `💳 Баланс`: детальный финансовый отчет с суммарным балансом заработанных звёзд (`TotalEarnedStars`), ориентировочным долларовым эквивалентом (1 ⭐ ≈ \$0.013 USD Fragment valuation), общим количеством совершенных транзакций и динамикой заработка за 24 часа, 7 дней и 30 дней.
+  - `📜 История транзакций`: отчет по последним 20 финансовым операциям (дата/время UTC, плательщик со ссылкой на профиль, сумма ⭐, назначение платежа, Telegram Payment Charge ID).
+- Автоматическая фиксация каждого входящего платежа в таблице `PaymentTransactions`.
+
 ---
 
 ## 4. Безопасность и разграничение доступа
 
 - Доступ к панели администратора предоставляется строго по списку идентификаторов Telegram из конфигурации `BotConfiguration:AdminIds`.
 - Все админ-экраны и уведомления локализованы на 6 поддерживаемых языков через `LocalizationService`.
+

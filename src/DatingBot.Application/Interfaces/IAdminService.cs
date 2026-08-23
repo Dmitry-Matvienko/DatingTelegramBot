@@ -17,4 +17,8 @@ public interface IAdminService
     Task<(UserProfileDto? Profile, int TotalCount, int CurrentIndex)> GetAdminProfileByGenderAsync(Gender gender, int offset, CancellationToken cancellationToken = default);
     Task<Result<AdminModerationActionResult>> BanUserDirectlyAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<Result<AdminModerationActionResult>> DeleteUserProfileDirectlyAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<AdminRevenueStatsDto> GetRevenueStatsAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<PaymentTransactionDto>> GetRecentTransactionsAsync(int count = 20, CancellationToken cancellationToken = default);
+    Task RecordSuccessfulPaymentAsync(long telegramId, int amount, string currency, PaymentType type, string payload, string? telegramPaymentChargeId, string? providerPaymentChargeId, CancellationToken cancellationToken = default);
 }
+

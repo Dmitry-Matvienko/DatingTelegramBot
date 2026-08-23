@@ -266,4 +266,65 @@ public class AdminRoutingAndCallbackTests
             It.Is<AnswerCallbackQueryRequest>(r => r.CallbackQueryId == "q_rep_err" && r.Text != null && r.Text.Contains("уже была обработана") && r.ShowAlert == true),
             It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task HandleAdminCallbackQueryAsync_Revenue_ShouldOpenRevenueMenu()
+    {
+        var adminUser = new User { TelegramId = 123, Language = AppLanguage.Russian, State = UserState.Admin_Panel };
+        var query = new CallbackQuery
+        {
+            Id = "q_rev",
+            Data = "adm_panel:revenue",
+            From = new Telegram.Bot.Types.User { Id = 123 }
+        };
+
+        _adminService.Setup(a => a.IsAdmin(123)).Returns(true);
+
+        var handled = await _callbackHandler.HandleAdminCallbackQueryAsync(adminUser, query);
+
+        handled.Should().BeTrue();
+        adminUser.State.Should().Be(UserState.Admin_Revenue);
+    }
+
+    [Fact]
+    public async Task HandleAdminCallbackQueryAsync_RevenueBalance_ShouldSendBalanceReport()
+    {
+        var adminUser = new User { TelegramId = 123, Language = AppLanguage.Russian, State = UserState.Admin_Revenue };
+        var query = new CallbackQuery
+        {
+            Id = "q_bal",
+            Data = "adm_rev:balance",
+            From = new Telegram.Bot.Types.User { Id = 123 }
+        };
+
+        _adminService.Setup(a => a.IsAdmin(123)).Returns(true);
+        _adminService.Setup(a => a.GetRevenueStatsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AdminRevenueStatsDto(500, 5, 100, 300, 500, []));
+
+        var handled = await _callbackHandler.HandleAdminCallbackQueryAsync(adminUser, query);
+
+        handled.Should().BeTrue();
+        _adminService.Verify(a => a.GetRevenueStatsAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAdminCallbackQueryAsync_RevenueHistory_ShouldSendHistoryReport()
+    {
+        var adminUser = new User { TelegramId = 123, Language = AppLanguage.Russian, State = UserState.Admin_Revenue };
+        var query = new CallbackQuery
+        {
+            Id = "q_hist",
+            Data = "adm_rev:history",
+            From = new Telegram.Bot.Types.User { Id = 123 }
+        };
+
+        _adminService.Setup(a => a.IsAdmin(123)).Returns(true);
+        _adminService.Setup(a => a.GetRecentTransactionsAsync(20, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        var handled = await _callbackHandler.HandleAdminCallbackQueryAsync(adminUser, query);
+
+        handled.Should().BeTrue();
+        _adminService.Verify(a => a.GetRecentTransactionsAsync(20, It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

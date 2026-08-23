@@ -45,6 +45,7 @@ public enum UserState
     Admin_Broadcasting_WaitingForButton = 403,
     Admin_Broadcasting_WaitingForCity = 404,
     Admin_BrowsingProfiles = 405,
+    Admin_Revenue = 406,
 
     Banned = 999
 }

@@ -11,6 +11,7 @@ public class AdminService(
     IUserProfileRepository userProfileRepository,
     IProfileReportRepository profileReportRepository,
     IInterestRepository interestRepository,
+    IPaymentTransactionRepository paymentTransactionRepository,
     IAdminSettings adminSettings,
     IUnitOfWork unitOfWork) : IAdminService
 {
@@ -78,7 +79,7 @@ public class AdminService(
                 reportedUser.Username,
                 reportedProfile?.Gender,
                 reportedProfile?.TargetGender,
-                reportedProfile?.Name ?? reportedUser.FirstName,
+                reportedProfile?.Name,
                 reportedProfile?.Age,
                 reportedProfile?.City,
                 reportedProfile?.Height,
@@ -91,7 +92,7 @@ public class AdminService(
                 reportedProfile?.SearchMinAge,
                 reportedProfile?.SearchMaxAge,
                 reportedProfile?.RatingCount ?? 0,
-                reportedProfile?.AverageRating ?? 0,
+                reportedProfile?.AverageRating ?? 0.0,
                 reportedProfile?.CityId,
                 reportedProfile?.AiVector,
                 reportedProfile?.Greeting
@@ -125,7 +126,6 @@ public class AdminService(
 
         var allInterests = await interestRepository.GetAllAsync(cancellationToken);
         var selectedInterestIds = profile.Interests.Select(i => i.InterestId).ToHashSet();
-
         var interestDtos = allInterests
             .Where(i => selectedInterestIds.Contains(i.Id))
             .Select(i => new InterestDto(i.Id, i.Code, i.Title, i.Icon, true))
@@ -184,7 +184,6 @@ public class AdminService(
         }
 
         user.State = UserState.Banned;
-        user.CurrentCandidateProfileId = null;
         user.UpdatedAt = DateTime.UtcNow;
         userRepository.Update(user);
 
@@ -201,7 +200,7 @@ public class AdminService(
             user.Id,
             user.TelegramId,
             user.Language,
-            profile?.Name ?? user.FirstName
+            profile?.Name ?? user.FirstName ?? "Пользователь"
         ));
     }
 
@@ -260,7 +259,48 @@ public class AdminService(
             user.Id,
             user.TelegramId,
             user.Language,
-            user.FirstName ?? "Пользователь"
+            profile?.Name ?? user.FirstName ?? "Пользователь"
         ));
+    }
+
+    public async Task<AdminRevenueStatsDto> GetRevenueStatsAsync(CancellationToken cancellationToken = default)
+    {
+        return await paymentTransactionRepository.GetRevenueStatsAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<PaymentTransactionDto>> GetRecentTransactionsAsync(int count = 20, CancellationToken cancellationToken = default)
+    {
+        return await paymentTransactionRepository.GetRecentAsync(count, cancellationToken);
+    }
+
+    public async Task RecordSuccessfulPaymentAsync(
+        long telegramId,
+        int amount,
+        string currency,
+        PaymentType type,
+        string payload,
+        string? telegramPaymentChargeId,
+        string? providerPaymentChargeId,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await userRepository.GetByTelegramIdAsync(telegramId, cancellationToken);
+        if (user is null) return;
+
+        var transaction = new PaymentTransaction
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            TelegramId = telegramId,
+            Amount = amount,
+            Currency = currency,
+            Type = type,
+            Payload = payload,
+            TelegramPaymentChargeId = telegramPaymentChargeId,
+            ProviderPaymentChargeId = providerPaymentChargeId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await paymentTransactionRepository.AddAsync(transaction, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

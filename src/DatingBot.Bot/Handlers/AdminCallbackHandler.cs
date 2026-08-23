@@ -87,6 +87,15 @@ public class AdminCallbackHandler(
                 return true;
             }
 
+            if (action == "revenue")
+            {
+                user.State = UserState.Admin_Revenue;
+                userRepository.Update(user);
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+                await adminPromptService.SendAdminRevenueMenuAsync(chatId, callbackQuery.Message?.MessageId, cancellationToken);
+                return true;
+            }
+
             if (action == "reports")
             {
                 var reports = await adminService.GetPendingReportsAsync(0, 1, cancellationToken);
@@ -116,6 +125,31 @@ public class AdminCallbackHandler(
                     replyMarkup: LanguageKeyboards.GetLanguageSelectionKeyboard("edit_lang"),
                     cancellationToken: cancellationToken
                 );
+                return true;
+            }
+        }
+
+        // Обработка раздела доходов: adm_rev:balance / adm_rev:history
+        if (data.StartsWith("adm_rev:"))
+        {
+            var revAction = data["adm_rev:".Length..];
+            await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: cancellationToken);
+
+            if (revAction == "balance")
+            {
+                user.State = UserState.Admin_Revenue;
+                userRepository.Update(user);
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+                await adminPromptService.SendAdminBalanceReportAsync(chatId, callbackQuery.Message?.MessageId, cancellationToken);
+                return true;
+            }
+
+            if (revAction == "history")
+            {
+                user.State = UserState.Admin_Revenue;
+                userRepository.Update(user);
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+                await adminPromptService.SendAdminTransactionHistoryAsync(chatId, callbackQuery.Message?.MessageId, cancellationToken);
                 return true;
             }
         }

@@ -364,6 +364,117 @@ public class AdminPromptService(
         }
     }
 
+    public async Task SendAdminRevenueMenuAsync(long chatId, int? prevMessageId = null, CancellationToken cancellationToken = default)
+    {
+        var user = await userRepository.GetByTelegramIdAsync(chatId, cancellationToken);
+        var lang = user?.Language ?? AppLanguage.Russian;
+
+        await DeleteMessageSafeAsync(chatId, prevMessageId, cancellationToken);
+
+        var sentMessage = await botClient.SendMessage(
+            chatId: chatId,
+            text: loc.Get(lang, "Admin_Revenue_Menu"),
+            parseMode: ParseMode.Html,
+            replyMarkup: AdminKeyboards.GetAdminRevenueKeyboard(lang),
+            cancellationToken: cancellationToken
+        );
+
+        if (sentMessage is not null)
+        {
+            await registrationService.SaveLastBotMessageIdAsync(chatId, sentMessage.MessageId, cancellationToken);
+        }
+    }
+
+    public async Task SendAdminBalanceReportAsync(long chatId, int? prevMessageId = null, CancellationToken cancellationToken = default)
+    {
+        var user = await userRepository.GetByTelegramIdAsync(chatId, cancellationToken);
+        var lang = user?.Language ?? AppLanguage.Russian;
+
+        await DeleteMessageSafeAsync(chatId, prevMessageId, cancellationToken);
+
+        var stats = await adminService.GetRevenueStatsAsync(cancellationToken);
+        var usdEquivalent = stats.TotalEarnedStars * 0.013;
+
+        var text = string.Format(
+            loc.Get(lang, "Admin_Revenue_Balance_Report"),
+            stats.TotalEarnedStars,
+            usdEquivalent,
+            stats.TotalTransactionsCount,
+            stats.EarnedLast24Hours,
+            stats.EarnedLast7Days,
+            stats.EarnedLast30Days
+        );
+
+        var sentMessage = await botClient.SendMessage(
+            chatId: chatId,
+            text: text,
+            parseMode: ParseMode.Html,
+            replyMarkup: AdminKeyboards.GetAdminRevenueDetailsKeyboard(lang, isBalanceScreen: true),
+            cancellationToken: cancellationToken
+        );
+
+        if (sentMessage is not null)
+        {
+            await registrationService.SaveLastBotMessageIdAsync(chatId, sentMessage.MessageId, cancellationToken);
+        }
+    }
+
+    public async Task SendAdminTransactionHistoryAsync(long chatId, int? prevMessageId = null, CancellationToken cancellationToken = default)
+    {
+        var user = await userRepository.GetByTelegramIdAsync(chatId, cancellationToken);
+        var lang = user?.Language ?? AppLanguage.Russian;
+
+        await DeleteMessageSafeAsync(chatId, prevMessageId, cancellationToken);
+
+        var txs = await adminService.GetRecentTransactionsAsync(20, cancellationToken);
+
+        var sb = new StringBuilder();
+        sb.Append(string.Format(loc.Get(lang, "Admin_Revenue_History_Header"), txs.Count > 0 ? txs.Count : 20));
+
+        if (txs.Count == 0)
+        {
+            sb.AppendLine(loc.Get(lang, "Admin_Revenue_NoTransactions"));
+        }
+        else
+        {
+            for (var i = 0; i < txs.Count; i++)
+            {
+                var t = txs[i];
+                var displayName = !string.IsNullOrWhiteSpace(t.FirstName) ? t.FirstName : (!string.IsNullOrWhiteSpace(t.Username) ? $"@{t.Username}" : $"ID:{t.TelegramId}");
+                var safeName = System.Net.WebUtility.HtmlEncode(displayName);
+                var purpose = t.Type switch
+                {
+                    PaymentType.Unban => "Разблокировка аккаунта",
+                    PaymentType.Subscription => "Премиум подписка",
+                    _ => "Оплата услуг"
+                };
+
+                sb.AppendLine($"<b>#{i + 1}</b> | 📅 <code>{t.CreatedAt:dd.MM.yyyy HH:mm}</code> UTC");
+                sb.AppendLine($"   👤 <b>Пользователь:</b> <a href=\"tg://user?id={t.TelegramId}\">{safeName}</a> (<code>{t.TelegramId}</code>)");
+                sb.AppendLine($"   ⭐️ <b>Сумма:</b> <code>+{t.Amount} ⭐ {t.Currency}</code>");
+                sb.AppendLine($"   🎯 <b>Назначение:</b> <i>{purpose}</i>");
+                if (!string.IsNullOrWhiteSpace(t.TelegramPaymentChargeId))
+                {
+                    sb.AppendLine($"   🧾 <b>ID платежа:</b> <code>{t.TelegramPaymentChargeId}</code>");
+                }
+                sb.AppendLine();
+            }
+        }
+
+        var sentMessage = await botClient.SendMessage(
+            chatId: chatId,
+            text: sb.ToString().TrimEnd(),
+            parseMode: ParseMode.Html,
+            replyMarkup: AdminKeyboards.GetAdminRevenueDetailsKeyboard(lang, isBalanceScreen: false),
+            cancellationToken: cancellationToken
+        );
+
+        if (sentMessage is not null)
+        {
+            await registrationService.SaveLastBotMessageIdAsync(chatId, sentMessage.MessageId, cancellationToken);
+        }
+    }
+
     public async Task DeleteMessageSafeAsync(long chatId, int? messageId, CancellationToken cancellationToken = default)
     {
         if (!messageId.HasValue) return;

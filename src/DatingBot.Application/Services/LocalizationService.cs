@@ -1464,6 +1464,69 @@ public class LocalizationService : ILocalizationService
             [AppLanguage.Hindi] = "⚠️ उपयोगकर्ता को ब्लॉक करने में त्रुटि।",
             [AppLanguage.Portuguese] = "⚠️ Erro ao bloquear usuário.",
             [AppLanguage.Indonesian] = "⚠️ Kesalahan saat memblokir pengguna."
+        },
+        ["Admin_Btn_Revenue"] = new()
+        {
+            [AppLanguage.Russian] = "💰 Доход",
+            [AppLanguage.Ukrainian] = "💰 Дохід",
+            [AppLanguage.English] = "💰 Revenue",
+            [AppLanguage.Hindi] = "💰 आय",
+            [AppLanguage.Portuguese] = "💰 Receita",
+            [AppLanguage.Indonesian] = "💰 Pendapatan"
+        },
+        ["Admin_Revenue_Menu"] = new()
+        {
+            [AppLanguage.Russian] = "💰 <b>Управление доходами и финансами</b>\n\nВыберите нужный раздел:",
+            [AppLanguage.Ukrainian] = "💰 <b>Керування доходами та фінансами</b>\n\nОберіть потрібний розділ:",
+            [AppLanguage.English] = "💰 <b>Revenue & Financial Management</b>\n\nSelect a section:",
+            [AppLanguage.Hindi] = "💰 <b>राजस्व और वित्तीय प्रबंधन</b>\n\nएक अनुभाग चुनें:",
+            [AppLanguage.Portuguese] = "💰 <b>Gestão de Receitas e Finanças</b>\n\nSelecione uma seção:",
+            [AppLanguage.Indonesian] = "💰 <b>Manajemen Pendapatan & Keuangan</b>\n\nPilih bagian:"
+        },
+        ["Admin_Revenue_Btn_Balance"] = new()
+        {
+            [AppLanguage.Russian] = "💳 Баланс",
+            [AppLanguage.Ukrainian] = "💳 Баланс",
+            [AppLanguage.English] = "💳 Balance",
+            [AppLanguage.Hindi] = "💳 शेष राशि",
+            [AppLanguage.Portuguese] = "💳 Saldo",
+            [AppLanguage.Indonesian] = "💳 Saldo"
+        },
+        ["Admin_Revenue_Btn_History"] = new()
+        {
+            [AppLanguage.Russian] = "📜 История транзакций",
+            [AppLanguage.Ukrainian] = "📜 Історія транзакцій",
+            [AppLanguage.English] = "📜 Transaction History",
+            [AppLanguage.Hindi] = "📜 लेनदेन इतिहास",
+            [AppLanguage.Portuguese] = "📜 Histórico de Transações",
+            [AppLanguage.Indonesian] = "📜 Riwayat Transaksi"
+        },
+        ["Admin_Revenue_Balance_Report"] = new()
+        {
+            [AppLanguage.Russian] = "💳 <b>ФИНАНСОВЫЙ БАЛАНС БОТА</b>\n\n⭐️ <b>Всего заработано:</b> <code>{0}</code> ⭐ <i>(~${1:F2} USD)</i>\n🧾 <b>Всего транзакций:</b> <code>{2}</code>\n\n📈 <b>Динамика дохода:</b>\n• За последние 24 часа: <code>+{3}</code> ⭐\n• За последние 7 дней: <code>+{4}</code> ⭐\n• За последние 30 дней: <code>+{5}</code> ⭐\n\n<i>ℹ️ Средства поступают в Telegram Stars и доступны к выводу через Fragment.</i>",
+            [AppLanguage.Ukrainian] = "💳 <b>ФІНАНСОВИЙ БАЛАНС БОТА</b>\n\n⭐️ <b>Всього зароблено:</b> <code>{0}</code> ⭐ <i>(~${1:F2} USD)</i>\n🧾 <b>Всього транзакцій:</b> <code>{2}</code>\n\n📈 <b>Динаміка доходу:</b>\n• За останні 24 години: <code>+{3}</code> ⭐\n• За останні 7 днів: <code>+{4}</code> ⭐\n• За останні 30 днів: <code>+{5}</code> ⭐\n\n<i>ℹ️ Кошти надходять у Telegram Stars і доступні для виведення через Fragment.</i>",
+            [AppLanguage.English] = "💳 <b>BOT FINANCIAL BALANCE</b>\n\n⭐️ <b>Total Earned:</b> <code>{0}</code> ⭐ <i>(~${1:F2} USD)</i>\n🧾 <b>Total Transactions:</b> <code>{2}</code>\n\n📈 <b>Revenue Dynamics:</b>\n• Last 24 hours: <code>+{3}</code> ⭐\n• Last 7 days: <code>+{4}</code> ⭐\n• Last 30 days: <code>+{5}</code> ⭐\n\n<i>ℹ️ Funds are received in Telegram Stars and can be withdrawn via Fragment.</i>",
+            [AppLanguage.Hindi] = "💳 <b>बॉट वित्तीय शेष</b>\n\n⭐️ <b>कुल कमाई:</b> <code>{0}</code> ⭐ <i>(~${1:F2} USD)</i>\n🧾 <b>कुल लेनदेन:</b> <code>{2}</code>\n\n📈 <b>राजस्व गतिशीलता:</b>\n• पिछले 24 घंटे: <code>+{3}</code> ⭐\n• पिछले 7 दिन: <code>+{4}</code> ⭐\n• पिछले 30 दिन: <code>+{5}</code> ⭐\n\n<i>ℹ️ फंड Telegram Stars में प्राप्त होते हैं और Fragment के माध्यम से निकाले जा सकते हैं।</i>",
+            [AppLanguage.Portuguese] = "💳 <b>SALDO FINANCEIRO DO BOT</b>\n\n⭐️ <b>Total Ganho:</b> <code>{0}</code> ⭐ <i>(~${1:F2} USD)</i>\n🧾 <b>Total de Transações:</b> <code>{2}</code>\n\n📈 <b>Dinâmica de Receita:</b>\n• Últimas 24 horas: <code>+{3}</code> ⭐\n• Últimos 7 dias: <code>+{4}</code> ⭐\n• Últimos 30 dias: <code>+{5}</code> ⭐\n\n<i>ℹ️ Os fundos são recebidos em Telegram Stars e podem ser sacados via Fragment.</i>",
+            [AppLanguage.Indonesian] = "💳 <b>SALDO KEUANGAN BOT</b>\n\n⭐️ <b>Total Pendapatan:</b> <code>{0}</code> ⭐ <i>(~${1:F2} USD)</i>\n🧾 <b>Total Transaksi:</b> <code>{2}</code>\n\n📈 <b>Dinamika Pendapatan:</b>\n• 24 jam terakhir: <code>+{3}</code> ⭐\n• 7 hari terakhir: <code>+{4}</code> ⭐\n• 30 hari terakhir: <code>+{5}</code> ⭐\n\n<i>ℹ️ Dana diterima dalam Telegram Stars dan dapat ditarik melalui Fragment.</i>"
+        },
+        ["Admin_Revenue_History_Header"] = new()
+        {
+            [AppLanguage.Russian] = "📜 <b>ИСТОРИЯ ТРАНЗАКЦИЙ (ПОСЛЕДНИЕ {0})</b>\n\n",
+            [AppLanguage.Ukrainian] = "📜 <b>ІСТОРІЯ ТРАНЗАКЦІЙ (ОСТАННІ {0})</b>\n\n",
+            [AppLanguage.English] = "📜 <b>TRANSACTION HISTORY (LAST {0})</b>\n\n",
+            [AppLanguage.Hindi] = "📜 <b>लेनदेन इतिहास (अंतिम {0})</b>\n\n",
+            [AppLanguage.Portuguese] = "📜 <b>HISTÓRICO DE TRANSAÇÕES (ÚLTIMAS {0})</b>\n\n",
+            [AppLanguage.Indonesian] = "📜 <b>RIWAYAT TRANSAKSI ({0} TERAKHIR)</b>\n\n"
+        },
+        ["Admin_Revenue_NoTransactions"] = new()
+        {
+            [AppLanguage.Russian] = "<i>Пока нет совершенных транзакций.</i>",
+            [AppLanguage.Ukrainian] = "<i>Наразі немає здійснених транзакцій.</i>",
+            [AppLanguage.English] = "<i>No transactions completed yet.</i>",
+            [AppLanguage.Hindi] = "<i>अभी तक कोई लेनदेन नहीं हुआ है।</i>",
+            [AppLanguage.Portuguese] = "<i>Nenhuma transação realizada ainda.</i>",
+            [AppLanguage.Indonesian] = "<i>Belum ada transaksi yang selesai.</i>"
         }
     };
 

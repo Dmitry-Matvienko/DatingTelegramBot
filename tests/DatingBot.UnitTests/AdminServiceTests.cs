@@ -15,6 +15,7 @@ public class AdminServiceTests
     private readonly Mock<IUserProfileRepository> _userProfileRepo = new();
     private readonly Mock<IProfileReportRepository> _reportRepo = new();
     private readonly Mock<IInterestRepository> _interestRepo = new();
+    private readonly Mock<IPaymentTransactionRepository> _paymentRepo = new();
     private readonly Mock<IAdminSettings> _adminSettings = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
 
@@ -29,6 +30,7 @@ public class AdminServiceTests
             _userProfileRepo.Object,
             _reportRepo.Object,
             _interestRepo.Object,
+            _paymentRepo.Object,
             _adminSettings.Object,
             _unitOfWork.Object
         );
