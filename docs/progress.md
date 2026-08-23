@@ -1,6 +1,6 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 22
+state_version: 23
 updated: 2026-08-24
 
 ---
@@ -15,16 +15,20 @@ updated: 2026-08-24
   3. **Исправление сбоя FileSystemWatcher (status 139 / inotify) в Linux-контейнерах**:
      - В `Program.cs` и `Dockerfile` добавлен `DOTNET_USE_POLLING_FILE_WATCHER=true` и `DOTNET_EnableDiagnostics=0`.
      - Все `reloadOnChange` переведены в `false` для статической контейнерной среды.
-  4. **Поддержка динамического порта Render**: Автоматическое считывание переменной `PORT` (`http://0.0.0.0:${PORT}`).
-  5. **Универсальные Environment Variables**:
+  4. **Надежное определение строки подключения (`DependencyInjection.ResolveConnectionString`)**:
+     - Приоритет переменных окружения: `DEFAULT_CONNECTION` -> `DATABASE_URL` -> `ConnectionStrings:DefaultConnection`.
+     - `appsettings.json` очищен от хардкода `(localdb)`, исключено маскирование переменных окружения.
+     - Добавлена валидация платформы: при запуске на Linux без удаленной БД выдается понятное сообщение с инструкцией по настройке переменных в Render вместо сбоя LocalDB (`PlatformNotSupportedException`).
+  5. **Поддержка динамического порта Render**: Автоматическое считывание переменной `PORT` (`http://0.0.0.0:${PORT}`).
+  6. **Универсальные Environment Variables**:
      - `BOT_TOKEN` или `BotConfiguration__BotToken` (токен бота).
      - `DEFAULT_CONNECTION` или `ConnectionStrings__DefaultConnection` (строка подключения к SmarterASP.NET MS SQL).
      - `ADMIN_IDS` или `BotConfiguration__AdminIds` (список ID админов, поддерживает как массив, так и разделение через запятую: `"123456, 789012"`).
      - `BotConfiguration__UnbanPriceStars` (цена платного разбана).
      - `BotConfiguration__InactivityReminderDays` (порог неактивности).
-  6. **Production Dockerfile и .dockerignore**: Создан легковесный multi-stage Dockerfile для сборки и запуска .NET 9 на Render.
-  7. **Тесты и верификация**: Добавлены тесты `HttpKeepAliveEndpointTests`, `AdminSettingsTests` и `BotSetupTests`. Все 322 теста пройдены (100% green).
-- **Далее**: Повторный деплой на Render.
+  7. **Production Dockerfile и .dockerignore**: Создан легковесный multi-stage Dockerfile для сборки и запуска .NET 9 на Render.
+  8. **Тесты и верификация**: Добавлены тесты `ConnectionStringResolutionTests`, `HttpKeepAliveEndpointTests`, `AdminSettingsTests` и `BotSetupTests`. Все 326 тестов пройдены (100% green).
+- **Далее**: Деплой на Render с указанием `DEFAULT_CONNECTION` в Environment Variables.
 
 ---
 

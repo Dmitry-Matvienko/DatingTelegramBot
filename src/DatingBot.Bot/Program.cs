@@ -101,10 +101,7 @@ using (var scope = app.Services.CreateScope())
     var loggerFactory = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Logging.ILoggerFactory>();
     var logger = loggerFactory.CreateLogger("DatabaseBootstrap");
 
-    var connString = config.GetConnectionString("DefaultConnection")
-        ?? config["DEFAULT_CONNECTION"]
-        ?? config["DATABASE_URL"]
-        ?? string.Empty;
+    var connString = DatingBot.Infrastructure.DependencyInjection.ResolveConnectionString(config);
 
     try
     {
