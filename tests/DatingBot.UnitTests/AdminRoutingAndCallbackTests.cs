@@ -182,4 +182,84 @@ public class AdminRoutingAndCallbackTests
         session.Filter.TargetGoal.Should().Be(expectedGoal);
         session.Filter.TargetGender.Should().BeNull();
     }
+
+    [Fact]
+    public async Task HandleAdminCallbackQueryAsync_DeleteInSearch_WhenFails_ShouldShowLocalizedAlert()
+    {
+        var adminUser = new User { TelegramId = 123, Language = AppLanguage.Russian };
+        var targetUserId = Guid.NewGuid();
+        var query = new CallbackQuery
+        {
+            Id = "q_err_del",
+            Data = $"adm_s_del:{targetUserId}:female:0",
+            From = new Telegram.Bot.Types.User { Id = 123 }
+        };
+
+        _adminService.Setup(a => a.IsAdmin(123)).Returns(true);
+        _adminService.Setup(a => a.DeleteUserProfileDirectlyAsync(targetUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DatingBot.Application.Common.Result<AdminModerationActionResult>.Failure("Not found"));
+        _adminService.Setup(a => a.GetAdminProfileByGenderAsync(Gender.Female, 0, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((null, 0, 0));
+
+        var handled = await _callbackHandler.HandleAdminCallbackQueryAsync(adminUser, query);
+
+        handled.Should().BeTrue();
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<AnswerCallbackQueryRequest>(r => r.CallbackQueryId == "q_err_del" && r.Text != null && r.Text.Contains("Ошибка удаления анкеты") && r.ShowAlert == true),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAdminCallbackQueryAsync_BanInSearch_WhenFails_ShouldShowLocalizedAlert()
+    {
+        var adminUser = new User { TelegramId = 123, Language = AppLanguage.Russian };
+        var targetUserId = Guid.NewGuid();
+        var query = new CallbackQuery
+        {
+            Id = "q_err_ban",
+            Data = $"adm_s_ban:{targetUserId}:male:0",
+            From = new Telegram.Bot.Types.User { Id = 123 }
+        };
+
+        _adminService.Setup(a => a.IsAdmin(123)).Returns(true);
+        _adminService.Setup(a => a.BanUserDirectlyAsync(targetUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DatingBot.Application.Common.Result<AdminModerationActionResult>.Failure("Not found"));
+        _adminService.Setup(a => a.GetAdminProfileByGenderAsync(Gender.Male, 0, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((null, 0, 0));
+
+        var handled = await _callbackHandler.HandleAdminCallbackQueryAsync(adminUser, query);
+
+        handled.Should().BeTrue();
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<AnswerCallbackQueryRequest>(r => r.CallbackQueryId == "q_err_ban" && r.Text != null && r.Text.Contains("Ошибка блокировки пользователя") && r.ShowAlert == true),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAdminCallbackQueryAsync_ReportBan_WhenAlreadyProcessed_ShouldShowAlert()
+    {
+        var adminUser = new User { TelegramId = 123, Language = AppLanguage.Russian };
+        var reportId = Guid.NewGuid();
+        var query = new CallbackQuery
+        {
+            Id = "q_rep_err",
+            Data = $"adm_rep_ban:{reportId}:0",
+            From = new Telegram.Bot.Types.User { Id = 123 }
+        };
+
+        _adminService.Setup(a => a.IsAdmin(123)).Returns(true);
+        _moderationService.Setup(m => m.BanUserByReportAsync(reportId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DatingBot.Application.Common.Result<ModerationActionResult>.Failure("Already resolved"));
+        _adminService.Setup(a => a.GetPendingReportsAsync(0, 1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        _adminService.Setup(a => a.GetPendingReportsCountAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0);
+
+        var handled = await _callbackHandler.HandleAdminCallbackQueryAsync(adminUser, query);
+
+        handled.Should().BeTrue();
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<AnswerCallbackQueryRequest>(r => r.CallbackQueryId == "q_rep_err" && r.Text != null && r.Text.Contains("уже была обработана") && r.ShowAlert == true),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

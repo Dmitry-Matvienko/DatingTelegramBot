@@ -1,6 +1,7 @@
 using DatingBot.Application.Common;
 using DatingBot.Application.DTOs;
 using DatingBot.Application.Interfaces;
+using DatingBot.Domain.Entities;
 using DatingBot.Domain.Enums;
 
 namespace DatingBot.Application.Services;
@@ -162,6 +163,21 @@ public class AdminService(
     public async Task<Result<AdminModerationActionResult>> BanUserDirectlyAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var user = await userRepository.GetByIdAsync(userId, cancellationToken);
+        UserProfile? profile = null;
+
+        if (user is null)
+        {
+            profile = await userProfileRepository.GetByIdAsync(userId, cancellationToken);
+            if (profile is not null)
+            {
+                user = profile.User ?? await userRepository.GetByIdAsync(profile.UserId, cancellationToken);
+            }
+        }
+        else
+        {
+            profile = await userProfileRepository.GetByUserIdAsync(user.Id, cancellationToken);
+        }
+
         if (user is null)
         {
             return Result<AdminModerationActionResult>.Failure("Пользователь не найден.");
@@ -172,7 +188,6 @@ public class AdminService(
         user.UpdatedAt = DateTime.UtcNow;
         userRepository.Update(user);
 
-        var profile = await userProfileRepository.GetByUserIdAsync(user.Id, cancellationToken);
         if (profile is not null)
         {
             profile.IsCompleted = false;
@@ -193,12 +208,26 @@ public class AdminService(
     public async Task<Result<AdminModerationActionResult>> DeleteUserProfileDirectlyAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var user = await userRepository.GetByIdAsync(userId, cancellationToken);
+        UserProfile? profile = null;
+
+        if (user is null)
+        {
+            profile = await userProfileRepository.GetByIdAsync(userId, cancellationToken);
+            if (profile is not null)
+            {
+                user = profile.User ?? await userRepository.GetByIdAsync(profile.UserId, cancellationToken);
+            }
+        }
+        else
+        {
+            profile = await userProfileRepository.GetByUserIdAsync(user.Id, cancellationToken);
+        }
+
         if (user is null)
         {
             return Result<AdminModerationActionResult>.Failure("Пользователь не найден.");
         }
 
-        var profile = await userProfileRepository.GetByUserIdAsync(user.Id, cancellationToken);
         if (profile is not null)
         {
             profile.Gender = null;

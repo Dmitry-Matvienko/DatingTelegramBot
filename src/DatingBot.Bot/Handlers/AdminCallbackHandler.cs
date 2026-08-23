@@ -361,7 +361,7 @@ public class AdminCallbackHandler(
             }
             else
             {
-                await botClient.AnswerCallbackQuery(callbackQuery.Id, "Ошибка блокировки", cancellationToken: cancellationToken);
+                await botClient.AnswerCallbackQuery(callbackQuery.Id, loc.Get(lang, "Admin_Alert_ErrorBanUser"), showAlert: true, cancellationToken: cancellationToken);
             }
 
             var (profile, totalCount, curIdx) = await adminService.GetAdminProfileByGenderAsync(gender, offset, cancellationToken);
@@ -398,7 +398,7 @@ public class AdminCallbackHandler(
             }
             else
             {
-                await botClient.AnswerCallbackQuery(callbackQuery.Id, "Ошибка удаления анкеты", cancellationToken: cancellationToken);
+                await botClient.AnswerCallbackQuery(callbackQuery.Id, loc.Get(lang, "Admin_Alert_ErrorDeleteProfile"), showAlert: true, cancellationToken: cancellationToken);
             }
 
             var (profile, totalCount, curIdx) = await adminService.GetAdminProfileByGenderAsync(gender, offset, cancellationToken);
@@ -429,6 +429,10 @@ public class AdminCallbackHandler(
                     await NotifyReporterSafeAsync(result.Value.ReporterTelegramId, result.Value.ReporterLanguage, cancellationToken);
                     await NotifyViolatorBannedSafeAsync(result.Value.ReportedTelegramId, result.Value.ReportedLanguage, cancellationToken);
                 }
+                else
+                {
+                    await botClient.AnswerCallbackQuery(callbackQuery.Id, loc.Get(lang, "Admin_Alert_AlreadyProcessed"), showAlert: true, cancellationToken: cancellationToken);
+                }
             }
             else if (data.StartsWith("adm_rep_del:"))
             {
@@ -439,11 +443,22 @@ public class AdminCallbackHandler(
                     await NotifyReporterSafeAsync(result.Value.ReporterTelegramId, result.Value.ReporterLanguage, cancellationToken);
                     await NotifyViolatorProfileDeletedSafeAsync(result.Value.ReportedTelegramId, result.Value.ReportedLanguage, cancellationToken);
                 }
+                else
+                {
+                    await botClient.AnswerCallbackQuery(callbackQuery.Id, loc.Get(lang, "Admin_Alert_AlreadyProcessed"), showAlert: true, cancellationToken: cancellationToken);
+                }
             }
             else if (data.StartsWith("adm_rep_ign:"))
             {
-                await moderationService.IgnoreReportAsync(reportId, cancellationToken);
-                await botClient.AnswerCallbackQuery(callbackQuery.Id, loc.Get(lang, "Admin_Decision_ReportIgnored"), cancellationToken: cancellationToken);
+                var result = await moderationService.IgnoreReportAsync(reportId, cancellationToken);
+                if (result.IsSuccess)
+                {
+                    await botClient.AnswerCallbackQuery(callbackQuery.Id, loc.Get(lang, "Admin_Decision_ReportIgnored"), cancellationToken: cancellationToken);
+                }
+                else
+                {
+                    await botClient.AnswerCallbackQuery(callbackQuery.Id, loc.Get(lang, "Admin_Alert_AlreadyProcessed"), showAlert: true, cancellationToken: cancellationToken);
+                }
             }
 
             var nextReports = await adminService.GetPendingReportsAsync(0, 1, cancellationToken);

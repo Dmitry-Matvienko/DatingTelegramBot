@@ -1392,6 +1392,24 @@ public class LocalizationService : ILocalizationService
             [AppLanguage.Hindi] = "➡️ अगली शिकायत",
             [AppLanguage.Portuguese] = "➡️ Próxima Denúncia",
             [AppLanguage.Indonesian] = "➡️ Laporan Berikutnya"
+        },
+        ["Admin_Alert_ErrorDeleteProfile"] = new()
+        {
+            [AppLanguage.Russian] = "⚠️ Ошибка удаления анкеты.",
+            [AppLanguage.Ukrainian] = "⚠️ Помилка видалення анкети.",
+            [AppLanguage.English] = "⚠️ Error deleting profile.",
+            [AppLanguage.Hindi] = "⚠️ प्रोफ़ाइल हटाने में त्रुटि।",
+            [AppLanguage.Portuguese] = "⚠️ Erro ao excluir perfil.",
+            [AppLanguage.Indonesian] = "⚠️ Kesalahan saat menghapus profil."
+        },
+        ["Admin_Alert_ErrorBanUser"] = new()
+        {
+            [AppLanguage.Russian] = "⚠️ Ошибка блокировки пользователя.",
+            [AppLanguage.Ukrainian] = "⚠️ Помилка блокування користувача.",
+            [AppLanguage.English] = "⚠️ Error banning user.",
+            [AppLanguage.Hindi] = "⚠️ उपयोगकर्ता को ब्लॉक करने में त्रुटि।",
+            [AppLanguage.Portuguese] = "⚠️ Erro ao bloquear usuário.",
+            [AppLanguage.Indonesian] = "⚠️ Kesalahan saat memblokir pengguna."
         }
     };
 

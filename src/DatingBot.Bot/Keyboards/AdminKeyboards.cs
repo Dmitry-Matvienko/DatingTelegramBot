@@ -163,12 +163,12 @@ public static class AdminKeyboards
         {
             new()
             {
-                InlineKeyboardButton.WithCallbackData("🚫 Заблокировать", $"adm_rep_ban:{reportId}:{nextSkip}"),
-                InlineKeyboardButton.WithCallbackData("🗑 Удалить анкету", $"adm_rep_del:{reportId}:{nextSkip}")
+                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Btn_BanUser"), $"adm_rep_ban:{reportId}:{nextSkip}"),
+                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Btn_DeleteProfile"), $"adm_rep_del:{reportId}:{nextSkip}")
             },
             new()
             {
-                InlineKeyboardButton.WithCallbackData("👁 Игнорировать", $"adm_rep_ign:{reportId}:{nextSkip}")
+                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Btn_Ignore"), $"adm_rep_ign:{reportId}:{nextSkip}")
             }
         };
 

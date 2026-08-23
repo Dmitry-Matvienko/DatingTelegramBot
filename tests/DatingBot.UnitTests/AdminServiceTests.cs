@@ -202,4 +202,78 @@ public class AdminServiceTests
         totalCount.Should().Be(3);
         curIdx.Should().Be(3); // (5 % 3) + 1 = 3
     }
+
+    [Fact]
+    public async Task DeleteUserProfileDirectlyAsync_WhenPassedProfileId_ShouldLookupByProfileIdAndResetProfileAndState()
+    {
+        var userId = Guid.NewGuid();
+        var profileId = Guid.NewGuid();
+        var user = new User
+        {
+            Id = userId,
+            TelegramId = 777,
+            Language = AppLanguage.Russian,
+            State = UserState.Active,
+            FirstName = "Анна"
+        };
+        var profile = new UserProfile
+        {
+            Id = profileId,
+            UserId = userId,
+            User = user,
+            Name = "Анна",
+            Age = 22,
+            City = "Москва",
+            IsCompleted = true
+        };
+
+        _userRepo.Setup(r => r.GetByIdAsync(profileId, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
+        _userProfileRepo.Setup(r => r.GetByIdAsync(profileId, It.IsAny<CancellationToken>())).ReturnsAsync(profile);
+
+        var result = await _sut.DeleteUserProfileDirectlyAsync(profileId);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.TelegramId.Should().Be(777);
+        user.State.Should().Be(UserState.Registration_SelectingLanguage);
+        profile.Name.Should().BeNull();
+        profile.Age.Should().BeNull();
+        profile.City.Should().BeNull();
+        profile.IsCompleted.Should().BeFalse();
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task BanUserDirectlyAsync_WhenPassedProfileId_ShouldLookupByProfileIdAndSetBannedState()
+    {
+        var userId = Guid.NewGuid();
+        var profileId = Guid.NewGuid();
+        var user = new User
+        {
+            Id = userId,
+            TelegramId = 555,
+            Language = AppLanguage.Ukrainian,
+            State = UserState.Active,
+            FirstName = "Олег"
+        };
+        var profile = new UserProfile
+        {
+            Id = profileId,
+            UserId = userId,
+            User = user,
+            Name = "Олег",
+            IsCompleted = true
+        };
+
+        _userRepo.Setup(r => r.GetByIdAsync(profileId, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
+        _userProfileRepo.Setup(r => r.GetByIdAsync(profileId, It.IsAny<CancellationToken>())).ReturnsAsync(profile);
+
+        var result = await _sut.BanUserDirectlyAsync(profileId);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.TelegramId.Should().Be(555);
+        result.Value.Language.Should().Be(AppLanguage.Ukrainian);
+        user.State.Should().Be(UserState.Banned);
+        profile.IsCompleted.Should().BeFalse();
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
 }
