@@ -206,6 +206,25 @@ public class ProfileEditCallbackHandler(
             return true;
         }
 
+        if (data == "edit:search_distance")
+        {
+            await editingService.SetEditingStateAsync(user.TelegramId, UserState.Editing_SearchDistance, cancellationToken);
+            await profilePromptService.SendEditPromptAsync(chatId, UserState.Editing_SearchDistance, messageId, null, cancellationToken);
+            return true;
+        }
+
+        if (data.StartsWith("edit_distance:"))
+        {
+            var rawValue = data["edit_distance:".Length..];
+            if (int.TryParse(rawValue, out var distInt) && Enum.IsDefined(typeof(SearchDistancePreference), distInt))
+            {
+                var distance = (SearchDistancePreference)distInt;
+                await editingService.UpdateSearchDistanceAsync(user.TelegramId, distance, cancellationToken);
+                await SendUpdatedProfileAsync(chatId, user.TelegramId, messageId, cancellationToken);
+            }
+            return true;
+        }
+
         if (data == "edit:target")
         {
             await editingService.SetEditingStateAsync(user.TelegramId, UserState.Editing_DatingTarget, cancellationToken);

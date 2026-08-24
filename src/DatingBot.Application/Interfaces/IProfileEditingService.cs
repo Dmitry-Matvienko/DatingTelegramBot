@@ -25,4 +25,5 @@ public interface IProfileEditingService
     Task<Result> SaveAgeCategoriesAsync(long telegramId, CancellationToken cancellationToken = default);
     Task<Result> SetSearchMinAgeAsync(long telegramId, int minAge, CancellationToken cancellationToken = default);
     Task<Result> SetSearchMaxAgeAsync(long telegramId, int maxAge, CancellationToken cancellationToken = default);
+    Task<Result> UpdateSearchDistanceAsync(long telegramId, SearchDistancePreference searchDistance, CancellationToken cancellationToken = default);
 }

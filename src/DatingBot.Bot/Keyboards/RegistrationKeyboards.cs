@@ -81,4 +81,20 @@ public static class RegistrationKeyboards
             [InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Target_AdultOnly"), "target_set:3")]
         ]);
     }
+
+    public static InlineKeyboardMarkup GetSearchDistanceKeyboard(AppLanguage language = AppLanguage.Russian)
+    {
+        return new InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Distance_UpTo100Km"), "reg_distance:1"),
+                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Distance_UpTo500Km"), "reg_distance:2")
+            ],
+            [
+                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Distance_SameCountry"), "reg_distance:3")
+            ],
+            [
+                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Distance_Anywhere"), "reg_distance:4")
+            ]
+        ]);
+    }
 }

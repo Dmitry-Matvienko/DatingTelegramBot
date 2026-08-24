@@ -40,6 +40,7 @@
 - `AgeFilters` (`AgeCategoryFilter`): Битовые флаги категорий возраста для фильтрации в поиске.
 - `SearchMinAge` (`int?`): Ручной минимальный возраст поиска (10–100).
 - `SearchMaxAge` (`int?`): Ручной максимальный возраст поиска (10–100).
+- `SearchDistance` (`SearchDistancePreference`): Выбранный радиус / область поиска кандидатов (`UpTo100Km`, `UpTo500Km`, `SameCountry`, `Anywhere`).
 - `RatingCount` (`int`): Количество полученных оценок.
 - `AverageRating` (`double`): Текущий средний балл (от 1.0 до 10.0).
 - `IsCompleted` (`bool`): Флаг завершенности заполнения анкеты.
@@ -89,14 +90,15 @@
 
 - `UserState`: Состояния конечного автомата FSM:
   - Базовые: `None` (0), `Active` (100), `Paused` (101), `Banned` (999).
-  - Регистрация: `Registration_SelectingGender` (1), `Registration_SelectingTargetGender` (2), `Registration_WaitingForName` (3), `Registration_WaitingForAge` (4), `Registration_WaitingForCity` (5), `Registration_WaitingForHeight` (6), `Registration_WaitingForPhoto` (7), `Registration_SelectingInterests` (8), `Registration_SelectingTarget` (9), `Registration_WaitingForAiBio` (10), `Registration_SelectingLanguage` (11).
-  - Редактирование: `Editing_Name` (201) .. `Editing_Greeting` (215).
+  - Регистрация: `Registration_SelectingGender` (1), `Registration_SelectingTargetGender` (2), `Registration_WaitingForName` (3), `Registration_WaitingForAge` (4), `Registration_WaitingForCity` (5), `Registration_WaitingForHeight` (6), `Registration_WaitingForPhoto` (7), `Registration_SelectingInterests` (8), `Registration_SelectingTarget` (9), `Registration_WaitingForAiBio` (10), `Registration_SelectingLanguage` (11), `Registration_SelectingSearchDistance` (12).
+  - Редактирование: `Editing_Name` (201) .. `Editing_Greeting` (215), `Editing_SearchDistance` (216).
   - Поиск и жалобы: `Searching` (300), `Reporting_WaitingForDetails` (301).
   - Администратор: `Admin_Panel` (400), `Admin_Stats_WaitingForCity` (401), `Admin_Broadcasting_WaitingForContent` (402), `Admin_Broadcasting_WaitingForButton` (403), `Admin_Broadcasting_WaitingForCity` (404), `Admin_BrowsingProfiles` (405).
 - `AppLanguage`: `Russian`, `Ukrainian`, `English`, `Hindi`, `Portuguese`, `Indonesian`.
 - `Gender`: `Male`, `Female`.
 - `TargetGender`: `Male`, `Female`, `All`.
 - `DatingTarget`: `Friends`, `Relationship`, `AdultOnly`.
+- `SearchDistancePreference`: `UpTo100Km` (1), `UpTo500Km` (2), `SameCountry` (3), `Anywhere` (4).
 - `InterestType`: `Gaming`, `Music`, `Cinema`, `Sports`, `Travel`, `Art`, `Cooking`, `Science`, `Literature`, `Nature`, `Fashion`, `Tech`.
 - `MatchTier`: `AiCompatibility`, `CommonInterests`, `SameCity`, `NearbyCity`.
 - `ReportReason`: `InappropriateContent`, `IncorrectProfile`, `Other`.

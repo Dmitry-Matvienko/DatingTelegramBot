@@ -187,6 +187,71 @@ public class RegistrationServiceTests
     }
 
     [Fact]
+    public async Task Should_TransitionTo_SelectingSearchDistance_When_AiDescriptionIsSet()
+    {
+        // Arrange
+        const long telegramId = 12345;
+        var user = new User { Id = Guid.NewGuid(), TelegramId = telegramId, State = UserState.Registration_WaitingForAiBio };
+        var profile = new UserProfile
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            User = user
+        };
+
+        _userRepoMock.Setup(r => r.GetByTelegramIdAsync(telegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        _profileRepoMock.Setup(r => r.GetWithInterestsByUserIdAsync(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(profile);
+
+        // Act
+        var result = await _service.SetAiDescriptionAsync(telegramId, "Люблю спорт, прогулки и хорошую музыку.");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        profile.AiDescription.Should().Be("Люблю спорт, прогулки и хорошую музыку.");
+        profile.IsCompleted.Should().BeFalse();
+        user.State.Should().Be(UserState.Registration_SelectingSearchDistance);
+    }
+
+    [Fact]
+    public async Task Should_CompleteRegistrationAndSetDistance_When_SearchDistanceIsSet()
+    {
+        // Arrange
+        const long telegramId = 12345;
+        var user = new User { Id = Guid.NewGuid(), TelegramId = telegramId, State = UserState.Registration_SelectingSearchDistance };
+        var profile = new UserProfile
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            Name = "Иван",
+            Age = 25,
+            City = "Москва",
+            Gender = Gender.Male,
+            TargetGender = TargetGender.Female,
+            DatingTarget = DatingTarget.Relationship,
+            AiDescription = "Люблю спорт",
+            User = user
+        };
+
+        _userRepoMock.Setup(r => r.GetByTelegramIdAsync(telegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        _profileRepoMock.Setup(r => r.GetWithInterestsByUserIdAsync(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(profile);
+        _interestRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        // Act
+        var result = await _service.SetSearchDistanceAndCompleteAsync(telegramId, SearchDistancePreference.UpTo100Km);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        profile.IsCompleted.Should().BeTrue();
+        profile.SearchDistance.Should().Be(SearchDistancePreference.UpTo100Km);
+        user.State.Should().Be(UserState.Active);
+    }
+
+    [Fact]
     public async Task Should_Succeed_When_AdultSelectsAdultOnly()
     {
         // Arrange

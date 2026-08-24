@@ -24,6 +24,8 @@ public interface IRegistrationService
     Task<Result<IReadOnlyList<InterestDto>>> ToggleInterestAsync(long telegramId, InterestType interestCode, CancellationToken cancellationToken = default);
     Task<Result> CompleteInterestsAsync(long telegramId, CancellationToken cancellationToken = default);
     Task<Result> SetDatingTargetAsync(long telegramId, DatingTarget target, CancellationToken cancellationToken = default);
+    Task<Result> SetAiDescriptionAsync(long telegramId, string description, CancellationToken cancellationToken = default);
+    Task<Result<UserProfileDto>> SetSearchDistanceAndCompleteAsync(long telegramId, SearchDistancePreference searchDistance, CancellationToken cancellationToken = default);
     Task<Result<UserProfileDto>> SetAiDescriptionAndCompleteAsync(long telegramId, string description, CancellationToken cancellationToken = default);
     Task<UserProfileDto?> GetProfileDtoAsync(long telegramId, CancellationToken cancellationToken = default);
     Task SaveLastBotMessageIdAsync(long telegramId, int messageId, CancellationToken cancellationToken = default);
@@ -66,6 +68,9 @@ public interface IRegistrationService
             │
             ▼
 [Registration_WaitingForAiBio] (Векторизация текста через LocalAiEmbeddingService)
+            │
+            ▼
+[Registration_SelectingSearchDistance] (Выбор дальности поиска: 100км / 500км / страна / без ограничений)
             │
             ▼
         [Active] ──► Готовая анкета и доступ в Главное меню

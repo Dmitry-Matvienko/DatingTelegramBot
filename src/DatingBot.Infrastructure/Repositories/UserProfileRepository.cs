@@ -90,8 +90,9 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
             .Where(p => p.UserId != currentUserId)
             .Where(p => !dbContext.ProfileReports.Any(rep => rep.ReporterId == currentUserId && rep.ReportedUserId == p.UserId));
 
-        // Строгая изоляция по стране (пользователь из Украины не видит РФ, Бразилия не видит другие страны и т.д.)
-        if (!string.IsNullOrEmpty(currentUserProfile.CityRef?.Country))
+        // Строгая изоляция по стране (по умолчанию или для UpTo100Km, UpTo500Km, SameCountry)
+        // Для Anywhere ограничение по стране отключается
+        if (currentUserProfile.SearchDistance != SearchDistancePreference.Anywhere && !string.IsNullOrEmpty(currentUserProfile.CityRef?.Country))
         {
             var userCountry = currentUserProfile.CityRef.Country;
             query = query.Where(p => p.CityRef != null && p.CityRef.Country == userCountry);

@@ -190,6 +190,20 @@ public class RegistrationPromptService(
                 );
                 break;
 
+            case UserState.Registration_SelectingSearchDistance:
+                var distText = customErrorMessage != null
+                    ? $"❌ {customErrorMessage}\n\n{loc.Get(lang, "SearchDistance_Prompt")}"
+                    : loc.Get(lang, "SearchDistance_Prompt");
+
+                sentMessage = await botClient.SendMessage(
+                    chatId: chatId,
+                    text: distText,
+                    parseMode: ParseMode.Html,
+                    replyMarkup: RegistrationKeyboards.GetSearchDistanceKeyboard(lang),
+                    cancellationToken: cancellationToken
+                );
+                break;
+
             default:
                 return;
         }

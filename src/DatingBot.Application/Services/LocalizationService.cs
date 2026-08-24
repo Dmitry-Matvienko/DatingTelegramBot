@@ -1644,6 +1644,69 @@ public class LocalizationService : ILocalizationService
             [AppLanguage.Hindi] = "💖 <b>प्यार इंतज़ार नहीं करता!</b>\n\nबॉट पर आएं और किसी ऐसे व्यक्ति को खोजें जिसके साथ आप डेट पर जाना चाहें।",
             [AppLanguage.Portuguese] = "💖 <b>O amor não espera!</b>\n\nDê uma passada no bot e encontre alguém especial para sair em um encontro.",
             [AppLanguage.Indonesian] = "💖 <b>Cinta tak menunggu!</b>\n\nBuka bot dan temukan seseorang yang ingin kamu ajak berkencan."
+        },
+        ["SearchDistance_Prompt"] = new()
+        {
+            [AppLanguage.Russian] = "📍 <b>Выберите дальность поиска анкет</b>\n\n<i>(вы всегда можете изменить все параметры в настройках):</i>",
+            [AppLanguage.Ukrainian] = "📍 <b>Оберіть дальність пошуку анкет</b>\n\n<i>(ви завжди можете змінити всі параметри в налаштуваннях):</i>",
+            [AppLanguage.English] = "📍 <b>Select search distance for profiles</b>\n\n<i>(you can always change all settings in settings):</i>",
+            [AppLanguage.Hindi] = "📍 <b>प्रोफाइल के लिए खोज दूरी चुनें</b>\n\n<i>(आप हमेशा सेटिंग्स में सभी पैरामीटर बदल सकते हैं):</i>",
+            [AppLanguage.Portuguese] = "📍 <b>Selecione a distância de busca dos perfis</b>\n\n<i>(você sempre pode alterar todas as preferências nas configurações):</i>",
+            [AppLanguage.Indonesian] = "📍 <b>Pilih jarak pencarian profil</b>\n\n<i>(Anda selalu dapat mengubah semua pengaturan di menu pengaturan):</i>"
+        },
+        ["Distance_UpTo100Km"] = new()
+        {
+            [AppLanguage.Russian] = "до 100 км",
+            [AppLanguage.Ukrainian] = "до 100 км",
+            [AppLanguage.English] = "up to 100 km",
+            [AppLanguage.Hindi] = "100 किमी तक",
+            [AppLanguage.Portuguese] = "até 100 km",
+            [AppLanguage.Indonesian] = "hingga 100 km"
+        },
+        ["Distance_UpTo500Km"] = new()
+        {
+            [AppLanguage.Russian] = "до 500 км",
+            [AppLanguage.Ukrainian] = "до 500 км",
+            [AppLanguage.English] = "up to 500 km",
+            [AppLanguage.Hindi] = "500 किमी तक",
+            [AppLanguage.Portuguese] = "até 500 km",
+            [AppLanguage.Indonesian] = "hingga 500 km"
+        },
+        ["Distance_SameCountry"] = new()
+        {
+            [AppLanguage.Russian] = "в пределах страны",
+            [AppLanguage.Ukrainian] = "у межах країни",
+            [AppLanguage.English] = "within country",
+            [AppLanguage.Hindi] = "देश के भीतर",
+            [AppLanguage.Portuguese] = "no mesmo país",
+            [AppLanguage.Indonesian] = "di dalam negeri"
+        },
+        ["Distance_Anywhere"] = new()
+        {
+            [AppLanguage.Russian] = "без ограничений",
+            [AppLanguage.Ukrainian] = "без обмежень",
+            [AppLanguage.English] = "no distance limit",
+            [AppLanguage.Hindi] = "बिना किसी सीमा के",
+            [AppLanguage.Portuguese] = "sem limites",
+            [AppLanguage.Indonesian] = "tanpa batas"
+        },
+        ["Btn_SearchDistance"] = new()
+        {
+            [AppLanguage.Russian] = "📍 Дальность поиска",
+            [AppLanguage.Ukrainian] = "📍 Дальність пошуку",
+            [AppLanguage.English] = "📍 Search distance",
+            [AppLanguage.Hindi] = "📍 खोज दूरी",
+            [AppLanguage.Portuguese] = "📍 Distância de busca",
+            [AppLanguage.Indonesian] = "📍 Jarak pencarian"
+        },
+        ["Label_SearchDistance"] = new()
+        {
+            [AppLanguage.Russian] = "Дальность поиска",
+            [AppLanguage.Ukrainian] = "Дальність пошуку",
+            [AppLanguage.English] = "Search distance",
+            [AppLanguage.Hindi] = "खोज दूरी",
+            [AppLanguage.Portuguese] = "Distância de busca",
+            [AppLanguage.Indonesian] = "Jarak pencarian"
         }
     };
 

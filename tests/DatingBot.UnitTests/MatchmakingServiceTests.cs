@@ -495,4 +495,100 @@ public class MatchmakingServiceTests
         match!.Profile.Name.Should().Be("Влад");
         match.Profile.Age.Should().Be(22);
     }
+
+    [Fact]
+    public async Task Should_FilterOut_NearbyCity_When_DistanceExceeds_100Km_For_UpTo100KmPreference()
+    {
+        // Arrange
+        const long telegramId = 11111;
+        var currentUser = new User { Id = Guid.NewGuid(), TelegramId = telegramId, State = UserState.Active };
+        var moscowCity = new City { Id = 1, Name = "Москва", Latitude = 55.7558, Longitude = 37.6173, Country = "Россия" };
+        var tverCity = new City { Id = 42, Name = "Тверь", Latitude = 56.8587, Longitude = 35.9176, Country = "Россия" }; // ~160 км
+
+        var currentProfile = new UserProfile
+        {
+            Id = Guid.NewGuid(),
+            UserId = currentUser.Id,
+            City = "Москва",
+            CityId = 1,
+            CityRef = moscowCity,
+            SearchDistance = SearchDistancePreference.UpTo100Km,
+            IsCompleted = true
+        };
+
+        var candidateTver = new UserProfile
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid(),
+            User = new User { Id = Guid.NewGuid(), TelegramId = 22222 },
+            Name = "Светлана (Тверь)",
+            City = "Тверь",
+            CityId = 42,
+            CityRef = tverCity,
+            IsCompleted = true
+        };
+
+        _userRepoMock.Setup(r => r.GetByTelegramIdAsync(telegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(currentUser);
+        _profileRepoMock.Setup(r => r.GetWithInterestsByUserIdAsync(currentUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(currentProfile);
+        _profileRepoMock.Setup(r => r.GetEligibleCandidatesAsync(currentProfile, It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserProfile> { candidateTver });
+
+        // Act
+        var match = await _service.GetNextMatchCandidateAsync(telegramId);
+
+        // Assert
+        match.Should().BeNull(); // Отсекается, так как 160 км > 100 км
+    }
+
+    [Fact]
+    public async Task Should_Include_FarCity_When_PreferenceIsSameCountry()
+    {
+        // Arrange
+        const long telegramId = 11111;
+        var currentUser = new User { Id = Guid.NewGuid(), TelegramId = telegramId, State = UserState.Active };
+        var moscowCity = new City { Id = 1, Name = "Москва", Latitude = 55.7558, Longitude = 37.6173, Country = "Россия" };
+        var vladivostokCity = new City { Id = 999, Name = "Владивосток", Latitude = 43.1155, Longitude = 131.8855, Country = "Россия" }; // > 6000 км
+
+        var currentProfile = new UserProfile
+        {
+            Id = Guid.NewGuid(),
+            UserId = currentUser.Id,
+            City = "Москва",
+            CityId = 1,
+            CityRef = moscowCity,
+            SearchDistance = SearchDistancePreference.SameCountry,
+            IsCompleted = true
+        };
+
+        var candidateVladivostok = new UserProfile
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid(),
+            User = new User { Id = Guid.NewGuid(), TelegramId = 22222 },
+            Name = "Анастасия (Владивосток)",
+            City = "Владивосток",
+            CityId = 999,
+            CityRef = vladivostokCity,
+            IsCompleted = true
+        };
+
+        _userRepoMock.Setup(r => r.GetByTelegramIdAsync(telegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(currentUser);
+        _profileRepoMock.Setup(r => r.GetWithInterestsByUserIdAsync(currentUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(currentProfile);
+        _profileRepoMock.Setup(r => r.GetEligibleCandidatesAsync(currentProfile, It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserProfile> { candidateVladivostok });
+        _interestRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Interest>());
+
+        // Act
+        var match = await _service.GetNextMatchCandidateAsync(telegramId);
+
+        // Assert
+        match.Should().NotBeNull();
+        match!.Profile.Name.Should().Be("Анастасия (Владивосток)");
+        match.Tier.Should().Be(MatchTier.NearbyCity);
+    }
 }
