@@ -389,4 +389,25 @@ public class ProfilePromptService(
 
         await registrationService.SaveLastBotMessageIdAsync(chatId, sentMessage.MessageId, cancellationToken);
     }
+
+    public async Task SendBotGuideAsync(long chatId, int? previousMessageIdToDelete = null, CancellationToken cancellationToken = default)
+    {
+        if (previousMessageIdToDelete.HasValue)
+        {
+            await registrationPromptService.DeleteMessageSafeAsync(chatId, previousMessageIdToDelete.Value, cancellationToken);
+        }
+
+        var user = await userRepository.GetByTelegramIdAsync(chatId, cancellationToken);
+        var lang = user?.Language ?? AppLanguage.Russian;
+
+        var sentMessage = await botClient.SendMessage(
+            chatId: chatId,
+            text: loc.Get(lang, "BotGuide_Text"),
+            parseMode: ParseMode.Html,
+            replyMarkup: MainMenuKeyboards.GetMainMenuReplyKeyboard(lang),
+            cancellationToken: cancellationToken
+        );
+
+        await registrationService.SaveLastBotMessageIdAsync(chatId, sentMessage.MessageId, cancellationToken);
+    }
 }

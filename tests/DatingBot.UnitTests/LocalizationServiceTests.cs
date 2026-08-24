@@ -76,6 +76,8 @@ public class LocalizationServiceTests
     [InlineData(AppLanguage.Russian, "ReportReason_18Plus")]
     [InlineData(AppLanguage.Russian, "ReportReason_Inappropriate")]
     [InlineData(AppLanguage.Russian, "ReportReason_Other")]
+    [InlineData(AppLanguage.Russian, "Menu_Guide")]
+    [InlineData(AppLanguage.Russian, "BotGuide_Text")]
     public void NewlyAddedKeys_ShouldReturnNonEmptyString(AppLanguage lang, string key)
     {
         var text = _loc.Get(lang, key);

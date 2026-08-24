@@ -324,14 +324,23 @@ public class TelegramUpdateRouter(
                     return;
                 }
 
-                // 10. Если пользователь в режиме редактирования профиля
+                // 10. Меню: "📖 Руководство бота" или /guide / /help
+                if (IsGuideButton(text) || text?.Equals("/guide", StringComparison.OrdinalIgnoreCase) == true || text?.Equals("/help", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    await registrationPromptService.DeleteMessageSafeAsync(message.Chat.Id, message.MessageId, cancellationToken);
+                    await searchService.ClearCurrentCandidateAsync(user.TelegramId, cancellationToken);
+                    await profilePromptService.SendBotGuideAsync(message.Chat.Id, prevBotMsgId, cancellationToken);
+                    return;
+                }
+
+                // 11. Если пользователь в режиме редактирования профиля
                 var isEditingHandled = await profileEditMessageHandler.HandleEditMessageAsync(user, message, cancellationToken);
                 if (isEditingHandled)
                 {
                     return;
                 }
 
-                // 11. Обычная ветка регистрации
+                // 12. Обычная ветка регистрации
                 await registrationMessageHandler.HandleMessageAsync(user, message, cancellationToken);
             }
             else if (update.Type == UpdateType.CallbackQuery && update.CallbackQuery is { } callbackQuery)
@@ -451,6 +460,12 @@ public class TelegramUpdateRouter(
     {
         if (string.IsNullOrWhiteSpace(text)) return false;
         return text.StartsWith("🏠") || text.Contains("Главное меню") || text.Contains("Головне меню") || text.Contains("Main Menu") || text.Contains("मुख्य मेनू") || text.Contains("Menu Principal") || text.Contains("Menu Utama");
+    }
+
+    private static bool IsGuideButton(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        return text.StartsWith("📖") || text.Contains("Руководство") || text.Contains("Керівництво") || text.Contains("Guide") || text.Contains("गाइड") || text.Contains("Guia") || text.Contains("Panduan");
     }
 
     private static bool IsReportButton(string? text)
