@@ -199,7 +199,7 @@ public class AdminPromptService(
             sb.AppendLine($"\n💬 <b>Приветствие:</b>\n<i>\"{candidate.Greeting}\"</i>");
         }
 
-        var keyboard = AdminKeyboards.GetAdminProfileCardKeyboard(candidate.Id, gender, nextOffset, lang);
+        var keyboard = AdminKeyboards.GetAdminProfileCardKeyboard(candidate.Id, candidate.TelegramId, candidate.Username, gender, nextOffset, lang);
 
         var photoSent = false;
         var cardText = sb.ToString();

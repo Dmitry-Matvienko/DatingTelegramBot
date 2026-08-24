@@ -173,11 +173,15 @@ public static class AdminKeyboards
         ]);
     }
 
-    public static InlineKeyboardMarkup GetAdminProfileCardKeyboard(Guid userId, Gender gender, int nextOffset, AppLanguage language = AppLanguage.Russian)
+    public static InlineKeyboardMarkup GetAdminProfileCardKeyboard(Guid userId, long telegramId, string? username, Gender gender, int nextOffset, AppLanguage language = AppLanguage.Russian)
     {
         var genderStr = gender == Gender.Male ? "male" : "female";
+        var userUrl = TelegramUrlHelper.GetUserProfileUrl(telegramId, username);
 
         return new InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton.WithUrl(Loc.Get(language, "Btn_SendMessage"), userUrl)
+            ],
             [
                 InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Search_Btn_Block"), $"adm_s_ban:{userId}:{genderStr}:{nextOffset}"),
                 InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Search_Btn_Delete"), $"adm_s_del:{userId}:{genderStr}:{nextOffset}")

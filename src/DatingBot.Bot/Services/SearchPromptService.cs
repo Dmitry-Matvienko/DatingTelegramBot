@@ -212,6 +212,7 @@ public class SearchPromptService(
         Message sentMessage = null!;
         var photoSent = false;
         var raterText = sb.ToString();
+        var keyboard = SearchKeyboards.GetRaterCardKeyboard(rater.TelegramId, rater.Username, lang);
         if (!string.IsNullOrEmpty(rater.PhotoFileId) && raterText.Length <= 1024)
         {
             try
@@ -221,7 +222,7 @@ public class SearchPromptService(
                     photo: InputFile.FromFileId(rater.PhotoFileId),
                     caption: raterText,
                     parseMode: ParseMode.Html,
-                    replyMarkup: SearchKeyboards.GetRatingReplyKeyboard(lang),
+                    replyMarkup: keyboard,
                     cancellationToken: cancellationToken
                 );
                 photoSent = true;
@@ -239,7 +240,7 @@ public class SearchPromptService(
                 chatId: chatId,
                 text: raterText,
                 parseMode: ParseMode.Html,
-                replyMarkup: SearchKeyboards.GetRatingReplyKeyboard(lang),
+                replyMarkup: keyboard,
                 cancellationToken: cancellationToken
             );
         }
@@ -315,6 +316,7 @@ public class SearchPromptService(
 
             var photoSent = false;
             var matchText = sb.ToString();
+            var keyboard = SearchKeyboards.GetMutualMatchKeyboard(partner.TelegramId, partner.Username, lang);
             if (!string.IsNullOrEmpty(partner.PhotoFileId) && matchText.Length <= 1024)
             {
                 try
@@ -324,6 +326,7 @@ public class SearchPromptService(
                         photo: InputFile.FromFileId(partner.PhotoFileId),
                         caption: matchText,
                         parseMode: ParseMode.Html,
+                        replyMarkup: keyboard,
                         cancellationToken: cancellationToken
                     );
                     photoSent = true;
@@ -340,6 +343,7 @@ public class SearchPromptService(
                     chatId: recipientTelegramId,
                     text: matchText,
                     parseMode: ParseMode.Html,
+                    replyMarkup: keyboard,
                     cancellationToken: cancellationToken
                 );
             }

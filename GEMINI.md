@@ -95,7 +95,7 @@ DatingBot/                                # Корень проекта == BASE_
 │   │
 │   └── DatingBot.Bot/                    # Презентационный слой Telegram (Telegram.Bot)
 │       ├── Handlers/                     # TelegramUpdateRouter, FSM хэндлеры сообщений и кнопок
-│       ├── Keyboards/                    # Фабрики инлайн- и reply-клавиатур (MainMenu, Profile, Payment, Admin...)
+│       ├── Keyboards/                    # Фабрики инлайн- и reply-клавиатур (MainMenu, Profile, Payment, Admin, TelegramUrlHelper...)
 │       ├── Services/                     # TelegramBotWorker, BotLifecycleCoordinator, IBotLifecycleCoordinator, AdminBroadcast, BotSetup...
 │       ├── Workers/                      # DatabaseBootstrapWorker, TelegramBotWorker, MatchmakingNotificationWorker, InactivityNotificationWorker
 │       ├── appsettings.json              # Базовая конфигурация (BotToken, AdminIds, InactivityReminderDays...)

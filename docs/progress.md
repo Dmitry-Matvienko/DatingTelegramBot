@@ -1,24 +1,27 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 28
+state_version: 29
 updated: 2026-08-24
 
 ---
 
 ## Сейчас
-- **Фаза**: Реализация **оптимизации аллокаций памяти и аппаратной SIMD-векторизации (CPU & GC)**:
-  1. **Zero-Allocation спан-скоринг в подборе кандидатов**:
-     - В `IAiEmbeddingService` и `LocalAiEmbeddingService` добавлен метод `CalculateCosineSimilarity(float[], byte[])`, использующий `MemoryMarshal.Cast<byte, float>` и спаны.
-     - В `MatchmakingService` исключен вызов `BytesToVector` в цикле кандидатов, ликвидировано выделение 153.6 КБ RAM на каждый свайп (0 аллокаций в куче при скоринге векторов).
-  2. **Zero-Allocation токенизация и хеширование**:
-     - В `LocalAiEmbeddingService` парсинг текста переведен на `ReadOnlySpan<char>`, стековые буферы `stackalloc byte[128]` для UTF-8 и `stackalloc byte[32]` для `SHA256.HashData` с `BinaryPrimitives.ReadUInt32LittleEndian`.
-     - Ликвидированы все промежуточные аллокации строк (`Split`, `Substring`, интерполяция биграмм) и массивов `byte[]`.
-  3. **SIMD-оптимизация нормализации и сходства**:
-     - `NormalizeL2` и `CalculateCosineSimilarity` векторизованы с помощью `System.Numerics.Vector<float>`.
-  4. **Тесты и верификация**:
-     - Дополнены тесты в `LocalAiEmbeddingServiceTests` и `MatchmakingServiceTests`.
-     - Все 345 тестов успешно пройдены (100% green, 0 warnings, 0 failures).
-- **Далее**: Переход к следующим этапам оптимизации (кэширование справочников, профилирование).
+- **Фаза**: Реализация **интерактивной Inline URL-кнопки «💬 Написать» под карточками анкет**:
+  1. **Уведомление о симпатии**:
+     - В `SearchPromptService.SendRaterCardAsync` прикреплена Inline-кнопка «💬 Написать» (`GetRaterCardKeyboard`), позволяющая сразу перейти в диалог с оценившим пользователем.
+  2. **Взаимная симпатия (Mutual Match)**:
+     - В `SearchPromptService.SendMutualMatchNotificationAsync` прикреплена Inline-кнопка «💬 Написать» (`GetMutualMatchKeyboard`) под карточкой взаимного мэтча.
+  3. **Сквозной просмотр анкет в админ-панели**:
+     - В `AdminKeyboards.GetAdminProfileCardKeyboard` первой строкой добавлена Inline URL-кнопка «💬 Написать».
+  4. **Безопасное формирование ссылок Telegram (`TelegramUrlHelper`)**:
+     - Если указан `Username` -> `https://t.me/{username}` (без префикса `@`).
+     - Если `Username` отсутствует -> `tg://user?id={telegramId}`.
+  5. **Мультиязычность (6 языков)**:
+     - В `LocalizationService` добавлен ключ `Btn_SendMessage` для RU, UK, EN, HI, PT, ID.
+  6. **Тестирование и верификация**:
+     - Добавлен полный набор модульных тестов в `InlineSendMessageButtonTests` (20 новых тестов).
+     - Все 365 тестов успешно пройдены (100% green, 0 warnings, 0 failures).
+- **Далее**: Ожидание следующих задач от пользователя.
 
 ---
 
@@ -72,6 +75,7 @@ updated: 2026-08-24
 - [x] Оптимизация аналитики админ-панели: устранение N+1 и двухфазной выборки в `GetTopCitiesStatsAsync`/`GetCityStatsAsync`, объединение 16+ запросов `CountAsync` и 5 `SumAsync` в одиночные условные SQL-агрегации.
 - [x] Добавление составного B-Tree индекса `IX_ProfileRatings_ToUser_Score_CreatedAt` на таблицу `ProfileRatings` и миграция `Add_IncomingRatings_Composite_Index` (ускорение выборки входящих симпатий до Index Seek).
 - [x] Оптимизация аллокаций памяти и SIMD-векторизации: Zero-Allocation вычисление косинусного сходства векторов в `MatchmakingService` (экономия 153.6 КБ RAM на свайп) и спан-токенизация со стековыми буферами SHA256 в `LocalAiEmbeddingService`.
+- [x] Реализация интерактивной Inline-кнопки «💬 Написать» со ссылкой на аккаунт Telegram при уведомлении о симпатии, взаимной симпатии и в админ-панели при поиске анкет.
 
 ---
 
