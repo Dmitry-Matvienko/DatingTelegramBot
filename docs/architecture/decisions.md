@@ -195,4 +195,20 @@
   - Полное устранение N+1 и избыточных сетевых roundtrip-задержек.
   - Снижение нагрузки на CPU СУБД и потребления оперативной памяти сервера приложения.
 
+---
+
+### ADR-015: Составной B-Tree индекс для входящих оценок (`IX_ProfileRatings_ToUser_Score_CreatedAt`)
+- **Дата**: 2026-08-24
+- **Статус**: Принято
+- **Контекст**:
+  - Метод `ProfileRatingRepository.GetIncomingUnratedHighRatingsAsync` производит выборку входящих оценок по предикату `ToUserId == @toUserId AND Score >= 6` с сортировкой `ORDER BY CreatedAt DESC`.
+  - Единственный существующий индекс `IX_ProfileRatings_FromUser_ToUser` содержал `FromUserId` в качестве лидирующей колонки, что исключало эффективный поиск по `ToUserId` и приводило к полному сканированию таблицы (`Table / Index Scan`) и сортировке в памяти (`Sort`).
+- **Решение**:
+  - В `ProfileRatingConfiguration` добавлен составной индекс `(ToUserId, Score, CreatedAt)` с именем `IX_ProfileRatings_ToUser_Score_CreatedAt`.
+  - Создана миграция EF Core `Add_IncomingRatings_Composite_Index`.
+- **Последствия**:
+  - Поиск входящих симпатий пользователя выполняется через высокоэффективный `Index Seek` за доли миллисекунды.
+  - Устранена необходимость в операторе `Sort` плана выполнения запроса в MS SQL Server, так как данные в B-Tree уже упорядочены.
+
+
 

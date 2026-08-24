@@ -53,8 +53,8 @@
    - Индекс `IX_Cities_Name` для поиска городов по префиксу и синонимам.
    - Координаты `Latitude` и `Longitude` для расчета дистанций.
 4. **`ProfileRatingConfiguration`**:
-   - Композитный уникальный индекс `IX_ProfileRatings_FromUserId_ToUserId` (предотвращает повторные оценки).
-   - Индекс `IX_ProfileRatings_ToUserId_Score` для быстрой выборки входящих оценок \(\ge 6\).
+   - Композитный уникальный индекс `IX_ProfileRatings_FromUser_ToUser` (предотвращает повторные оценки).
+   - Композитный индекс `IX_ProfileRatings_ToUser_Score_CreatedAt` на `(ToUserId, Score, CreatedAt)` для мгновенной выборки входящих оценок \(\ge 6\) (Index Seek) с готовым порядком сортировки.
 5. **`ProfileReportConfiguration`**:
    - Индекс `IX_ProfileReports_ReporterId` для отсечения нарушителей из выдачи.
 

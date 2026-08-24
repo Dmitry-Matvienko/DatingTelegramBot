@@ -32,5 +32,9 @@ public class ProfileRatingConfiguration : IEntityTypeConfiguration<ProfileRating
         builder.HasIndex(r => new { r.FromUserId, r.ToUserId })
             .IsUnique()
             .HasDatabaseName("IX_ProfileRatings_FromUser_ToUser");
+
+        // Составной индекс для выборки входящих высоких оценок пользователя
+        builder.HasIndex(r => new { r.ToUserId, r.Score, r.CreatedAt })
+            .HasDatabaseName("IX_ProfileRatings_ToUser_Score_CreatedAt");
     }
 }

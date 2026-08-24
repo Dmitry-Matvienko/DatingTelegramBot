@@ -257,4 +257,21 @@ public class UserProfileRepositoryCandidateTests
         unratedIncoming[0].FromUserId.Should().Be(rater1.Id);
         unratedIncoming[0].Score.Should().Be(8);
     }
+
+    [Fact]
+    public void ProfileRating_ShouldHave_CompositeIndex_On_ToUser_Score_CreatedAt()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+
+        // Act
+        var entityType = context.Model.FindEntityType(typeof(ProfileRating));
+        var indexes = entityType?.GetIndexes().ToList();
+
+        // Assert
+        indexes.Should().NotBeNull();
+        var compositeIndex = indexes!.FirstOrDefault(i => i.GetDatabaseName() == "IX_ProfileRatings_ToUser_Score_CreatedAt");
+        compositeIndex.Should().NotBeNull();
+        compositeIndex!.Properties.Select(p => p.Name).Should().ContainInOrder(nameof(ProfileRating.ToUserId), nameof(ProfileRating.Score), nameof(ProfileRating.CreatedAt));
+    }
 }
