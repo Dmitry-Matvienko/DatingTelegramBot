@@ -365,4 +365,26 @@ public class ProfileEditingServiceTests
         result.IsSuccess.Should().BeFalse();
         result.ErrorMessage.Should().Contain("не должно превышать 300");
     }
+
+    [Fact]
+    public async Task Should_UpdateSearchDistanceAndResetStateToActive_When_DistanceIsSelected()
+    {
+        // Arrange
+        const long telegramId = 12345;
+        var user = new User { Id = Guid.NewGuid(), TelegramId = telegramId, State = UserState.Editing_SearchDistance };
+        var profile = new UserProfile { Id = Guid.NewGuid(), UserId = user.Id, SearchDistance = SearchDistancePreference.UpTo500Km };
+
+        _userRepoMock.Setup(r => r.GetByTelegramIdAsync(telegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        _profileRepoMock.Setup(r => r.GetByUserIdAsync(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(profile);
+
+        // Act
+        var result = await _service.UpdateSearchDistanceAsync(telegramId, SearchDistancePreference.SameCountry);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        profile.SearchDistance.Should().Be(SearchDistancePreference.SameCountry);
+        user.State.Should().Be(UserState.Active);
+    }
 }

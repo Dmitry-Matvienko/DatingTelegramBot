@@ -26,6 +26,7 @@ public class UserProfile
     public AgeCategoryFilter AgeFilters { get; set; } = AgeCategoryFilter.None;
     public int? SearchMinAge { get; set; }
     public int? SearchMaxAge { get; set; }
+    public SearchDistancePreference SearchDistance { get; set; } = SearchDistancePreference.UpTo500Km;
 
     public int RatingCount { get; set; } = 0;
     public double AverageRating { get; set; } = 0.0;

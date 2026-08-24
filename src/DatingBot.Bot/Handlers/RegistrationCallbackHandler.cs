@@ -160,5 +160,24 @@ public class RegistrationCallbackHandler(
                 await promptService.SendPromptForStateAsync(chatId, UserState.Registration_WaitingForAiBio, messageId, null, cancellationToken);
             }
         }
+        else if (data.StartsWith("reg_distance:"))
+        {
+            if (user.State != UserState.Registration_SelectingSearchDistance)
+            {
+                await promptService.DeleteMessageSafeAsync(chatId, messageId, cancellationToken);
+                return;
+            }
+
+            var rawValue = data["reg_distance:".Length..];
+            if (int.TryParse(rawValue, out var distInt) && Enum.IsDefined(typeof(SearchDistancePreference), distInt))
+            {
+                var distance = (SearchDistancePreference)distInt;
+                var completeResult = await registrationService.SetSearchDistanceAndCompleteAsync(user.TelegramId, distance, cancellationToken);
+                if (completeResult.IsSuccess && completeResult.Value is not null)
+                {
+                    await promptService.SendCompletedProfileCardAsync(chatId, completeResult.Value, messageId, cancellationToken);
+                }
+            }
+        }
     }
 }

@@ -52,6 +52,10 @@ public class UserProfileConfiguration : IEntityTypeConfiguration<UserProfile>
         builder.Property(p => p.SearchMaxAge)
             .IsRequired(false);
 
+        builder.Property(p => p.SearchDistance)
+            .IsRequired()
+            .HasDefaultValue(SearchDistancePreference.UpTo500Km);
+
         builder.Property(p => p.RatingCount)
             .IsRequired()
             .HasDefaultValue(0);

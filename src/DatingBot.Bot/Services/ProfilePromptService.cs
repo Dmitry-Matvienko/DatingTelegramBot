@@ -52,6 +52,15 @@ public class ProfilePromptService(
             searchAgeStr = "-";
         }
 
+        string distanceStr = profile.SearchDistance switch
+        {
+            SearchDistancePreference.UpTo100Km => loc.Get(lang, "Distance_UpTo100Km"),
+            SearchDistancePreference.UpTo500Km => loc.Get(lang, "Distance_UpTo500Km"),
+            SearchDistancePreference.SameCountry => loc.Get(lang, "Distance_SameCountry"),
+            SearchDistancePreference.Anywhere => loc.Get(lang, "Distance_Anywhere"),
+            _ => loc.Get(lang, "Distance_UpTo500Km")
+        };
+
         var sb = new StringBuilder();
         sb.AppendLine($"👤 <b>{profile.Name}</b>, {profile.Age}\n");
         sb.AppendLine($"📍 <b>{loc.Get(lang, "Label_City")}:</b> {profile.City}");
@@ -59,6 +68,7 @@ public class ProfilePromptService(
         sb.AppendLine($"🚻 <b>{loc.Get(lang, "Label_Gender")}:</b> {genderStr}");
         sb.AppendLine($"🔍 <b>{loc.Get(lang, "Label_LookingFor")}:</b> {lookingForStr}");
         sb.AppendLine($"🔎 <b>{loc.Get(lang, "Label_AgeFilters")}:</b> {searchAgeStr}");
+        sb.AppendLine($"📍 <b>{loc.Get(lang, "Label_SearchDistance")}:</b> {distanceStr}");
         sb.AppendLine($"🎯 <b>{loc.Get(lang, "Label_Target")}:</b> {targetStr}");
 
         var ratingStr = profile.RatingCount > 0
@@ -331,6 +341,23 @@ public class ProfilePromptService(
                     text: greetingText,
                     parseMode: ParseMode.Html,
                     replyMarkup: ProfileKeyboards.GetCancelKeyboard(lang),
+                    cancellationToken: cancellationToken
+                );
+                break;
+
+            case UserState.Editing_SearchDistance:
+                var currentProf = await registrationService.GetProfileDtoAsync(chatId, cancellationToken);
+                var currentDist = currentProf?.SearchDistance ?? SearchDistancePreference.UpTo500Km;
+
+                var distPrompt = customErrorMessage != null
+                    ? $"❌ {customErrorMessage}\n\n{loc.Get(lang, "SearchDistance_Prompt")}"
+                    : loc.Get(lang, "SearchDistance_Prompt");
+
+                sentMessage = await botClient.SendMessage(
+                    chatId: chatId,
+                    text: distPrompt,
+                    parseMode: ParseMode.Html,
+                    replyMarkup: ProfileKeyboards.GetEditSearchDistanceKeyboard(currentDist, lang),
                     cancellationToken: cancellationToken
                 );
                 break;

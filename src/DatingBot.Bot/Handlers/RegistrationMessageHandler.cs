@@ -34,6 +34,7 @@ public class RegistrationMessageHandler(
             case UserState.Registration_SelectingTargetGender:
             case UserState.Registration_SelectingInterests:
             case UserState.Registration_SelectingTarget:
+            case UserState.Registration_SelectingSearchDistance:
                 // В этих состояниях ожидается нажатие кнопок. Напомним пользователю:
                 await promptService.SendPromptForStateAsync(chatId, user.State, prevBotMsgId, null, cancellationToken);
                 break;
@@ -164,15 +165,15 @@ public class RegistrationMessageHandler(
                     return;
                 }
 
-                var completeResult = await registrationService.SetAiDescriptionAndCompleteAsync(user.TelegramId, text, cancellationToken);
-                if (completeResult.IsFailure)
+                var bioResult = await registrationService.SetAiDescriptionAsync(user.TelegramId, text, cancellationToken);
+                if (bioResult.IsFailure)
                 {
-                    await promptService.SendPromptForStateAsync(chatId, UserState.Registration_WaitingForAiBio, prevBotMsgId, completeResult.ErrorMessage, cancellationToken);
+                    await promptService.SendPromptForStateAsync(chatId, UserState.Registration_WaitingForAiBio, prevBotMsgId, bioResult.ErrorMessage, cancellationToken);
                     return;
                 }
 
-                // Показываем финальную готовую анкету!
-                await promptService.SendCompletedProfileCardAsync(chatId, completeResult.Value!, prevBotMsgId, cancellationToken);
+                // Переходим к финальному шагу выбора дальности поиска
+                await promptService.SendPromptForStateAsync(chatId, UserState.Registration_SelectingSearchDistance, prevBotMsgId, null, cancellationToken);
                 break;
 
             case UserState.Active:

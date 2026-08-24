@@ -24,5 +24,6 @@ public record UserProfileDto(
     double AverageRating = 0.0,
     int? CityId = null,
     byte[]? AiVector = null,
-    string? Greeting = null
+    string? Greeting = null,
+    SearchDistancePreference SearchDistance = SearchDistancePreference.UpTo500Km
 );

@@ -22,6 +22,8 @@ public interface IRegistrationService
     Task<Result<IReadOnlyList<InterestDto>>> ToggleInterestAsync(long telegramId, InterestType code, CancellationToken cancellationToken = default);
     Task<Result> CompleteInterestsAsync(long telegramId, CancellationToken cancellationToken = default);
     Task<Result> SetDatingTargetAsync(long telegramId, DatingTarget target, CancellationToken cancellationToken = default);
+    Task<Result> SetAiDescriptionAsync(long telegramId, string description, CancellationToken cancellationToken = default);
+    Task<Result<UserProfileDto>> SetSearchDistanceAndCompleteAsync(long telegramId, SearchDistancePreference searchDistance, CancellationToken cancellationToken = default);
     Task<Result<UserProfileDto>> SetAiDescriptionAndCompleteAsync(long telegramId, string description, CancellationToken cancellationToken = default);
     Task<Result> ResetRegistrationAsync(long telegramId, CancellationToken cancellationToken = default);
     Task SaveLastBotMessageIdAsync(long telegramId, int? messageId, CancellationToken cancellationToken = default);

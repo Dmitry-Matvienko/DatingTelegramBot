@@ -14,6 +14,7 @@ public enum UserState
     Registration_SelectingTarget = 9,
     Registration_WaitingForAiBio = 10,
     Registration_SelectingLanguage = 11,
+    Registration_SelectingSearchDistance = 12,
     Active = 100,
     Paused = 101,
     
@@ -33,6 +34,7 @@ public enum UserState
     Editing_SearchMaxAge = 213,
     Editing_Language = 214,
     Editing_Greeting = 215,
+    Editing_SearchDistance = 216,
 
     // Режим просмотра и поиска анкет
     Searching = 300,

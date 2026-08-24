@@ -507,4 +507,24 @@ public class ProfileEditingService(
 
         return Result.Success();
     }
+
+    public async Task<Result> UpdateSearchDistanceAsync(long telegramId, SearchDistancePreference searchDistance, CancellationToken cancellationToken = default)
+    {
+        var user = await userRepository.GetByTelegramIdAsync(telegramId, cancellationToken);
+        if (user is null) return Result.Failure(loc.Get(AppLanguage.Russian, "Error_UserNotFound"));
+
+        var profile = await userProfileRepository.GetByUserIdAsync(user.Id, cancellationToken);
+        if (profile is null) return Result.Failure(loc.Get(user.Language, "Error_ProfileNotFound"));
+
+        profile.SearchDistance = searchDistance;
+        profile.UpdatedAt = DateTime.UtcNow;
+        user.State = UserState.Active;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        userProfileRepository.Update(profile);
+        userRepository.Update(user);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result.Success();
+    }
 }

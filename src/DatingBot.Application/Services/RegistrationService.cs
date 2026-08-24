@@ -118,7 +118,8 @@ public class RegistrationService(
             profile.AverageRating,
             profile.CityId,
             profile.AiVector,
-            profile.Greeting
+            profile.Greeting,
+            profile.SearchDistance
         );
     }
 
@@ -412,7 +413,7 @@ public class RegistrationService(
         return Result.Success();
     }
 
-    public async Task<Result<UserProfileDto>> SetAiDescriptionAndCompleteAsync(long telegramId, string description, CancellationToken cancellationToken = default)
+    public async Task<Result> SetAiDescriptionAsync(long telegramId, string description, CancellationToken cancellationToken = default)
     {
         var user = await userRepository.GetByTelegramIdAsync(telegramId, cancellationToken);
         var lang = user?.Language ?? AppLanguage.Russian;
@@ -420,13 +421,13 @@ public class RegistrationService(
         var validation = await _aiDescriptionValidator.ValidateAsync(description, cancellationToken);
         if (!validation.IsValid)
         {
-            return Result<UserProfileDto>.Failure(loc.Get(lang, validation.Errors[0].ErrorMessage));
+            return Result.Failure(loc.Get(lang, validation.Errors[0].ErrorMessage));
         }
 
-        if (user is null) return Result<UserProfileDto>.Failure(loc.Get(AppLanguage.Russian, "Error_UserNotFound"));
+        if (user is null) return Result.Failure(loc.Get(AppLanguage.Russian, "Error_UserNotFound"));
 
         var profile = await userProfileRepository.GetWithInterestsByUserIdAsync(user.Id, cancellationToken);
-        if (profile is null) return Result<UserProfileDto>.Failure(loc.Get(user.Language, "Error_ProfileNotFound"));
+        if (profile is null) return Result.Failure(loc.Get(user.Language, "Error_ProfileNotFound"));
 
         profile.AiDescription = description.Trim();
         var vector = await aiEmbeddingService.GenerateEmbeddingAsync(description.Trim(), cancellationToken);
@@ -435,6 +436,27 @@ public class RegistrationService(
             profile.AiVector = aiEmbeddingService.VectorToBytes(vector);
         }
 
+        profile.UpdatedAt = DateTime.UtcNow;
+
+        user.State = UserState.Registration_SelectingSearchDistance;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        userProfileRepository.Update(profile);
+        userRepository.Update(user);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result.Success();
+    }
+
+    public async Task<Result<UserProfileDto>> SetSearchDistanceAndCompleteAsync(long telegramId, SearchDistancePreference searchDistance, CancellationToken cancellationToken = default)
+    {
+        var user = await userRepository.GetByTelegramIdAsync(telegramId, cancellationToken);
+        if (user is null) return Result<UserProfileDto>.Failure(loc.Get(AppLanguage.Russian, "Error_UserNotFound"));
+
+        var profile = await userProfileRepository.GetWithInterestsByUserIdAsync(user.Id, cancellationToken);
+        if (profile is null) return Result<UserProfileDto>.Failure(loc.Get(user.Language, "Error_ProfileNotFound"));
+
+        profile.SearchDistance = searchDistance;
         profile.IsCompleted = true;
         profile.UpdatedAt = DateTime.UtcNow;
 
@@ -475,10 +497,22 @@ public class RegistrationService(
             profile.AverageRating,
             profile.CityId,
             profile.AiVector,
-            profile.Greeting
+            profile.Greeting,
+            profile.SearchDistance
         );
 
         return Result<UserProfileDto>.Success(dto);
+    }
+
+    public async Task<Result<UserProfileDto>> SetAiDescriptionAndCompleteAsync(long telegramId, string description, CancellationToken cancellationToken = default)
+    {
+        var descResult = await SetAiDescriptionAsync(telegramId, description, cancellationToken);
+        if (descResult.IsFailure)
+        {
+            return Result<UserProfileDto>.Failure(descResult.ErrorMessage ?? string.Empty);
+        }
+
+        return await SetSearchDistanceAndCompleteAsync(telegramId, SearchDistancePreference.UpTo500Km, cancellationToken);
     }
 
     public async Task<Result> ResetRegistrationAsync(long telegramId, CancellationToken cancellationToken = default)

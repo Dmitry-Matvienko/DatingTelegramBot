@@ -31,7 +31,8 @@ public class ProfileEditMessageHandler(
         switch (user.State)
         {
             case UserState.Editing_Language:
-                await profilePromptService.SendEditPromptAsync(chatId, UserState.Editing_Language, prevMsgId, null, cancellationToken);
+            case UserState.Editing_SearchDistance:
+                await profilePromptService.SendEditPromptAsync(chatId, user.State, prevMsgId, null, cancellationToken);
                 return true;
 
             case UserState.Editing_Name:

@@ -127,13 +127,40 @@ public static class ProfileKeyboards
                 InlineKeyboardButton.WithCallbackData($"{age40PlusCheck} 40+", "edit_age_cat:16")
             ],
             [
-                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Btn_Done"), "edit_age_cat_save")
-            ],
-            [
                 InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Btn_CustomAgeRange"), "edit:custom_age_range")
             ],
             [
+                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Btn_SearchDistance"), "edit:search_distance")
+            ],
+            [
+                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Btn_Done"), "edit_age_cat_save")
+            ],
+            [
                 InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Btn_Cancel"), "edit:cancel")
+            ]
+        ]);
+    }
+
+    public static InlineKeyboardMarkup GetEditSearchDistanceKeyboard(SearchDistancePreference currentDistance, AppLanguage language = AppLanguage.Russian)
+    {
+        var check100 = currentDistance == SearchDistancePreference.UpTo100Km ? "✅ " : "";
+        var check500 = currentDistance == SearchDistancePreference.UpTo500Km ? "✅ " : "";
+        var checkCountry = currentDistance == SearchDistancePreference.SameCountry ? "✅ " : "";
+        var checkAnywhere = currentDistance == SearchDistancePreference.Anywhere ? "✅ " : "";
+
+        return new InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton.WithCallbackData($"{check100}{Loc.Get(language, "Distance_UpTo100Km")}", "edit_distance:1"),
+                InlineKeyboardButton.WithCallbackData($"{check500}{Loc.Get(language, "Distance_UpTo500Km")}", "edit_distance:2")
+            ],
+            [
+                InlineKeyboardButton.WithCallbackData($"{checkCountry}{Loc.Get(language, "Distance_SameCountry")}", "edit_distance:3")
+            ],
+            [
+                InlineKeyboardButton.WithCallbackData($"{checkAnywhere}{Loc.Get(language, "Distance_Anywhere")}", "edit_distance:4")
+            ],
+            [
+                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Btn_Cancel"), "edit:search_params")
             ]
         ]);
     }

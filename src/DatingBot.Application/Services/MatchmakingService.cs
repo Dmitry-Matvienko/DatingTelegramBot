@@ -148,11 +148,22 @@ public class MatchmakingService(
 
             if (!isSameCity)
             {
-                // Если кандидат из другого города, он должен быть строго в радиусе до 500 км
-                if (!distanceKm.HasValue || distanceKm.Value > MaxNearbyRadiusKm)
+                var distancePref = profile.SearchDistance;
+                if (distancePref == SearchDistancePreference.UpTo100Km)
                 {
-                    continue;
+                    if (!distanceKm.HasValue || distanceKm.Value > 100.0)
+                    {
+                        continue;
+                    }
                 }
+                else if (distancePref == SearchDistancePreference.UpTo500Km)
+                {
+                    if (!distanceKm.HasValue || distanceKm.Value > MaxNearbyRadiusKm)
+                    {
+                        continue;
+                    }
+                }
+                // SameCountry и Anywhere не отсекают по километражу
             }
 
             var common = candidate.Interests.Where(i => userInterests.Contains(i.InterestId)).Select(i => i.Interest).ToList();
@@ -238,7 +249,8 @@ public class MatchmakingService(
             profile.AverageRating,
             profile.CityId,
             profile.AiVector,
-            profile.Greeting
+            profile.Greeting,
+            profile.SearchDistance
         );
     }
 
