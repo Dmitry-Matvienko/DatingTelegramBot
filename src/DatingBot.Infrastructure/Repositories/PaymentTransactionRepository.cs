@@ -37,37 +37,32 @@ public class PaymentTransactionRepository(AppDbContext dbContext) : IPaymentTran
 
     public async Task<AdminRevenueStatsDto> GetRevenueStatsAsync(CancellationToken cancellationToken = default)
     {
-        var totalEarned = await dbContext.PaymentTransactions
-            .SumAsync(t => (int?)t.Amount, cancellationToken) ?? 0;
-
-        var totalCount = await dbContext.PaymentTransactions
-            .CountAsync(cancellationToken);
-
         var now = DateTime.UtcNow;
         var last24hCutoff = now.AddHours(-24);
         var last7dCutoff = now.AddDays(-7);
         var last30dCutoff = now.AddDays(-30);
 
-        var earned24h = await dbContext.PaymentTransactions
-            .Where(t => t.CreatedAt >= last24hCutoff)
-            .SumAsync(t => (int?)t.Amount, cancellationToken) ?? 0;
-
-        var earned7d = await dbContext.PaymentTransactions
-            .Where(t => t.CreatedAt >= last7dCutoff)
-            .SumAsync(t => (int?)t.Amount, cancellationToken) ?? 0;
-
-        var earned30d = await dbContext.PaymentTransactions
-            .Where(t => t.CreatedAt >= last30dCutoff)
-            .SumAsync(t => (int?)t.Amount, cancellationToken) ?? 0;
+        var stats = await dbContext.PaymentTransactions
+            .AsNoTracking()
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                TotalEarned = g.Sum(t => (int?)t.Amount) ?? 0,
+                TotalCount = g.Count(),
+                Earned24h = g.Where(t => t.CreatedAt >= last24hCutoff).Sum(t => (int?)t.Amount) ?? 0,
+                Earned7d = g.Where(t => t.CreatedAt >= last7dCutoff).Sum(t => (int?)t.Amount) ?? 0,
+                Earned30d = g.Where(t => t.CreatedAt >= last30dCutoff).Sum(t => (int?)t.Amount) ?? 0
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
         var recent = await GetRecentAsync(20, cancellationToken);
 
         return new AdminRevenueStatsDto(
-            totalEarned,
-            totalCount,
-            earned24h,
-            earned7d,
-            earned30d,
+            stats?.TotalEarned ?? 0,
+            stats?.TotalCount ?? 0,
+            stats?.Earned24h ?? 0,
+            stats?.Earned7d ?? 0,
+            stats?.Earned30d ?? 0,
             recent
         );
     }

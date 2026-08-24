@@ -355,26 +355,63 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
 
     public async Task<AdminStatsDto> GetAdminStatsAsync(CancellationToken cancellationToken = default)
     {
-        var totalUsers = await dbContext.Users.AsNoTracking().CountAsync(cancellationToken);
-        var completedProfiles = await dbContext.UserProfiles.AsNoTracking().CountAsync(p => p.IsCompleted, cancellationToken);
-        var bannedUsers = await dbContext.Users.AsNoTracking().CountAsync(u => u.State == UserState.Banned, cancellationToken);
-        var maleCount = await dbContext.UserProfiles.AsNoTracking().CountAsync(p => p.Gender == Gender.Male, cancellationToken);
-        var femaleCount = await dbContext.UserProfiles.AsNoTracking().CountAsync(p => p.Gender == Gender.Female, cancellationToken);
-
         var now = DateTime.UtcNow;
-        var newUsers24h = await dbContext.Users.AsNoTracking().CountAsync(u => u.CreatedAt >= now.AddHours(-24), cancellationToken);
-        var newUsers7d = await dbContext.Users.AsNoTracking().CountAsync(u => u.CreatedAt >= now.AddDays(-7), cancellationToken);
-        var newUsers30d = await dbContext.Users.AsNoTracking().CountAsync(u => u.CreatedAt >= now.AddDays(-30), cancellationToken);
+        var cutoff24h = now.AddHours(-24);
+        var cutoff7d = now.AddDays(-7);
+        var cutoff30d = now.AddDays(-30);
 
-        var friends = await dbContext.UserProfiles.AsNoTracking().CountAsync(p => p.DatingTarget == DatingTarget.Friends, cancellationToken);
-        var relationship = await dbContext.UserProfiles.AsNoTracking().CountAsync(p => p.DatingTarget == DatingTarget.Relationship, cancellationToken);
-        var adultOnly = await dbContext.UserProfiles.AsNoTracking().CountAsync(p => p.DatingTarget == DatingTarget.AdultOnly, cancellationToken);
+        var userStats = await dbContext.Users
+            .AsNoTracking()
+            .Select(u => new
+            {
+                IsBanned = u.State == UserState.Banned ? 1 : 0,
+                Is24h = u.CreatedAt >= cutoff24h ? 1 : 0,
+                Is7d = u.CreatedAt >= cutoff7d ? 1 : 0,
+                Is30d = u.CreatedAt >= cutoff30d ? 1 : 0
+            })
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                TotalUsers = g.Count(),
+                BannedUsers = g.Sum(u => u.IsBanned),
+                NewUsers24h = g.Sum(u => u.Is24h),
+                NewUsers7d = g.Sum(u => u.Is7d),
+                NewUsers30d = g.Sum(u => u.Is30d)
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
-        var ageUnder18 = await dbContext.UserProfiles.AsNoTracking().CountAsync(p => p.Age.HasValue && p.Age.Value < 18, cancellationToken);
-        var age18To24 = await dbContext.UserProfiles.AsNoTracking().CountAsync(p => p.Age.HasValue && p.Age.Value >= 18 && p.Age.Value <= 24, cancellationToken);
-        var age25To34 = await dbContext.UserProfiles.AsNoTracking().CountAsync(p => p.Age.HasValue && p.Age.Value >= 25 && p.Age.Value <= 34, cancellationToken);
-        var age35To44 = await dbContext.UserProfiles.AsNoTracking().CountAsync(p => p.Age.HasValue && p.Age.Value >= 35 && p.Age.Value <= 44, cancellationToken);
-        var age45Plus = await dbContext.UserProfiles.AsNoTracking().CountAsync(p => p.Age.HasValue && p.Age.Value >= 45, cancellationToken);
+        var profileStats = await dbContext.UserProfiles
+            .AsNoTracking()
+            .Select(p => new
+            {
+                IsCompleted = p.IsCompleted ? 1 : 0,
+                IsMale = p.Gender == Gender.Male ? 1 : 0,
+                IsFemale = p.Gender == Gender.Female ? 1 : 0,
+                IsFriends = p.DatingTarget == DatingTarget.Friends ? 1 : 0,
+                IsRelationship = p.DatingTarget == DatingTarget.Relationship ? 1 : 0,
+                IsAdultOnly = p.DatingTarget == DatingTarget.AdultOnly ? 1 : 0,
+                IsUnder18 = p.Age.HasValue && p.Age.Value < 18 ? 1 : 0,
+                Is18To24 = p.Age.HasValue && p.Age.Value >= 18 && p.Age.Value <= 24 ? 1 : 0,
+                Is25To34 = p.Age.HasValue && p.Age.Value >= 25 && p.Age.Value <= 34 ? 1 : 0,
+                Is35To44 = p.Age.HasValue && p.Age.Value >= 35 && p.Age.Value <= 44 ? 1 : 0,
+                Is45Plus = p.Age.HasValue && p.Age.Value >= 45 ? 1 : 0
+            })
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                CompletedProfiles = g.Sum(p => p.IsCompleted),
+                MaleCount = g.Sum(p => p.IsMale),
+                FemaleCount = g.Sum(p => p.IsFemale),
+                Friends = g.Sum(p => p.IsFriends),
+                Relationship = g.Sum(p => p.IsRelationship),
+                AdultOnly = g.Sum(p => p.IsAdultOnly),
+                AgeUnder18 = g.Sum(p => p.IsUnder18),
+                Age18To24 = g.Sum(p => p.Is18To24),
+                Age25To34 = g.Sum(p => p.Is25To34),
+                Age35To44 = g.Sum(p => p.Is35To44),
+                Age45Plus = g.Sum(p => p.Is45Plus)
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
         var topCities = await GetTopCitiesStatsAsync(5, cancellationToken);
 
@@ -393,22 +430,22 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
             .ToList();
 
         return new AdminStatsDto(
-            totalUsers,
-            completedProfiles,
-            bannedUsers,
-            maleCount,
-            femaleCount,
-            newUsers24h,
-            newUsers7d,
-            newUsers30d,
-            friends,
-            relationship,
-            adultOnly,
-            ageUnder18,
-            age18To24,
-            age25To34,
-            age35To44,
-            age45Plus,
+            userStats?.TotalUsers ?? 0,
+            profileStats?.CompletedProfiles ?? 0,
+            userStats?.BannedUsers ?? 0,
+            profileStats?.MaleCount ?? 0,
+            profileStats?.FemaleCount ?? 0,
+            userStats?.NewUsers24h ?? 0,
+            userStats?.NewUsers7d ?? 0,
+            userStats?.NewUsers30d ?? 0,
+            profileStats?.Friends ?? 0,
+            profileStats?.Relationship ?? 0,
+            profileStats?.AdultOnly ?? 0,
+            profileStats?.AgeUnder18 ?? 0,
+            profileStats?.Age18To24 ?? 0,
+            profileStats?.Age25To34 ?? 0,
+            profileStats?.Age35To44 ?? 0,
+            profileStats?.Age45Plus ?? 0,
             topCities,
             topCountries
         );
@@ -416,47 +453,40 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
 
     public async Task<IReadOnlyList<AdminCityStatsDto>> GetTopCitiesStatsAsync(int count = 10, CancellationToken cancellationToken = default)
     {
-        var topCityNames = await dbContext.UserProfiles
+        var rawStats = await dbContext.UserProfiles
             .AsNoTracking()
             .Where(p => !string.IsNullOrEmpty(p.City))
-            .GroupBy(p => p.City!)
-            .Select(g => new { CityName = g.Key, UserCount = g.Count() })
-            .OrderByDescending(x => x.UserCount)
-            .ThenBy(x => x.CityName)
-            .Take(count)
-            .ToListAsync(cancellationToken);
-
-        if (topCityNames.Count == 0)
-        {
-            return [];
-        }
-
-        var cityNames = topCityNames.Select(x => x.CityName).ToList();
-
-        var profilesInTopCities = await dbContext.UserProfiles
-            .AsNoTracking()
-            .Include(p => p.CityRef)
-            .Where(p => p.City != null && cityNames.Contains(p.City))
             .Select(p => new
             {
                 City = p.City!,
                 Country = p.CityRef != null ? p.CityRef.Country : null,
-                p.IsCompleted,
-                p.Gender
+                IsCompleted = p.IsCompleted ? 1 : 0,
+                IsMale = p.Gender == Gender.Male ? 1 : 0,
+                IsFemale = p.Gender == Gender.Female ? 1 : 0
             })
+            .GroupBy(p => new { p.City, p.Country })
+            .Select(g => new
+            {
+                g.Key.City,
+                g.Key.Country,
+                UserCount = g.Count(),
+                CompletedCount = g.Sum(x => x.IsCompleted),
+                MaleCount = g.Sum(x => x.IsMale),
+                FemaleCount = g.Sum(x => x.IsFemale)
+            })
+            .OrderByDescending(x => x.UserCount)
+            .ThenBy(x => x.City)
+            .Take(count)
             .ToListAsync(cancellationToken);
 
-        var result = topCityNames.Select(top =>
-        {
-            var inCity = profilesInTopCities.Where(p => p.City == top.CityName).ToList();
-            var country = inCity.FirstOrDefault(p => !string.IsNullOrEmpty(p.Country))?.Country;
-            var completed = inCity.Count(p => p.IsCompleted);
-            var male = inCity.Count(p => p.Gender == Gender.Male);
-            var female = inCity.Count(p => p.Gender == Gender.Female);
-            return new AdminCityStatsDto(top.CityName, country, inCity.Count, completed, male, female);
-        }).ToList();
-
-        return result;
+        return rawStats.Select(s => new AdminCityStatsDto(
+            s.City,
+            s.Country,
+            s.UserCount,
+            s.CompletedCount,
+            s.MaleCount,
+            s.FemaleCount
+        )).ToList();
     }
 
     public async Task<AdminCityStatsDto?> GetCityStatsAsync(string cityName, CancellationToken cancellationToken = default)
@@ -465,31 +495,38 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
 
         var cleanCity = cityName.Trim().ToLower();
 
-        var profiles = await dbContext.UserProfiles
+        var stats = await dbContext.UserProfiles
             .AsNoTracking()
-            .Include(p => p.CityRef)
             .Where(p => p.City != null && (p.City.ToLower() == cleanCity || (p.CityRef != null && p.CityRef.Name.ToLower() == cleanCity)))
             .Select(p => new
             {
-                p.City,
+                City = p.City!,
                 Country = p.CityRef != null ? p.CityRef.Country : null,
-                p.IsCompleted,
-                p.Gender
+                IsCompleted = p.IsCompleted ? 1 : 0,
+                IsMale = p.Gender == Gender.Male ? 1 : 0,
+                IsFemale = p.Gender == Gender.Female ? 1 : 0
             })
-            .ToListAsync(cancellationToken);
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                DisplayName = g.Select(p => p.City).FirstOrDefault() ?? cityName,
+                Country = g.Select(p => p.Country).FirstOrDefault(),
+                UserCount = g.Count(),
+                CompletedCount = g.Sum(x => x.IsCompleted),
+                MaleCount = g.Sum(x => x.IsMale),
+                FemaleCount = g.Sum(x => x.IsFemale)
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (profiles.Count == 0) return null;
-
-        var displayName = profiles.FirstOrDefault(p => !string.IsNullOrEmpty(p.City))?.City ?? cityName;
-        var country = profiles.FirstOrDefault(p => !string.IsNullOrEmpty(p.Country))?.Country;
+        if (stats == null || stats.UserCount == 0) return null;
 
         return new AdminCityStatsDto(
-            displayName,
-            country,
-            profiles.Count,
-            profiles.Count(p => p.IsCompleted),
-            profiles.Count(p => p.Gender == Gender.Male),
-            profiles.Count(p => p.Gender == Gender.Female)
+            stats.DisplayName,
+            stats.Country,
+            stats.UserCount,
+            stats.CompletedCount,
+            stats.MaleCount,
+            stats.FemaleCount
         );
     }
 

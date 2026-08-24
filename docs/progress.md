@@ -1,26 +1,25 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 25
+state_version: 26
 updated: 2026-08-24
 
 ---
 
 ## Сейчас
-- **Фаза**: Реализация **оптимизации запросов подбора кандидатов (Проблемы 1.1 и 1.2)**:
-  1. **Ликвидация риска переполнения параметров SQL Server (лимит 2100 параметров)**:
-     - Заменена передача C#-коллекций `excludedUserIds` в `NOT IN (@p0, ... @pN)` на эффективные SQL-подзапросы `NOT EXISTS` через `!dbContext.ProfileRatings.Any(r => r.FromUserId == currentUserId && r.ToUserId == p.UserId)` и `!dbContext.ProfileReports.Any(rep => rep.ReporterId == currentUserId && rep.ReportedUserId == p.UserId)`.
-     - Запросы выполняются за доли миллисекунды напрямую по индексам `IX_ProfileRatings_FromUser_ToUser` и `IX_ProfileReports_Reporter_Reported`.
-  2. **Сокращение лишних сетевых обращений к БД**:
-     - Удалены избыточные вызовы `profileRatingRepository.GetRatedUserIdsAsync` и `profileReportRepository.GetReportedUserIdsAsync` из горячего пути `MatchmakingService.GetNextMatchCandidateAsync` (минус 2 SQL-запроса на каждый свайп).
-  3. **Ограничение пула кандидатов до 100 человек**:
-     - В `UserProfileRepository.GetEligibleCandidatesAsync` добавлен жесткий лимит `Take(limit)` (по умолчанию 100) с сортировкой по актуальности `OrderByDescending(p.UpdatedAt ?? p.CreatedAt).ThenBy(p.Id)` прямо в SQL-запросе, снижая потребление RAM и трафик.
-  4. **Оптимизация выборки входящих симпатий**:
-     - В `ProfileRatingRepository.GetIncomingUnratedHighRatingsAsync` устранен двойной запрос и `NOT IN` — метод переведен на единый быстрый SQL-подзапрос с `!dbContext.ProfileRatings.Any(...)`.
+- **Фаза**: Реализация **оптимизации аналитики админ-панели (Устранение N+1 и множественных запросов)**:
+  1. **Консолидация запросов дашборда администратора (`GetAdminStatsAsync`)**:
+     - 16+ разрозненных одиночных `CountAsync` заменены на 2 условных групповых SQL-запроса (`GroupBy(_ => 1)` с суммированием индикаторов) для `Users` и `UserProfiles`.
+     - Общее число обращений к БД при открытии аналитики медиакита сократилось с 19 до 4 запросов.
+  2. **Устранение двухфазной выборки в аналитике городов (`GetTopCitiesStatsAsync`)**:
+     - Заменен двухфазный запрос (выборка названий + загрузка сотен профилей в RAM) на единый эффективный SQL-запрос `GROUP BY City, Country` с прямым подсчетом агрегатов на стороне СУБД.
+  3. **Прямая SQL-агрегация срезов города (`GetCityStatsAsync`)**:
+     - Исключена выгрузка массива сущностей города в память приложения — агрегация выполняется в SQL.
+  4. **Консолидация финансовых метрик (`GetRevenueStatsAsync`)**:
+     - 5 отдельных `SumAsync/CountAsync` объединены в 1 SQL-запрос.
   5. **Тесты и верификация**:
-     - Добавлен тестовый набор `UserProfileRepositoryCandidateTests` (проверка исключения себя, оцененных, пожалованных и лимита 100).
-     - Обновлены тесты `MatchmakingServiceTests`.
-     - Все 340 тестов успешно пройдены (100% green, 0 warnings, 0 failures).
-- **Далее**: Переход к следующим этапам оптимизации (индексы, дашборд админа, кэширование справочников, векторизация).
+     - Дополнен тестовый набор `UserProfileRepositoryAdminStatsTests` (проверка работы на пустой базе, корректности срезов и ненайденных городов).
+     - Все 342 теста успешно пройдены (100% green, 0 warnings, 0 failures).
+- **Далее**: Переход к следующим этапам оптимизации (составные индексы БД, кэширование справочников, векторизация).
 
 ---
 
@@ -71,6 +70,7 @@ updated: 2026-08-24
 - [x] Создание Multi-stage Dockerfile и .dockerignore для сборки и развертывания .NET 9.
 - [x] Отказоустойчивая система инициализации и автоматического самовосстановления бота (`IBotLifecycleCoordinator`, `DatabaseBootstrapWorker`, `TelegramBotWorker` polling loop retry, `HostOptions` failure isolation).
 - [x] Оптимизация запросов подбора кандидатов: устранение риска переполнения параметров SQL Server (лимит 2100 параметров через NOT EXISTS) и ограничение пула кандидатов до 100 человек (`Take(100)`).
+- [x] Оптимизация аналитики админ-панели: устранение N+1 и двухфазной выборки в `GetTopCitiesStatsAsync`/`GetCityStatsAsync`, объединение 16+ запросов `CountAsync` и 5 `SumAsync` в одиночные условные SQL-агрегации.
 
 ---
 

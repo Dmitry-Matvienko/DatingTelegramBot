@@ -141,6 +141,27 @@ public class UserProfileRepositoryAdminStatsTests
     }
 
     [Fact]
+    public async Task GetAdminStatsAsync_ShouldHandleEmptyDatabaseGracefully()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+
+        using var context = new AppDbContext(options);
+        var repo = new UserProfileRepository(context);
+
+        var stats = await repo.GetAdminStatsAsync();
+
+        stats.TotalUsers.Should().Be(0);
+        stats.CompletedProfiles.Should().Be(0);
+        stats.BannedUsers.Should().Be(0);
+        stats.MaleCount.Should().Be(0);
+        stats.FemaleCount.Should().Be(0);
+        stats.TopCities.Should().BeEmpty();
+        stats.TopCountries.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task GetCityStatsAsync_ShouldReturnSingleCityStats()
     {
         using var context = CreateInMemoryDbContext();
@@ -155,5 +176,16 @@ public class UserProfileRepositoryAdminStatsTests
         stats.CompletedCount.Should().Be(2);
         stats.MaleCount.Should().Be(2);
         stats.FemaleCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetCityStatsAsync_ShouldReturnNull_WhenCityDoesNotExist()
+    {
+        using var context = CreateInMemoryDbContext();
+        var repo = new UserProfileRepository(context);
+
+        var stats = await repo.GetCityStatsAsync("НесуществующийГород");
+
+        stats.Should().BeNull();
     }
 }
