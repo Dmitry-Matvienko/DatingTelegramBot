@@ -30,16 +30,11 @@ public class ProfileRatingRepository(AppDbContext dbContext) : IProfileRatingRep
 
     public async Task<List<ProfileRating>> GetIncomingUnratedHighRatingsAsync(Guid toUserId, CancellationToken cancellationToken = default)
     {
-        var alreadyRatedByUser = await dbContext.ProfileRatings
-            .Where(r => r.FromUserId == toUserId)
-            .Select(r => r.ToUserId)
-            .ToListAsync(cancellationToken);
-
         return await dbContext.ProfileRatings
             .AsNoTracking()
             .Include(r => r.FromUser)
             .Where(r => r.ToUserId == toUserId && r.Score >= 6)
-            .Where(r => !alreadyRatedByUser.Contains(r.FromUserId))
+            .Where(r => !dbContext.ProfileRatings.Any(back => back.FromUserId == toUserId && back.ToUserId == r.FromUserId))
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync(cancellationToken);
     }

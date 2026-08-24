@@ -40,8 +40,9 @@ public record MatchCandidateDto(
 2. Не принадлежат текущему пользователю (`UserId != CurrentUserId`).
 3. Подходят по взаимному полу (`Gender` и `TargetGender` удовлетворяют друг друга).
 4. Соответствуют возрастным фильтрам (категории `AgeFilters` или ручной диапазон `SearchMinAge`..`SearchMaxAge`).
-5. Еще не были оценены текущим пользователем (`ProfileRating`) и на них не подана жалоба (`ProfileReport`).
+5. Еще не были оценены текущим пользователем (`ProfileRating`) и на них не подана жалоба (`ProfileReport`) — фильтруется в SQL через подзапросы `NOT EXISTS`.
 6. Совместимы по языковой группе (`UserProfileRepository.GetCompatibleLanguages`).
+7. Пул кандидатов ограничивается `Take(100)` наиболее актуальных профилей (`OrderByDescending(UpdatedAt ?? CreatedAt)`).
 
 ### Приоритеты выдачи:
 

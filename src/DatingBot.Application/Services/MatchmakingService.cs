@@ -10,8 +10,6 @@ public class MatchmakingService(
     IUserRepository userRepository,
     IUserProfileRepository userProfileRepository,
     IInterestRepository interestRepository,
-    IProfileRatingRepository profileRatingRepository,
-    IProfileReportRepository profileReportRepository,
     IAiEmbeddingService aiEmbeddingService,
     ILocalizationService loc,
     IUnitOfWork unitOfWork) : IMatchmakingService
@@ -37,14 +35,7 @@ public class MatchmakingService(
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
-        var ratedIds = await profileRatingRepository.GetRatedUserIdsAsync(user.Id, cancellationToken);
-        var reportedIds = await profileReportRepository.GetReportedUserIdsAsync(user.Id, cancellationToken);
-
-        var excludedUserIds = new HashSet<Guid>(ratedIds);
-        excludedUserIds.UnionWith(reportedIds);
-        excludedUserIds.Add(user.Id);
-
-        var candidates = await userProfileRepository.GetEligibleCandidatesAsync(profile, excludedUserIds, cancellationToken);
+        var candidates = await userProfileRepository.GetEligibleCandidatesAsync(profile, limit: 100, cancellationToken);
         if (candidates.Count == 0)
         {
             user.CurrentCandidateProfileId = null;

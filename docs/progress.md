@@ -1,35 +1,26 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 24
+state_version: 25
 updated: 2026-08-24
 
 ---
 
 ## Сейчас
-- **Фаза**: Реализация **отказоустойчивой системы инициализации и автоматического самовосстановления (Self-Healing Architecture)** для бота:
-  1. **Координатор жизненного цикла (`IBotLifecycleCoordinator` / `BotLifecycleCoordinator`)**:
-     - Потокобезопасный `Singleton`, отслеживающий состояние готовности базы данных (`IsDatabaseReady`), активность опроса Telegram Long Polling (`IsTelegramPollingActive`), количество попыток подключения к БД (`DatabaseRetryCount`), количество перезапусков Telegram (`TelegramRestartCount`), время запуска, аптайм и текст последних ошибок.
-     - Асинхронное ожидание готовности базы (`WaitForDatabaseReadyAsync`) через `TaskCompletionSource` для зависимых служб.
-  2. **Неблокирующая фоновая инициализация БД (`DatabaseBootstrapWorker`)**:
-     - Миграции EF Core и сидирование 100k+ городов вынесены из блокирующего `Program.cs` в фоновый воркер (`BackgroundService`).
-     - При холодном старте, задержках удаленной СУБД (SmarterASP.NET / Azure SQL) или сетевых сбоях веб-сервер Kestrel остается онлайн, отвечает на Keep-Alive пинги (`/ping`, `/health`), а воркер повторяет попытки подключения с экспоненциальным backoff (3s -> 5s -> 10s -> 30s) до успешного завершения.
-  3. **Супервизорный цикл опроса и изоляция ошибок (`TelegramBotWorker`)**:
-     - Запуск опроса ожидает готовности БД, после чего запускает `botClient.ReceiveAsync` внутри защищенного супервизорного цикла `while (!stoppingToken.IsCancellationRequested)`.
-     - При любых сбоях сети, таймаутах или ошибках Telegram API воркер автоматически перезапускает сессию опроса с backoff-задержкой.
-     - Метод `ProcessUpdateSafeAsync` изолирует ошибки обработки входящих апдейтов отдельных пользователей — сбой на одном сообщении никогда не ломает сессию бота для остальных пользователей.
-  4. **Защита хоста от падений воркеров**:
-     - `HostOptions.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore` в `Program.cs` исключает аварийную остановку всего хоста .NET при непредвиденных исключениях в фоновых задачах.
-     - Добавлены глобальные обработчики `AppDomain.CurrentDomain.UnhandledException` и `TaskScheduler.UnobservedTaskException`.
-  5. **Координация фоновых сервисов уведомлений**:
-     - `MatchmakingNotificationWorker` и `InactivityNotificationWorker` безопасно ожидают готовности базы через `WaitForDatabaseReadyAsync` перед выполнением периодических запросов.
-  6. **Расширенная телеметрия здоровья и статуса**:
-     - `GET /` — детальный JSON-статус с аптаймом, `status` ("running" / "bootstrapping"), `isDatabaseReady`, `isTelegramPollingActive`, `databaseRetryCount`, `telegramRestartCount`, `lastDatabaseError`, `lastTelegramError`.
-     - `GET /health` — `{"status": "Healthy" / "Degraded", "isDatabaseReady": ..., "isTelegramPollingActive": ...}`.
-     - `GET /ping` — `pong` (Keep-Alive для cron-job.org / Render).
-  7. **Тесты и верификация**:
-     - Добавлены `BotLifecycleCoordinatorTests`, `DatabaseBootstrapWorkerTests`, `SelfHealingTelegramBotWorkerTests`.
-     - Все 337 тестов успешно пройдены (100% green, 0 warnings).
-- **Далее**: Деплой на Render с указанием `DEFAULT_CONNECTION` в Environment Variables.
+- **Фаза**: Реализация **оптимизации запросов подбора кандидатов (Проблемы 1.1 и 1.2)**:
+  1. **Ликвидация риска переполнения параметров SQL Server (лимит 2100 параметров)**:
+     - Заменена передача C#-коллекций `excludedUserIds` в `NOT IN (@p0, ... @pN)` на эффективные SQL-подзапросы `NOT EXISTS` через `!dbContext.ProfileRatings.Any(r => r.FromUserId == currentUserId && r.ToUserId == p.UserId)` и `!dbContext.ProfileReports.Any(rep => rep.ReporterId == currentUserId && rep.ReportedUserId == p.UserId)`.
+     - Запросы выполняются за доли миллисекунды напрямую по индексам `IX_ProfileRatings_FromUser_ToUser` и `IX_ProfileReports_Reporter_Reported`.
+  2. **Сокращение лишних сетевых обращений к БД**:
+     - Удалены избыточные вызовы `profileRatingRepository.GetRatedUserIdsAsync` и `profileReportRepository.GetReportedUserIdsAsync` из горячего пути `MatchmakingService.GetNextMatchCandidateAsync` (минус 2 SQL-запроса на каждый свайп).
+  3. **Ограничение пула кандидатов до 100 человек**:
+     - В `UserProfileRepository.GetEligibleCandidatesAsync` добавлен жесткий лимит `Take(limit)` (по умолчанию 100) с сортировкой по актуальности `OrderByDescending(p.UpdatedAt ?? p.CreatedAt).ThenBy(p.Id)` прямо в SQL-запросе, снижая потребление RAM и трафик.
+  4. **Оптимизация выборки входящих симпатий**:
+     - В `ProfileRatingRepository.GetIncomingUnratedHighRatingsAsync` устранен двойной запрос и `NOT IN` — метод переведен на единый быстрый SQL-подзапрос с `!dbContext.ProfileRatings.Any(...)`.
+  5. **Тесты и верификация**:
+     - Добавлен тестовый набор `UserProfileRepositoryCandidateTests` (проверка исключения себя, оцененных, пожалованных и лимита 100).
+     - Обновлены тесты `MatchmakingServiceTests`.
+     - Все 340 тестов успешно пройдены (100% green, 0 warnings, 0 failures).
+- **Далее**: Переход к следующим этапам оптимизации (индексы, дашборд админа, кэширование справочников, векторизация).
 
 ---
 
@@ -79,6 +70,7 @@ updated: 2026-08-24
 - [x] Поддержка удобного конфигурирования через Environment Variables (`BOT_TOKEN`, `DEFAULT_CONNECTION`, `ADMIN_IDS`).
 - [x] Создание Multi-stage Dockerfile и .dockerignore для сборки и развертывания .NET 9.
 - [x] Отказоустойчивая система инициализации и автоматического самовосстановления бота (`IBotLifecycleCoordinator`, `DatabaseBootstrapWorker`, `TelegramBotWorker` polling loop retry, `HostOptions` failure isolation).
+- [x] Оптимизация запросов подбора кандидатов: устранение риска переполнения параметров SQL Server (лимит 2100 параметров через NOT EXISTS) и ограничение пула кандидатов до 100 человек (`Take(100)`).
 
 ---
 

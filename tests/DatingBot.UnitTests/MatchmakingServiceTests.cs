@@ -13,8 +13,6 @@ public class MatchmakingServiceTests
     private readonly Mock<IUserRepository> _userRepoMock = new();
     private readonly Mock<IUserProfileRepository> _profileRepoMock = new();
     private readonly Mock<IInterestRepository> _interestRepoMock = new();
-    private readonly Mock<IProfileRatingRepository> _ratingRepoMock = new();
-    private readonly Mock<IProfileReportRepository> _reportRepoMock = new();
     private readonly Mock<IAiEmbeddingService> _aiEmbeddingMock = new();
     private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
     private readonly MatchmakingService _service;
@@ -25,8 +23,6 @@ public class MatchmakingServiceTests
             _userRepoMock.Object,
             _profileRepoMock.Object,
             _interestRepoMock.Object,
-            _ratingRepoMock.Object,
-            _reportRepoMock.Object,
             _aiEmbeddingMock.Object,
             new LocalizationService(),
             _unitOfWorkMock.Object
@@ -89,12 +85,7 @@ public class MatchmakingServiceTests
         _profileRepoMock.Setup(r => r.GetWithInterestsByUserIdAsync(currentUser.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(currentProfile);
 
-        _ratingRepoMock.Setup(r => r.GetRatedUserIdsAsync(currentUser.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HashSet<Guid>());
-        _reportRepoMock.Setup(r => r.GetReportedUserIdsAsync(currentUser.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HashSet<Guid>());
-
-        _profileRepoMock.Setup(r => r.GetEligibleCandidatesAsync(currentProfile, It.IsAny<HashSet<Guid>>(), It.IsAny<CancellationToken>()))
+        _profileRepoMock.Setup(r => r.GetEligibleCandidatesAsync(currentProfile, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<UserProfile> { candidate2, candidate1 });
 
         _aiEmbeddingMock.Setup(a => a.BytesToVector(It.IsAny<byte[]>()))
@@ -184,12 +175,7 @@ public class MatchmakingServiceTests
         _profileRepoMock.Setup(r => r.GetWithInterestsByUserIdAsync(currentUser.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(currentProfile);
 
-        _ratingRepoMock.Setup(r => r.GetRatedUserIdsAsync(currentUser.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HashSet<Guid>());
-        _reportRepoMock.Setup(r => r.GetReportedUserIdsAsync(currentUser.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HashSet<Guid>());
-
-        _profileRepoMock.Setup(r => r.GetEligibleCandidatesAsync(currentProfile, It.IsAny<HashSet<Guid>>(), It.IsAny<CancellationToken>()))
+        _profileRepoMock.Setup(r => r.GetEligibleCandidatesAsync(currentProfile, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<UserProfile> { candidate2, candidate1 });
 
         _interestRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
@@ -255,13 +241,8 @@ public class MatchmakingServiceTests
         _profileRepoMock.Setup(r => r.GetWithInterestsByUserIdAsync(currentUser.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(currentProfile);
 
-        _ratingRepoMock.Setup(r => r.GetRatedUserIdsAsync(currentUser.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HashSet<Guid>());
-        _reportRepoMock.Setup(r => r.GetReportedUserIdsAsync(currentUser.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HashSet<Guid>());
-
         // Передаем Тверь первым в списке, но Химки ближе
-        _profileRepoMock.Setup(r => r.GetEligibleCandidatesAsync(currentProfile, It.IsAny<HashSet<Guid>>(), It.IsAny<CancellationToken>()))
+        _profileRepoMock.Setup(r => r.GetEligibleCandidatesAsync(currentProfile, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<UserProfile> { candidateTver, candidateKhimki });
 
         _interestRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
@@ -315,12 +296,7 @@ public class MatchmakingServiceTests
         _profileRepoMock.Setup(r => r.GetWithInterestsByUserIdAsync(currentUser.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(currentProfile);
 
-        _ratingRepoMock.Setup(r => r.GetRatedUserIdsAsync(currentUser.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HashSet<Guid>());
-        _reportRepoMock.Setup(r => r.GetReportedUserIdsAsync(currentUser.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HashSet<Guid>());
-
-        _profileRepoMock.Setup(r => r.GetEligibleCandidatesAsync(currentProfile, It.IsAny<HashSet<Guid>>(), It.IsAny<CancellationToken>()))
+        _profileRepoMock.Setup(r => r.GetEligibleCandidatesAsync(currentProfile, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<UserProfile> { candidateFar });
 
         // Act

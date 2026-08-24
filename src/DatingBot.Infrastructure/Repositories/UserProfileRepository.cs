@@ -37,8 +37,10 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
             .FirstOrDefaultAsync(p => p.UserId == userId, cancellationToken);
     }
 
-    public async Task<UserProfile?> GetNextCandidateForUserAsync(UserProfile currentUserProfile, HashSet<Guid> excludedUserIds, CancellationToken cancellationToken = default)
+    public async Task<UserProfile?> GetNextCandidateForUserAsync(UserProfile currentUserProfile, CancellationToken cancellationToken = default)
     {
+        var currentUserId = currentUserProfile.UserId;
+
         var query = dbContext.UserProfiles
             .AsNoTracking()
             .Include(p => p.User)
@@ -47,7 +49,9 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
                 .ThenInclude(i => i.Interest)
             .Where(p => p.IsCompleted)
             .Where(p => p.User.State == UserState.Active || p.User.State == UserState.Searching)
-            .Where(p => !excludedUserIds.Contains(p.UserId));
+            .Where(p => p.UserId != currentUserId)
+            .Where(p => !dbContext.ProfileRatings.Any(r => r.FromUserId == currentUserId && r.ToUserId == p.UserId))
+            .Where(p => !dbContext.ProfileReports.Any(rep => rep.ReporterId == currentUserId && rep.ReportedUserId == p.UserId));
 
         // Строгая изоляция по стране (пользователь из Украины не видит РФ, Бразилия не видит другие страны и т.д.)
         if (!string.IsNullOrEmpty(currentUserProfile.CityRef?.Country))
@@ -123,8 +127,10 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
             .FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<UserProfile>> GetEligibleCandidatesAsync(UserProfile currentUserProfile, HashSet<Guid> excludedUserIds, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<UserProfile>> GetEligibleCandidatesAsync(UserProfile currentUserProfile, int limit = 100, CancellationToken cancellationToken = default)
     {
+        var currentUserId = currentUserProfile.UserId;
+
         var query = dbContext.UserProfiles
             .AsNoTracking()
             .Include(p => p.User)
@@ -133,7 +139,9 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
                 .ThenInclude(i => i.Interest)
             .Where(p => p.IsCompleted)
             .Where(p => p.User.State == UserState.Active || p.User.State == UserState.Searching)
-            .Where(p => !excludedUserIds.Contains(p.UserId));
+            .Where(p => p.UserId != currentUserId)
+            .Where(p => !dbContext.ProfileRatings.Any(r => r.FromUserId == currentUserId && r.ToUserId == p.UserId))
+            .Where(p => !dbContext.ProfileReports.Any(rep => rep.ReporterId == currentUserId && rep.ReportedUserId == p.UserId));
 
         // Строгая изоляция по стране (пользователь из Украины не видит РФ, Бразилия не видит другие страны и т.д.)
         if (!string.IsNullOrEmpty(currentUserProfile.CityRef?.Country))
@@ -203,7 +211,11 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
             query = query.Where(p => p.DatingTarget != DatingTarget.AdultOnly && p.Age < 18);
         }
 
-        return await query.ToListAsync(cancellationToken);
+        return await query
+            .OrderByDescending(p => p.UpdatedAt ?? p.CreatedAt)
+            .ThenBy(p => p.Id)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
     }
 
     public static List<AppLanguage> GetCompatibleLanguages(AppLanguage language, string? userCountry = null)

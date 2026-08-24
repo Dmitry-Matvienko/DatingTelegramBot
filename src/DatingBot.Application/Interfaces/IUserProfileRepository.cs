@@ -9,8 +9,8 @@ public interface IUserProfileRepository
     Task<UserProfile?> GetByIdAsync(Guid profileId, CancellationToken cancellationToken = default);
     Task<UserProfile?> GetWithInterestsByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<UserProfile?> GetWithInterestsByTelegramIdAsync(long telegramId, CancellationToken cancellationToken = default);
-    Task<UserProfile?> GetNextCandidateForUserAsync(UserProfile currentUserProfile, HashSet<Guid> excludedUserIds, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<UserProfile>> GetEligibleCandidatesAsync(UserProfile currentUserProfile, HashSet<Guid> excludedUserIds, CancellationToken cancellationToken = default);
+    Task<UserProfile?> GetNextCandidateForUserAsync(UserProfile currentUserProfile, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<UserProfile>> GetEligibleCandidatesAsync(UserProfile currentUserProfile, int limit = 100, CancellationToken cancellationToken = default);
     Task<int> ResetRatingsForCityAsync(Guid userId, int? cityId, string? cityName, CancellationToken cancellationToken = default);
     Task AddAsync(UserProfile profile, CancellationToken cancellationToken = default);
     void Update(UserProfile profile);
