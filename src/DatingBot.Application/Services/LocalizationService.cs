@@ -889,6 +889,15 @@ public class LocalizationService : ILocalizationService
             [AppLanguage.Portuguese] = "💬 <b>Contato:</b> {0}\n",
             [AppLanguage.Indonesian] = "💬 <b>Kontak:</b> {0}\n"
         },
+        ["Notification_CanMessageUser"] = new()
+        {
+            [AppLanguage.Russian] = "💬 <b>Вы можете написать этому человеку:</b>",
+            [AppLanguage.Ukrainian] = "💬 <b>Ви можете написати цій людині:</b>",
+            [AppLanguage.English] = "💬 <b>You can write to this person:</b>",
+            [AppLanguage.Hindi] = "💬 <b>आप इस व्यक्ति को संदेश भेज सकते हैं:</b>",
+            [AppLanguage.Portuguese] = "💬 <b>Você pode escrever para esta pessoa:</b>",
+            [AppLanguage.Indonesian] = "💬 <b>Anda dapat mengirim pesan ke orang ini:</b>"
+        },
         ["Btn_SendMessage"] = new()
         {
             [AppLanguage.Russian] = "💬 Написать",

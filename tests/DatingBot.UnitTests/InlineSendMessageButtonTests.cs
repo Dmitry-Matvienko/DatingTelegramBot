@@ -55,6 +55,19 @@ public class InlineSendMessageButtonTests
         text.Should().Be(expectedText);
     }
 
+    [Theory]
+    [InlineData(AppLanguage.Russian, "💬 <b>Вы можете написать этому человеку:</b>")]
+    [InlineData(AppLanguage.Ukrainian, "💬 <b>Ви можете написати цій людині:</b>")]
+    [InlineData(AppLanguage.English, "💬 <b>You can write to this person:</b>")]
+    [InlineData(AppLanguage.Hindi, "💬 <b>आप इस व्यक्ति को संदेश भेज सकते हैं:</b>")]
+    [InlineData(AppLanguage.Portuguese, "💬 <b>Você pode escrever para esta pessoa:</b>")]
+    [InlineData(AppLanguage.Indonesian, "💬 <b>Anda dapat mengirim pesan ke orang ini:</b>")]
+    public void LocalizationService_Notification_CanMessageUser_ShouldBeConfiguredForAllLanguages(AppLanguage lang, string expectedText)
+    {
+        var text = _loc.Get(lang, "Notification_CanMessageUser");
+        text.Should().Be(expectedText);
+    }
+
     [Fact]
     public void SearchKeyboards_GetMutualMatchKeyboard_ShouldReturnInlineKeyboardMarkupWithSendMessageButton()
     {
@@ -161,7 +174,7 @@ public class InlineSendMessageButtonTests
     }
 
     [Fact]
-    public async Task SearchPromptService_SendRaterCardAsync_ShouldIncludeInlineKeyboardWithSendMessageButton()
+    public async Task SearchPromptService_SendRaterCardAsync_ShouldSendPhotoWithRatingReplyKeyboard_AndFollowUpMessageWithInlineSendMessageButton()
     {
         var botClient = new Mock<ITelegramBotClient>();
         var registrationService = new Mock<IRegistrationService>();
@@ -201,16 +214,31 @@ public class InlineSendMessageButtonTests
         botClient.Setup(b => b.SendRequest(It.IsAny<SendPhotoRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Message { Id = 100 });
 
+        botClient.Setup(b => b.SendRequest(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Message { Id = 101 });
+
         var sut = new SearchPromptService(botClient.Object, registrationService.Object, userRepo.Object, _loc, config, logger.Object);
 
         await sut.SendRaterCardAsync(chatId, rater, 8);
 
+        // 1. Photo card sent with 1..10 ReplyKeyboardMarkup
         botClient.Verify(b => b.SendRequest(
             It.Is<SendPhotoRequest>(r =>
                 r.ChatId.Identifier == chatId &&
+                r.ReplyMarkup is ReplyKeyboardMarkup),
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        // 2. Follow-up message sent with InlineKeyboardMarkup (Send Message button)
+        botClient.Verify(b => b.SendRequest(
+            It.Is<SendMessageRequest>(r =>
+                r.ChatId.Identifier == chatId &&
+                r.Text.Contains("Вы можете написать этому человеку") &&
                 r.ReplyMarkup is InlineKeyboardMarkup &&
                 ((InlineKeyboardMarkup)r.ReplyMarkup).InlineKeyboard.First().First().Url == "tg://user?id=999888777"),
             It.IsAny<CancellationToken>()), Times.Once);
+
+        // 3. Last bot message id saved from the follow-up message
+        registrationService.Verify(r => r.SaveLastBotMessageIdAsync(chatId, 101, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -320,7 +348,7 @@ public class InlineSendMessageButtonTests
     }
 
     [Fact]
-    public async Task SearchPromptService_SendRaterCardAsync_WhenNoPhoto_ShouldFallbackToSendMessageWithInlineKeyboard()
+    public async Task SearchPromptService_SendRaterCardAsync_WhenNoPhoto_ShouldSendTextMessageWithRatingReplyKeyboard_AndFollowUpMessageWithInlineSendMessageButton()
     {
         var botClient = new Mock<ITelegramBotClient>();
         var registrationService = new Mock<IRegistrationService>();
@@ -357,18 +385,32 @@ public class InlineSendMessageButtonTests
             Greeting: "Hi there!"
         );
 
-        botClient.Setup(b => b.SendRequest(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Message { Id = 100 });
+        botClient.SetupSequence(b => b.SendRequest(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Message { Id = 100 })
+            .ReturnsAsync(new Message { Id = 101 });
 
         var sut = new SearchPromptService(botClient.Object, registrationService.Object, userRepo.Object, _loc, config, logger.Object);
 
         await sut.SendRaterCardAsync(chatId, rater, 8);
 
+        // 1. Text card sent with 1..10 ReplyKeyboardMarkup
         botClient.Verify(b => b.SendRequest(
             It.Is<SendMessageRequest>(r =>
                 r.ChatId.Identifier == chatId &&
+                r.Text.Contains("Anna") &&
+                r.ReplyMarkup is ReplyKeyboardMarkup),
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        // 2. Follow-up message sent with InlineKeyboardMarkup
+        botClient.Verify(b => b.SendRequest(
+            It.Is<SendMessageRequest>(r =>
+                r.ChatId.Identifier == chatId &&
+                r.Text.Contains("Вы можете написать этому человеку") &&
                 r.ReplyMarkup is InlineKeyboardMarkup &&
                 ((InlineKeyboardMarkup)r.ReplyMarkup).InlineKeyboard.First().First().Url == "tg://user?id=999888777"),
             It.IsAny<CancellationToken>()), Times.Once);
+
+        // 3. Last bot message id saved from the follow-up message
+        registrationService.Verify(r => r.SaveLastBotMessageIdAsync(chatId, 101, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

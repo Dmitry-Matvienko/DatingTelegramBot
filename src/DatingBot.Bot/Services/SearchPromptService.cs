@@ -212,7 +212,7 @@ public class SearchPromptService(
         Message sentMessage = null!;
         var photoSent = false;
         var raterText = sb.ToString();
-        var keyboard = SearchKeyboards.GetRaterCardKeyboard(rater.TelegramId, rater.Username, lang);
+        var ratingReplyKeyboard = SearchKeyboards.GetRatingReplyKeyboard(lang);
         if (!string.IsNullOrEmpty(rater.PhotoFileId) && raterText.Length <= 1024)
         {
             try
@@ -222,7 +222,7 @@ public class SearchPromptService(
                     photo: InputFile.FromFileId(rater.PhotoFileId),
                     caption: raterText,
                     parseMode: ParseMode.Html,
-                    replyMarkup: keyboard,
+                    replyMarkup: ratingReplyKeyboard,
                     cancellationToken: cancellationToken
                 );
                 photoSent = true;
@@ -240,12 +240,30 @@ public class SearchPromptService(
                 chatId: chatId,
                 text: raterText,
                 parseMode: ParseMode.Html,
-                replyMarkup: keyboard,
+                replyMarkup: ratingReplyKeyboard,
                 cancellationToken: cancellationToken
             );
         }
 
-        await registrationService.SaveLastBotMessageIdAsync(chatId, sentMessage.MessageId, cancellationToken);
+        Message followUpMessage = null!;
+        var inlineKeyboard = SearchKeyboards.GetRaterCardKeyboard(rater.TelegramId, rater.Username, lang);
+        try
+        {
+            followUpMessage = await botClient.SendMessage(
+                chatId: chatId,
+                text: loc.Get(lang, "Notification_CanMessageUser"),
+                parseMode: ParseMode.Html,
+                replyMarkup: inlineKeyboard,
+                cancellationToken: cancellationToken
+            );
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning("Не удалось отправить сообщение с кнопкой 'Написать' пользователю {ChatId}: {ErrorMessage}", chatId, ex.Message);
+        }
+
+        var lastMessageId = followUpMessage?.MessageId ?? sentMessage.MessageId;
+        await registrationService.SaveLastBotMessageIdAsync(chatId, lastMessageId, cancellationToken);
     }
 
     public async Task SendReportReasonsPromptAsync(long chatId, Guid candidateProfileId, CancellationToken cancellationToken = default)
