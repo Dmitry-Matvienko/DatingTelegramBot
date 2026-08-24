@@ -19,7 +19,7 @@ public interface ISearchService
     Task<Result<ReportInfo>> ReportCandidateAsync(long reporterTelegramId, Guid targetProfileId, ReportReason reason, string? details, CancellationToken cancellationToken = default);
     Task<Result> SetReportingStateAsync(long telegramId, Guid targetProfileId, CancellationToken cancellationToken = default);
     Task<Result> ResetHistoryForCityAsync(long telegramId, CancellationToken cancellationToken = default);
-    Task ClearCurrentCandidateAsync(long telegramId, CancellationToken cancellationToken = default);
+    Task<Result> ClearCurrentCandidateAsync(long telegramId, CancellationToken cancellationToken = default);
 }
 ```
 
