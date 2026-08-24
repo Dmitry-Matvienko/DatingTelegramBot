@@ -16,6 +16,7 @@ public class User
     public DateTime? UpdatedAt { get; set; }
     public DateTime LastActiveAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastInactivityReminderSentAt { get; set; }
+    public DateTime? SearchCycleStartedAt { get; set; }
 
     public UserProfile? Profile { get; set; }
 }

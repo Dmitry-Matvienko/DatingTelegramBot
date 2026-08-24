@@ -11,6 +11,7 @@ public interface IUserProfileRepository
     Task<UserProfile?> GetWithInterestsByTelegramIdAsync(long telegramId, CancellationToken cancellationToken = default);
     Task<UserProfile?> GetNextCandidateForUserAsync(UserProfile currentUserProfile, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<UserProfile>> GetEligibleCandidatesAsync(UserProfile currentUserProfile, int limit = 100, CancellationToken cancellationToken = default);
+    Task<int> GetTotalEligibleCandidatesCountAsync(UserProfile currentUserProfile, CancellationToken cancellationToken = default);
     Task<int> ResetRatingsForCityAsync(Guid userId, int? cityId, string? cityName, CancellationToken cancellationToken = default);
     Task AddAsync(UserProfile profile, CancellationToken cancellationToken = default);
     void Update(UserProfile profile);

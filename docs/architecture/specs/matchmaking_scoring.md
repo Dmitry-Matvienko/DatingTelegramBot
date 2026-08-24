@@ -40,7 +40,7 @@ public record MatchCandidateDto(
 2. Не принадлежат текущему пользователю (`UserId != CurrentUserId`).
 3. Подходят по взаимному полу (`Gender` и `TargetGender` удовлетворяют друг друга).
 4. Соответствуют возрастным фильтрам (категории `AgeFilters` или ручной диапазон `SearchMinAge`..`SearchMaxAge`).
-5. Еще не были оценены текущим пользователем (`ProfileRating`) и на них не подана жалоба (`ProfileReport`) — фильтруется в SQL через подзапросы `NOT EXISTS`.
+5. Еще не были оценены текущим пользователем в текущем цикле (`ProfileRating.CreatedAt >= User.SearchCycleStartedAt`) и на них не подана жалоба (`ProfileReport`) — фильтруется в SQL через подзапросы `NOT EXISTS`.
 6. Совместимы по языковой группе (`UserProfileRepository.GetCompatibleLanguages`).
 7. Пул кандидатов ограничивается `Take(100)` наиболее актуальных профилей (`OrderByDescending(UpdatedAt ?? CreatedAt)`).
 
@@ -90,6 +90,12 @@ d = 2 R \arcsin\left(\sqrt{\sin^2\left(\frac{\Delta \text{lat}}{2}\right) + \cos
 
 ---
 
-## 6. Сброс истории для города (`ResetHistoryForCityAsync`)
+## 6. Бесконечный циклический поиск и сброс (`SearchCycleStartedAt` & `ResetHistoryForCityAsync`)
 
-Если все анкеты в городе и окрестностях просмотрены, пользователю предлагается кнопка **«🔄 Искать заново»**, которая удаляет историю оценок (`ProfileRating`) для профилей данного города, позволяя просматривать их по новому кругу.
+1. **Автоматическое циклирование**:
+   - Когда все кандидаты в текущем круге оценены (`GetEligibleCandidatesAsync` вернул 0 кандидатов, но общее количество подходящих профилей в категории `GetTotalEligibleCandidatesCountAsync` > 0), система **автоматически начинает новый цикл поиска** (`User.SearchCycleStartedAt = DateTime.UtcNow`), возвращая первого кандидата из начала очереди согласно 4-уровневому каскаду скоринга.
+   - Поиск не останавливается и не требует 24-часового ожидания.
+2. **Ручной перезапуск цикла**:
+   - При нажатии кнопки **«🔄 Искать заново»** вызывается `ResetHistoryForCityAsync`, который обновляет метку `User.SearchCycleStartedAt = DateTime.UtcNow`, немедленно начиная выдачу анкет с начала списка.
+3. **Строгая изоляция категорий**:
+   - Циклический поиск всегда строго соблюдает фильтры по `DatingTarget`, `Gender`, `TargetGender`, `AgeFilters` и стране/языку — категории никогда не смешиваются и не пересекаются.

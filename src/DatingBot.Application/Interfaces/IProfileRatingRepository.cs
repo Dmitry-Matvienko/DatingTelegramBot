@@ -10,4 +10,5 @@ public interface IProfileRatingRepository
     Task<List<ProfileRating>> GetIncomingUnratedHighRatingsAsync(Guid toUserId, CancellationToken cancellationToken = default);
     Task<HashSet<Guid>> GetRatedUserIdsAsync(Guid fromUserId, CancellationToken cancellationToken = default);
     Task AddAsync(ProfileRating rating, CancellationToken cancellationToken = default);
+    void Update(ProfileRating rating);
 }

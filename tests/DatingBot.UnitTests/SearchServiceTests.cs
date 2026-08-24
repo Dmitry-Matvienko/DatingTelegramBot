@@ -134,6 +134,56 @@ public class SearchServiceTests
         _ratingRepoMock.Verify(r => r.AddAsync(It.Is<ProfileRating>(pr => pr.FromUserId == rater.Id && pr.ToUserId == candidateUser.Id && pr.Score == 10), It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [Fact]
+    public async Task Should_UpdateExistingRatingAndRecalculateAverage_WhenCandidateReRated()
+    {
+        // Arrange
+        const long raterTelegramId = 11111;
+        var rater = new User { Id = Guid.NewGuid(), TelegramId = raterTelegramId };
+
+        var candidateUser = new User { Id = Guid.NewGuid(), TelegramId = 22222 };
+        var candidateProfile = new UserProfile
+        {
+            Id = Guid.NewGuid(),
+            UserId = candidateUser.Id,
+            User = candidateUser,
+            RatingCount = 2,
+            AverageRating = 7.0 // Например, оценки 6 и 8
+        };
+
+        var existingRating = new ProfileRating
+        {
+            Id = Guid.NewGuid(),
+            FromUserId = rater.Id,
+            ToUserId = candidateUser.Id,
+            Score = 6, // Старая оценка пользователя
+            CreatedAt = DateTime.UtcNow.AddDays(-1)
+        };
+
+        _userRepoMock.Setup(r => r.GetByTelegramIdAsync(raterTelegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(rater);
+        _profileRepoMock.Setup(r => r.GetByIdAsync(candidateProfile.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(candidateProfile);
+        _ratingRepoMock.Setup(r => r.GetRatingAsync(rater.Id, candidateUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingRating);
+
+        // Act: пользователь меняет оценку с 6 на 10 ((7.0 * 2 - 6 + 10) / 2 = 9.0)
+        var result = await _service.RateCandidateAsync(raterTelegramId, candidateProfile.Id, 10);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.Score.Should().Be(10);
+        result.Value.NewRatingCount.Should().Be(2); // Количество оценок не изменилось
+        result.Value.NewAverageRating.Should().Be(9.0); // Средний балл пересчитался
+
+        existingRating.Score.Should().Be(10);
+        candidateProfile.RatingCount.Should().Be(2);
+        candidateProfile.AverageRating.Should().Be(9.0);
+        _ratingRepoMock.Verify(r => r.Update(existingRating), Times.Once);
+        _profileRepoMock.Verify(r => r.Update(candidateProfile), Times.Once);
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(11)]

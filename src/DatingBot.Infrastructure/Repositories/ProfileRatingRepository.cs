@@ -54,4 +54,9 @@ public class ProfileRatingRepository(AppDbContext dbContext) : IProfileRatingRep
     {
         await dbContext.ProfileRatings.AddAsync(rating, cancellationToken);
     }
+
+    public void Update(ProfileRating rating)
+    {
+        dbContext.ProfileRatings.Update(rating);
+    }
 }

@@ -37,8 +37,8 @@ public class MatchmakingNotificationWorker(
                 var botClient = scope.ServiceProvider.GetRequiredService<ITelegramBotClient>();
                 var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
 
-                // Фоновое напоминание пользователям о возможности возобновить поиск через 24ч
-                logger.LogDebug("Проверка пользователей для 24-часового напоминания о поиске...");
+                // Фоновый мониторинг очереди подбора анкет
+                logger.LogDebug("Фоновая проверка подбора анкет...");
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

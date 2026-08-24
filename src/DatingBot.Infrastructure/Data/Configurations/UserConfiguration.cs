@@ -50,6 +50,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.LastInactivityReminderSentAt)
             .IsRequired(false);
 
+        builder.Property(u => u.SearchCycleStartedAt)
+            .IsRequired(false);
+
         builder.HasIndex(u => new { u.LastActiveAt, u.LastInactivityReminderSentAt })
             .HasDatabaseName("IX_Users_LastActive_LastReminder");
 

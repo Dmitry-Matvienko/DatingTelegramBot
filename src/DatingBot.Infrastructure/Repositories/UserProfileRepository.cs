@@ -40,86 +40,14 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
     public async Task<UserProfile?> GetNextCandidateForUserAsync(UserProfile currentUserProfile, CancellationToken cancellationToken = default)
     {
         var currentUserId = currentUserProfile.UserId;
+        var cycleStartedAt = currentUserProfile.User?.SearchCycleStartedAt ?? DateTime.MinValue;
 
-        var query = dbContext.UserProfiles
-            .AsNoTracking()
+        var query = BuildBaseCandidateQuery(currentUserProfile)
             .Include(p => p.User)
             .Include(p => p.CityRef)
             .Include(p => p.Interests)
                 .ThenInclude(i => i.Interest)
-            .Where(p => p.IsCompleted)
-            .Where(p => p.User.State == UserState.Active || p.User.State == UserState.Searching)
-            .Where(p => p.UserId != currentUserId)
-            .Where(p => !dbContext.ProfileRatings.Any(r => r.FromUserId == currentUserId && r.ToUserId == p.UserId))
-            .Where(p => !dbContext.ProfileReports.Any(rep => rep.ReporterId == currentUserId && rep.ReportedUserId == p.UserId));
-
-        // Строгая изоляция по стране (пользователь из Украины не видит РФ, Бразилия не видит другие страны и т.д.)
-        if (!string.IsNullOrEmpty(currentUserProfile.CityRef?.Country))
-        {
-            var userCountry = currentUserProfile.CityRef.Country;
-            query = query.Where(p => p.CityRef != null && p.CityRef.Country == userCountry);
-        }
-
-        // Фильтрация по полу: кого ищет текущий пользователь
-        if (currentUserProfile.TargetGender == TargetGender.Male)
-        {
-            query = query.Where(p => p.Gender == Gender.Male);
-        }
-        else if (currentUserProfile.TargetGender == TargetGender.Female)
-        {
-            query = query.Where(p => p.Gender == Gender.Female);
-        }
-
-        // Фильтрация по полу: подходит ли текущий пользователь кандидату
-        if (currentUserProfile.Gender == Gender.Male)
-        {
-            query = query.Where(p => p.TargetGender == TargetGender.Male || p.TargetGender == TargetGender.All);
-        }
-        else if (currentUserProfile.Gender == Gender.Female)
-        {
-            query = query.Where(p => p.TargetGender == TargetGender.Female || p.TargetGender == TargetGender.All);
-        }
-
-        // Фильтрация по возрасту (ручной диапазон)
-        if (currentUserProfile.SearchMinAge.HasValue)
-        {
-            query = query.Where(p => p.Age >= currentUserProfile.SearchMinAge.Value);
-        }
-        if (currentUserProfile.SearchMaxAge.HasValue)
-        {
-            query = query.Where(p => p.Age <= currentUserProfile.SearchMaxAge.Value);
-        }
-
-        // Фильтрация по возрастным категориям (если заданы)
-        if (currentUserProfile.AgeFilters != AgeCategoryFilter.None)
-        {
-            var under18 = currentUserProfile.AgeFilters.HasFlag(AgeCategoryFilter.Under18);
-            var age18To25 = currentUserProfile.AgeFilters.HasFlag(AgeCategoryFilter.Age18To25);
-            var age25To30 = currentUserProfile.AgeFilters.HasFlag(AgeCategoryFilter.Age25To30);
-            var age30To40 = currentUserProfile.AgeFilters.HasFlag(AgeCategoryFilter.Age30To40);
-            var age40Plus = currentUserProfile.AgeFilters.HasFlag(AgeCategoryFilter.Age40Plus);
-
-            query = query.Where(p =>
-                (under18 && p.Age < 18) ||
-                (age18To25 && p.Age >= 18 && p.Age <= 25) ||
-                (age25To30 && p.Age >= 25 && p.Age <= 30) ||
-                (age30To40 && p.Age >= 30 && p.Age <= 40) ||
-                (age40Plus && p.Age >= 40)
-            );
-        }
-
-        // Строгая изоляция по цели знакомства («Общение» -> «Общение», «Отношения» -> «Отношения», «18+» -> «18+»)
-        query = query.Where(p => p.DatingTarget == currentUserProfile.DatingTarget);
-
-        // Изоляция по языковым группам с учетом страны нахождения пользователя
-        var compatibleLanguages = GetCompatibleLanguages(currentUserProfile.User?.Language ?? AppLanguage.Russian, currentUserProfile.CityRef?.Country);
-        query = query.Where(p => compatibleLanguages.Contains(p.User.Language));
-
-        // Безопасность 18+: если текущий пользователь младше 18, кандидат не может быть 18+ целевой
-        if (currentUserProfile.Age < 18)
-        {
-            query = query.Where(p => p.DatingTarget != DatingTarget.AdultOnly && p.Age < 18);
-        }
+            .Where(p => !dbContext.ProfileRatings.Any(r => r.FromUserId == currentUserId && r.ToUserId == p.UserId && r.CreatedAt >= cycleStartedAt));
 
         return await query
             .OrderByDescending(p => p.UpdatedAt ?? p.CreatedAt)
@@ -130,17 +58,36 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
     public async Task<IReadOnlyList<UserProfile>> GetEligibleCandidatesAsync(UserProfile currentUserProfile, int limit = 100, CancellationToken cancellationToken = default)
     {
         var currentUserId = currentUserProfile.UserId;
+        var cycleStartedAt = currentUserProfile.User?.SearchCycleStartedAt ?? DateTime.MinValue;
 
-        var query = dbContext.UserProfiles
-            .AsNoTracking()
+        var query = BuildBaseCandidateQuery(currentUserProfile)
             .Include(p => p.User)
             .Include(p => p.CityRef)
             .Include(p => p.Interests)
                 .ThenInclude(i => i.Interest)
+            .Where(p => !dbContext.ProfileRatings.Any(r => r.FromUserId == currentUserId && r.ToUserId == p.UserId && r.CreatedAt >= cycleStartedAt));
+
+        return await query
+            .OrderByDescending(p => p.UpdatedAt ?? p.CreatedAt)
+            .ThenBy(p => p.Id)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<int> GetTotalEligibleCandidatesCountAsync(UserProfile currentUserProfile, CancellationToken cancellationToken = default)
+    {
+        return await BuildBaseCandidateQuery(currentUserProfile).CountAsync(cancellationToken);
+    }
+
+    private IQueryable<UserProfile> BuildBaseCandidateQuery(UserProfile currentUserProfile)
+    {
+        var currentUserId = currentUserProfile.UserId;
+
+        var query = dbContext.UserProfiles
+            .AsNoTracking()
             .Where(p => p.IsCompleted)
             .Where(p => p.User.State == UserState.Active || p.User.State == UserState.Searching)
             .Where(p => p.UserId != currentUserId)
-            .Where(p => !dbContext.ProfileRatings.Any(r => r.FromUserId == currentUserId && r.ToUserId == p.UserId))
             .Where(p => !dbContext.ProfileReports.Any(rep => rep.ReporterId == currentUserId && rep.ReportedUserId == p.UserId));
 
         // Строгая изоляция по стране (пользователь из Украины не видит РФ, Бразилия не видит другие страны и т.д.)
@@ -211,11 +158,7 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
             query = query.Where(p => p.DatingTarget != DatingTarget.AdultOnly && p.Age < 18);
         }
 
-        return await query
-            .OrderByDescending(p => p.UpdatedAt ?? p.CreatedAt)
-            .ThenBy(p => p.Id)
-            .Take(limit)
-            .ToListAsync(cancellationToken);
+        return query;
     }
 
     public static List<AppLanguage> GetCompatibleLanguages(AppLanguage language, string? userCountry = null)

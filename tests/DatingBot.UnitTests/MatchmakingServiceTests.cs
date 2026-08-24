@@ -326,6 +326,112 @@ public class MatchmakingServiceTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        _profileRepoMock.Verify(r => r.ResetRatingsForCityAsync(user.Id, 1, "Москва", It.IsAny<CancellationToken>()), Times.Once);
+        user.SearchCycleStartedAt.Should().NotBeNull();
+        _userRepoMock.Verify(r => r.Update(user), Times.Once);
+    }
+
+    [Fact]
+    public async Task Should_AutomaticallyCycleCandidates_When_CurrentCycleExhausted()
+    {
+        // Arrange
+        const long telegramId = 11111;
+        var currentUser = new User { Id = Guid.NewGuid(), TelegramId = telegramId, State = UserState.Active };
+        var moscowCity = new City { Id = 1, Name = "Москва" };
+
+        var currentProfile = new UserProfile
+        {
+            Id = Guid.NewGuid(),
+            UserId = currentUser.Id,
+            User = currentUser,
+            Gender = Gender.Male,
+            TargetGender = TargetGender.Female,
+            DatingTarget = DatingTarget.Relationship,
+            City = "Москва",
+            CityId = 1,
+            CityRef = moscowCity,
+            IsCompleted = true
+        };
+
+        var candidate1 = new UserProfile
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid(),
+            User = new User { Id = Guid.NewGuid(), TelegramId = 22222 },
+            Name = "Анна",
+            Gender = Gender.Female,
+            TargetGender = TargetGender.Male,
+            DatingTarget = DatingTarget.Relationship,
+            City = "Москва",
+            CityId = 1,
+            CityRef = moscowCity,
+            IsCompleted = true
+        };
+
+        _userRepoMock.Setup(r => r.GetByTelegramIdAsync(telegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(currentUser);
+        _profileRepoMock.Setup(r => r.GetWithInterestsByUserIdAsync(currentUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(currentProfile);
+
+        // Первый вызов GetEligibleCandidatesAsync возвращает пустой список (все анкеты в текущем круге оценены)
+        // Второй вызов (после перезапуска цикла) возвращает candidate1
+        var callCount = 0;
+        _profileRepoMock.Setup(r => r.GetEligibleCandidatesAsync(currentProfile, It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() =>
+            {
+                callCount++;
+                return callCount == 1 ? new List<UserProfile>() : new List<UserProfile> { candidate1 };
+            });
+
+        _profileRepoMock.Setup(r => r.GetTotalEligibleCandidatesCountAsync(currentProfile, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        _interestRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Interest>());
+
+        // Act
+        var match = await _service.GetNextMatchCandidateAsync(telegramId);
+
+        // Assert
+        match.Should().NotBeNull();
+        match!.Profile.Name.Should().Be("Анна");
+        currentUser.SearchCycleStartedAt.Should().NotBeNull();
+        currentUser.CurrentCandidateProfileId.Should().Be(candidate1.Id);
+        _profileRepoMock.Verify(r => r.GetTotalEligibleCandidatesCountAsync(currentProfile, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Should_ReturnNull_When_TotalEligibleCandidatesCountIsZero()
+    {
+        // Arrange
+        const long telegramId = 11111;
+        var currentUser = new User { Id = Guid.NewGuid(), TelegramId = telegramId, State = UserState.Active };
+        var currentProfile = new UserProfile
+        {
+            Id = Guid.NewGuid(),
+            UserId = currentUser.Id,
+            User = currentUser,
+            Gender = Gender.Male,
+            TargetGender = TargetGender.Female,
+            DatingTarget = DatingTarget.AdultOnly,
+            IsCompleted = true
+        };
+
+        _userRepoMock.Setup(r => r.GetByTelegramIdAsync(telegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(currentUser);
+        _profileRepoMock.Setup(r => r.GetWithInterestsByUserIdAsync(currentUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(currentProfile);
+
+        _profileRepoMock.Setup(r => r.GetEligibleCandidatesAsync(currentProfile, It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserProfile>());
+
+        _profileRepoMock.Setup(r => r.GetTotalEligibleCandidatesCountAsync(currentProfile, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0);
+
+        // Act
+        var match = await _service.GetNextMatchCandidateAsync(telegramId);
+
+        // Assert
+        match.Should().BeNull();
+        currentUser.CurrentCandidateProfileId.Should().BeNull();
     }
 }

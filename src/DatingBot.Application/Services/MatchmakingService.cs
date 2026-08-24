@@ -35,8 +35,31 @@ public class MatchmakingService(
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
+        var userInterests = profile.Interests.Select(i => i.InterestId).ToHashSet();
+        float[]? userVector = profile.AiVector != null ? aiEmbeddingService.BytesToVector(profile.AiVector) : null;
+
         var candidates = await userProfileRepository.GetEligibleCandidatesAsync(profile, limit: 100, cancellationToken);
-        if (candidates.Count == 0)
+        var evaluatedCandidates = EvaluateCandidates(profile, candidates, userInterests, userVector, lang);
+
+        if (evaluatedCandidates.Count == 0)
+        {
+            // Проверяем, есть ли вообще подходящие кандидаты в базе по критериям категории
+            var totalEligible = await userProfileRepository.GetTotalEligibleCandidatesCountAsync(profile, cancellationToken);
+            if (totalEligible > 0)
+            {
+                // Автоматически начинаем новый цикл поиска с начала списка (как в админ-панели)
+                user.SearchCycleStartedAt = DateTime.UtcNow;
+                user.UpdatedAt = DateTime.UtcNow;
+                userRepository.Update(user);
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+
+                profile.User = user;
+                candidates = await userProfileRepository.GetEligibleCandidatesAsync(profile, limit: 100, cancellationToken);
+                evaluatedCandidates = EvaluateCandidates(profile, candidates, userInterests, userVector, lang);
+            }
+        }
+
+        if (evaluatedCandidates.Count == 0)
         {
             user.CurrentCandidateProfileId = null;
             userRepository.Update(user);
@@ -44,9 +67,68 @@ public class MatchmakingService(
             return null;
         }
 
-        var userInterests = profile.Interests.Select(i => i.InterestId).ToHashSet();
-        float[]? userVector = profile.AiVector != null ? aiEmbeddingService.BytesToVector(profile.AiVector) : null;
+        // Многоуровневая сортировка (Каскад приоритетов):
+        // 1. Tier 1 (ИИ-мэтч в городе) -> сортировка по сходству DESC
+        // 2. Tier 2 (Общие интересы в городе) -> сортировка по кол-ву общих интересов DESC
+        // 3. Tier 3 (Свой город) -> по дате обновления DESC
+        // 4. Tier 4 (Соседние города) -> по расстоянию ASC, затем по сходству/интересам
+        var best = evaluatedCandidates
+            .OrderBy(c => c.Tier switch
+            {
+                MatchTier.AiCompatibility => 1,
+                MatchTier.CommonInterests => 2,
+                MatchTier.SameCity => 3,
+                MatchTier.NearbyCity => 4,
+                _ => 5
+            })
+            .ThenBy(c => c.Tier == MatchTier.NearbyCity ? (c.DistanceKm ?? 99999) : 0)
+            .ThenByDescending(c => c.Tier == MatchTier.AiCompatibility ? c.Similarity : 0)
+            .ThenByDescending(c => c.Tier == MatchTier.CommonInterests ? c.CommonInterests.Count : 0)
+            .ThenByDescending(c => c.Candidate.UpdatedAt ?? c.Candidate.CreatedAt)
+            .First();
 
+        user.CurrentCandidateProfileId = best.Candidate.Id;
+        userRepository.Update(user);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var profileDto = await MapToDtoAsync(best.Candidate, cancellationToken);
+        var commonDtos = best.CommonInterests.Select(i => new InterestDto(i.Id, i.Code, i.Title, i.Icon, true)).ToList();
+        var otherDtos = best.OtherInterests.Select(i => new InterestDto(i.Id, i.Code, i.Title, i.Icon, true)).ToList();
+
+        return new MatchCandidateDto(
+            profileDto,
+            commonDtos,
+            otherDtos,
+            best.Tier,
+            best.Badge,
+            best.Similarity,
+            best.DistanceKm
+        );
+    }
+
+    public async Task<Result> ResetHistoryForCityAsync(long telegramId, CancellationToken cancellationToken = default)
+    {
+        var user = await userRepository.GetByTelegramIdAsync(telegramId, cancellationToken);
+        if (user is null) return Result.Failure(loc.Get(AppLanguage.Russian, "Error_UserNotFound"));
+
+        var profile = await userProfileRepository.GetByUserIdAsync(user.Id, cancellationToken);
+        if (profile is null) return Result.Failure(loc.Get(user.Language, "Error_ProfileNotFound"));
+
+        user.SearchCycleStartedAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTime.UtcNow;
+        userRepository.Update(user);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result.Success();
+    }
+
+    private List<CandidateEvaluation> EvaluateCandidates(
+        UserProfile profile,
+        IReadOnlyList<UserProfile> candidates,
+        HashSet<int> userInterests,
+        float[]? userVector,
+        AppLanguage lang)
+    {
         var evaluatedCandidates = new List<CandidateEvaluation>();
 
         foreach (var candidate in candidates)
@@ -121,63 +203,7 @@ public class MatchmakingService(
             evaluatedCandidates.Add(new CandidateEvaluation(candidate, common, other, tier, badge, similarity, distanceKm));
         }
 
-        if (evaluatedCandidates.Count == 0)
-        {
-            user.CurrentCandidateProfileId = null;
-            userRepository.Update(user);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
-            return null;
-        }
-
-        // Многоуровневая сортировка (Каскад приоритетов):
-        // 1. Tier 1 (ИИ-мэтч в городе) -> сортировка по сходству DESC
-        // 2. Tier 2 (Общие интересы в городе) -> сортировка по кол-ву общих интересов DESC
-        // 3. Tier 3 (Свой город) -> по дате обновления DESC
-        // 4. Tier 4 (Соседние города) -> по расстоянию ASC, затем по сходству/интересам
-        var best = evaluatedCandidates
-            .OrderBy(c => c.Tier switch
-            {
-                MatchTier.AiCompatibility => 1,
-                MatchTier.CommonInterests => 2,
-                MatchTier.SameCity => 3,
-                MatchTier.NearbyCity => 4,
-                _ => 5
-            })
-            .ThenBy(c => c.Tier == MatchTier.NearbyCity ? (c.DistanceKm ?? 99999) : 0)
-            .ThenByDescending(c => c.Tier == MatchTier.AiCompatibility ? c.Similarity : 0)
-            .ThenByDescending(c => c.Tier == MatchTier.CommonInterests ? c.CommonInterests.Count : 0)
-            .ThenByDescending(c => c.Candidate.UpdatedAt ?? c.Candidate.CreatedAt)
-            .First();
-
-        user.CurrentCandidateProfileId = best.Candidate.Id;
-        userRepository.Update(user);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        var profileDto = await MapToDtoAsync(best.Candidate, cancellationToken);
-        var commonDtos = best.CommonInterests.Select(i => new InterestDto(i.Id, i.Code, i.Title, i.Icon, true)).ToList();
-        var otherDtos = best.OtherInterests.Select(i => new InterestDto(i.Id, i.Code, i.Title, i.Icon, true)).ToList();
-
-        return new MatchCandidateDto(
-            profileDto,
-            commonDtos,
-            otherDtos,
-            best.Tier,
-            best.Badge,
-            best.Similarity,
-            best.DistanceKm
-        );
-    }
-
-    public async Task<Result> ResetHistoryForCityAsync(long telegramId, CancellationToken cancellationToken = default)
-    {
-        var user = await userRepository.GetByTelegramIdAsync(telegramId, cancellationToken);
-        if (user is null) return Result.Failure(loc.Get(AppLanguage.Russian, "Error_UserNotFound"));
-
-        var profile = await userProfileRepository.GetByUserIdAsync(user.Id, cancellationToken);
-        if (profile is null) return Result.Failure(loc.Get(user.Language, "Error_ProfileNotFound"));
-
-        await userProfileRepository.ResetRatingsForCityAsync(user.Id, profile.CityId, profile.City, cancellationToken);
-        return Result.Success();
+        return evaluatedCandidates;
     }
 
     private async Task<UserProfileDto> MapToDtoAsync(UserProfile profile, CancellationToken cancellationToken)

@@ -85,32 +85,49 @@ public class SearchService(
             return Result<RatingResult>.Failure("Нельзя оценить самого себя.");
         }
 
-        var alreadyRated = await profileRatingRepository.HasRatedAsync(rater.Id, candidate.UserId, cancellationToken);
-        if (alreadyRated)
+        var existingRating = await profileRatingRepository.GetRatingAsync(rater.Id, candidate.UserId, cancellationToken);
+        Guid ratingId;
+        int newCount;
+        double newAverage;
+
+        if (existingRating is not null)
         {
-            return Result<RatingResult>.Failure("Вы уже оценили эту анкету.");
+            ratingId = existingRating.Id;
+            var oldScore = existingRating.Score;
+            existingRating.Score = score;
+            existingRating.CreatedAt = DateTime.UtcNow;
+            profileRatingRepository.Update(existingRating);
+
+            newCount = candidate.RatingCount > 0 ? candidate.RatingCount : 1;
+            newAverage = Math.Round(((candidate.AverageRating * newCount) - oldScore + score) / newCount, 1);
+            candidate.AverageRating = newAverage;
+            candidate.RatingCount = newCount;
+            candidate.UpdatedAt = DateTime.UtcNow;
+            userProfileRepository.Update(candidate);
+        }
+        else
+        {
+            var rating = new ProfileRating
+            {
+                Id = Guid.NewGuid(),
+                FromUserId = rater.Id,
+                ToUserId = candidate.UserId,
+                Score = score,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await profileRatingRepository.AddAsync(rating, cancellationToken);
+            ratingId = rating.Id;
+
+            newCount = candidate.RatingCount + 1;
+            newAverage = Math.Round(((candidate.AverageRating * candidate.RatingCount) + score) / newCount, 1);
+
+            candidate.RatingCount = newCount;
+            candidate.AverageRating = newAverage;
+            candidate.UpdatedAt = DateTime.UtcNow;
+            userProfileRepository.Update(candidate);
         }
 
-        var rating = new ProfileRating
-        {
-            Id = Guid.NewGuid(),
-            FromUserId = rater.Id,
-            ToUserId = candidate.UserId,
-            Score = score,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        await profileRatingRepository.AddAsync(rating, cancellationToken);
-
-        // Пересчёт рейтинга анкеты
-        var newCount = candidate.RatingCount + 1;
-        var newAverage = Math.Round(((candidate.AverageRating * candidate.RatingCount) + score) / newCount, 1);
-
-        candidate.RatingCount = newCount;
-        candidate.AverageRating = newAverage;
-        candidate.UpdatedAt = DateTime.UtcNow;
-
-        userProfileRepository.Update(candidate);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Проверка взаимной симпатии (оценил ли кандидат ранее оценивающего на 6+ баллов)
@@ -128,7 +145,7 @@ public class SearchService(
         var candidateDto = await MapToDtoAsync(candidate, cancellationToken);
 
         return Result<RatingResult>.Success(new RatingResult(
-            rating.Id,
+            ratingId,
             candidate.User.TelegramId,
             score,
             newCount,
