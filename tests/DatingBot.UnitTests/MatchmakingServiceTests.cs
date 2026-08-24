@@ -92,9 +92,9 @@ public class MatchmakingServiceTests
             .Returns<byte[]>(b => new float[] { b[0] });
 
         // candidate1 сходство 0.85 (> 0.55), candidate2 сходство 0.30
-        _aiEmbeddingMock.Setup(a => a.CalculateCosineSimilarity(It.IsAny<float[]>(), It.Is<float[]>(v => v[0] == 4)))
+        _aiEmbeddingMock.Setup(a => a.CalculateCosineSimilarity(It.IsAny<float[]>(), candidate1.AiVector!))
             .Returns(0.85);
-        _aiEmbeddingMock.Setup(a => a.CalculateCosineSimilarity(It.IsAny<float[]>(), It.Is<float[]>(v => v[0] == 7)))
+        _aiEmbeddingMock.Setup(a => a.CalculateCosineSimilarity(It.IsAny<float[]>(), candidate2.AiVector!))
             .Returns(0.30);
 
         _interestRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))

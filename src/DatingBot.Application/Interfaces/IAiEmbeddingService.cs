@@ -4,6 +4,7 @@ public interface IAiEmbeddingService
 {
     Task<float[]?> GenerateEmbeddingAsync(string text, CancellationToken cancellationToken = default);
     double CalculateCosineSimilarity(float[] vectorA, float[] vectorB);
+    double CalculateCosineSimilarity(float[] vectorA, byte[] vectorBBytes);
     byte[] VectorToBytes(float[] vector);
     float[] BytesToVector(byte[] bytes);
 }

@@ -79,8 +79,7 @@ public class MatchmakingService(
             double similarity = 0.0;
             if (userVector is not null && candidate.AiVector is not null)
             {
-                var candidateVector = aiEmbeddingService.BytesToVector(candidate.AiVector);
-                similarity = aiEmbeddingService.CalculateCosineSimilarity(userVector, candidateVector);
+                similarity = aiEmbeddingService.CalculateCosineSimilarity(userVector, candidate.AiVector);
             }
 
             // Классификация по уровням подбора

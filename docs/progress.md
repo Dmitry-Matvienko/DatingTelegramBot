@@ -1,22 +1,24 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 27
+state_version: 28
 updated: 2026-08-24
 
 ---
 
 ## Сейчас
-- **Фаза**: Реализация **составного B-Tree индекса для входящих оценок (Проблема 3.1)**:
-  1. **Добавление составного индекса в схему базы данных**:
-     - В `ProfileRatingConfiguration` добавлен композитный индекс `IX_ProfileRatings_ToUser_Score_CreatedAt` на колонки `(ToUserId, Score, CreatedAt)`.
-     - Создана миграция EF Core 9 `Add_IncomingRatings_Composite_Index`.
-  2. **Оптимизация плана выполнения в MS SQL Server**:
-     - Запрос `GetIncomingUnratedHighRatingsAsync` теперь выполняет мгновенный `Index Seek` по `ToUserId` и диапазону `Score >= 6`.
-     - Устранена необходимость в операторе `Sort` плана выполнения благодаря естественному порядку `CreatedAt` в индексе.
-  3. **Тесты и верификация**:
-     - Добавлен тест в `UserProfileRepositoryCandidateTests` для проверки метаданных индекса в модели EF Core.
-     - Все 343 теста успешно пройдены (100% green, 0 warnings, 0 failures).
-- **Далее**: Переход к следующим этапам оптимизации (кэширование справочников, векторизация, профилирование).
+- **Фаза**: Реализация **оптимизации аллокаций памяти и аппаратной SIMD-векторизации (CPU & GC)**:
+  1. **Zero-Allocation спан-скоринг в подборе кандидатов**:
+     - В `IAiEmbeddingService` и `LocalAiEmbeddingService` добавлен метод `CalculateCosineSimilarity(float[], byte[])`, использующий `MemoryMarshal.Cast<byte, float>` и спаны.
+     - В `MatchmakingService` исключен вызов `BytesToVector` в цикле кандидатов, ликвидировано выделение 153.6 КБ RAM на каждый свайп (0 аллокаций в куче при скоринге векторов).
+  2. **Zero-Allocation токенизация и хеширование**:
+     - В `LocalAiEmbeddingService` парсинг текста переведен на `ReadOnlySpan<char>`, стековые буферы `stackalloc byte[128]` для UTF-8 и `stackalloc byte[32]` для `SHA256.HashData` с `BinaryPrimitives.ReadUInt32LittleEndian`.
+     - Ликвидированы все промежуточные аллокации строк (`Split`, `Substring`, интерполяция биграмм) и массивов `byte[]`.
+  3. **SIMD-оптимизация нормализации и сходства**:
+     - `NormalizeL2` и `CalculateCosineSimilarity` векторизованы с помощью `System.Numerics.Vector<float>`.
+  4. **Тесты и верификация**:
+     - Дополнены тесты в `LocalAiEmbeddingServiceTests` и `MatchmakingServiceTests`.
+     - Все 345 тестов успешно пройдены (100% green, 0 warnings, 0 failures).
+- **Далее**: Переход к следующим этапам оптимизации (кэширование справочников, профилирование).
 
 ---
 
@@ -69,6 +71,7 @@ updated: 2026-08-24
 - [x] Оптимизация запросов подбора кандидатов: устранение риска переполнения параметров SQL Server (лимит 2100 параметров через NOT EXISTS) и ограничение пула кандидатов до 100 человек (`Take(100)`).
 - [x] Оптимизация аналитики админ-панели: устранение N+1 и двухфазной выборки в `GetTopCitiesStatsAsync`/`GetCityStatsAsync`, объединение 16+ запросов `CountAsync` и 5 `SumAsync` в одиночные условные SQL-агрегации.
 - [x] Добавление составного B-Tree индекса `IX_ProfileRatings_ToUser_Score_CreatedAt` на таблицу `ProfileRatings` и миграция `Add_IncomingRatings_Composite_Index` (ускорение выборки входящих симпатий до Index Seek).
+- [x] Оптимизация аллокаций памяти и SIMD-векторизации: Zero-Allocation вычисление косинусного сходства векторов в `MatchmakingService` (экономия 153.6 КБ RAM на свайп) и спан-токенизация со стековыми буферами SHA256 в `LocalAiEmbeddingService`.
 
 ---
 

@@ -210,5 +210,22 @@
   - Поиск входящих симпатий пользователя выполняется через высокоэффективный `Index Seek` за доли миллисекунды.
   - Устранена необходимость в операторе `Sort` плана выполнения запроса в MS SQL Server, так как данные в B-Tree уже упорядочены.
 
+---
+
+### ADR-016: Оптимизация аллокаций памяти и аппаратная SIMD-векторизация (CPU & GC)
+- **Дата**: 2026-08-24
+- **Статус**: Принято
+- **Контекст**:
+  - В цикле скоринга кандидатов `MatchmakingService` для каждого кандидата вызывался `aiEmbeddingService.BytesToVector`, выделявший массив `float[384]` (153.6 КБ на каждые 100 кандидатов), что создавало высокое давление на GC поколения Gen0 при каждом свайпе.
+  - В `LocalAiEmbeddingService.GenerateEmbeddingAsync` использовались `string.Split`, `Substring`, форматированные интерполяции строк для биграмм, а также аллокации `byte[]` массивов при кодировании UTF-8 и вычислении `SHA256.HashData`.
+- **Решение**:
+  - В `IAiEmbeddingService` и `LocalAiEmbeddingService` добавлен метод `CalculateCosineSimilarity(float[] vectorA, byte[] vectorBBytes)`, использующий `MemoryMarshal.Cast<byte, float>` и `ReadOnlySpan` без аллокаций памяти в куче.
+  - В `LocalAiEmbeddingService` векторизация переведена на `ReadOnlySpan<char>`, стековые буферы `stackalloc byte[128]` для UTF-8 и `stackalloc byte[32]` для `SHA256.HashData`, исключая все промежуточные строковые и байтовые аллокации.
+  - `NormalizeL2` и `CalculateCosineSimilarity` векторизованы с помощью `System.Numerics.Vector<float>`.
+- **Последствия**:
+  - Аллокации памяти при векторном скоринге кандидатов сведены к **0 байт**.
+  - Нагрузка на сборщик мусора (GC) и время генерации эмбеддингов профилей радикально снижены.
+
+
 
 

@@ -66,4 +66,35 @@ public class LocalAiEmbeddingServiceTests
             restored[i].Should().BeApproximately(original[i], 0.0001f);
         }
     }
+
+    [Fact]
+    public async Task Should_CalculateCosineSimilarity_UsingByteSpan_IdenticalToFloatArray()
+    {
+        var vec1 = await _service.GenerateEmbeddingAsync("Текст номер один для проверки спанов");
+        var vec2 = await _service.GenerateEmbeddingAsync("Текст номер два для проверки спанов");
+
+        vec1.Should().NotBeNull();
+        vec2.Should().NotBeNull();
+
+        var bytes2 = _service.VectorToBytes(vec2!);
+
+        var simArray = _service.CalculateCosineSimilarity(vec1!, vec2!);
+        var simSpan = _service.CalculateCosineSimilarity(vec1!.AsSpan(), vec2!.AsSpan());
+        var simByteSpan = _service.CalculateCosineSimilarity(vec1!.AsSpan(), bytes2.AsSpan());
+
+        simSpan.Should().BeApproximately(simArray, 0.00001);
+        simByteSpan.Should().BeApproximately(simArray, 0.00001);
+    }
+
+    [Fact]
+    public async Task Should_ReturnNull_ForEmptyOrWhitespaceText()
+    {
+        var result1 = await _service.GenerateEmbeddingAsync("");
+        var result2 = await _service.GenerateEmbeddingAsync("   \t\n  ");
+        var result3 = await _service.GenerateEmbeddingAsync(" , . ! ? ");
+
+        result1.Should().BeNull();
+        result2.Should().BeNull();
+        result3.Should().BeNull();
+    }
 }
