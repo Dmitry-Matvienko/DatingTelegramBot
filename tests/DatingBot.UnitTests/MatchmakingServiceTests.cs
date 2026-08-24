@@ -434,4 +434,65 @@ public class MatchmakingServiceTests
         match.Should().BeNull();
         currentUser.CurrentCandidateProfileId.Should().BeNull();
     }
+
+    [Fact]
+    public async Task Should_MatchMinorAndAdult_When_BothHaveRelationshipTargetAndNoAgeFilters()
+    {
+        // Arrange: Настя (15 лет, Девушка ищет Парня, Отношения) и Влад (22 года, Парень ищет Девушку, Отношения)
+        const long nastyaTelegramId = 151515;
+        var vologda = new City { Id = 35, Name = "Вологда" };
+
+        var nastyaUser = new User { Id = Guid.NewGuid(), TelegramId = nastyaTelegramId, State = UserState.Searching };
+        var nastyaProfile = new UserProfile
+        {
+            Id = Guid.NewGuid(),
+            UserId = nastyaUser.Id,
+            User = nastyaUser,
+            Name = "Настя",
+            Age = 15,
+            Gender = Gender.Female,
+            TargetGender = TargetGender.Male,
+            DatingTarget = DatingTarget.Relationship,
+            City = "Вологда",
+            CityId = 35,
+            CityRef = vologda,
+            IsCompleted = true
+        };
+
+        var vladUser = new User { Id = Guid.NewGuid(), TelegramId = 222222, State = UserState.Searching };
+        var vladProfile = new UserProfile
+        {
+            Id = Guid.NewGuid(),
+            UserId = vladUser.Id,
+            User = vladUser,
+            Name = "Влад",
+            Age = 22,
+            Gender = Gender.Male,
+            TargetGender = TargetGender.Female,
+            DatingTarget = DatingTarget.Relationship,
+            City = "Вологда",
+            CityId = 35,
+            CityRef = vologda,
+            IsCompleted = true
+        };
+
+        _userRepoMock.Setup(r => r.GetByTelegramIdAsync(nastyaTelegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(nastyaUser);
+        _profileRepoMock.Setup(r => r.GetWithInterestsByUserIdAsync(nastyaUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(nastyaProfile);
+
+        _profileRepoMock.Setup(r => r.GetEligibleCandidatesAsync(nastyaProfile, It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserProfile> { vladProfile });
+
+        _interestRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Interest>());
+
+        // Act
+        var match = await _service.GetNextMatchCandidateAsync(nastyaTelegramId);
+
+        // Assert: Настя успешно находит Влада
+        match.Should().NotBeNull();
+        match!.Profile.Name.Should().Be("Влад");
+        match.Profile.Age.Should().Be(22);
+    }
 }

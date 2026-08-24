@@ -37,6 +37,7 @@ public enum UserState
     // Режим просмотра и поиска анкет
     Searching = 300,
     Reporting_WaitingForDetails = 301,
+    Searching_ViewingIncoming = 302,
 
     // Состояния администратора
     Admin_Panel = 400,

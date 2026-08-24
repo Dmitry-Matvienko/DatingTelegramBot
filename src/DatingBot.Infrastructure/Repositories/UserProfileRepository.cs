@@ -47,7 +47,7 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
             .Include(p => p.CityRef)
             .Include(p => p.Interests)
                 .ThenInclude(i => i.Interest)
-            .Where(p => !dbContext.ProfileRatings.Any(r => r.FromUserId == currentUserId && r.ToUserId == p.UserId && r.CreatedAt >= cycleStartedAt));
+            .Where(p => !dbContext.ProfileRatings.Any(r => r.FromUserId == currentUserId && r.ToUserId == p.UserId && r.CreatedAt > cycleStartedAt));
 
         return await query
             .OrderByDescending(p => p.UpdatedAt ?? p.CreatedAt)
@@ -65,7 +65,7 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
             .Include(p => p.CityRef)
             .Include(p => p.Interests)
                 .ThenInclude(i => i.Interest)
-            .Where(p => !dbContext.ProfileRatings.Any(r => r.FromUserId == currentUserId && r.ToUserId == p.UserId && r.CreatedAt >= cycleStartedAt));
+            .Where(p => !dbContext.ProfileRatings.Any(r => r.FromUserId == currentUserId && r.ToUserId == p.UserId && r.CreatedAt > cycleStartedAt));
 
         return await query
             .OrderByDescending(p => p.UpdatedAt ?? p.CreatedAt)
@@ -86,7 +86,7 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
         var query = dbContext.UserProfiles
             .AsNoTracking()
             .Where(p => p.IsCompleted)
-            .Where(p => p.User.State == UserState.Active || p.User.State == UserState.Searching)
+            .Where(p => p.User.State == UserState.Active || p.User.State == UserState.Searching || p.User.State == UserState.Searching_ViewingIncoming)
             .Where(p => p.UserId != currentUserId)
             .Where(p => !dbContext.ProfileReports.Any(rep => rep.ReporterId == currentUserId && rep.ReportedUserId == p.UserId));
 
@@ -155,7 +155,7 @@ public class UserProfileRepository(AppDbContext dbContext) : IUserProfileReposit
         // Безопасность 18+: если текущий пользователь младше 18, кандидат не может быть 18+ целевой
         if (currentUserProfile.Age < 18)
         {
-            query = query.Where(p => p.DatingTarget != DatingTarget.AdultOnly && p.Age < 18);
+            query = query.Where(p => p.DatingTarget != DatingTarget.AdultOnly);
         }
 
         return query;

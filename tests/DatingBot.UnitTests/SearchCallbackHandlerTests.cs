@@ -70,7 +70,7 @@ public class SearchCallbackHandlerTests
             Id = currentUserId,
             TelegramId = currentTelegramId,
             Language = AppLanguage.Russian,
-            State = UserState.Searching,
+            State = UserState.Searching_ViewingIncoming,
             CurrentCandidateProfileId = candidateId
         };
 
@@ -148,7 +148,7 @@ public class SearchCallbackHandlerTests
         _searchService.Verify(s => s.ClearCurrentCandidateAsync(currentTelegramId, It.IsAny<CancellationToken>()), Times.Once);
         _searchService.Verify(s => s.ClearCurrentCandidateAsync(candidateTelegramId, It.IsAny<CancellationToken>()), Times.Once);
 
-        // 2. Next candidate/incoming was NOT queried (search stopped)
+        // 2. Next candidate/incoming was NOT queried (search stopped when responding to incoming rating)
         _searchService.Verify(s => s.GetNextMatchCandidateAsync(It.IsAny<long>(), It.IsAny<CancellationToken>()), Times.Never);
         _searchService.Verify(s => s.GetNextIncomingRatingAsync(It.IsAny<long>(), It.IsAny<CancellationToken>()), Times.Never);
 
@@ -159,6 +159,101 @@ public class SearchCallbackHandlerTests
                 r.Text.Contains("Главное меню") &&
                 r.ReplyMarkup is Telegram.Bot.Types.ReplyMarkups.ReplyKeyboardMarkup),
             It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleRatingFromReplyKeyboardAsync_WhenMutualMatchInRegularSearch_ShouldSendNotificationsAndContinueSearch()
+    {
+        // Arrange
+        var currentUserId = Guid.NewGuid();
+        var candidateId = Guid.NewGuid();
+        const long currentTelegramId = 111222333L;
+        const long candidateTelegramId = 999888777L;
+
+        var currentUser = new User
+        {
+            Id = currentUserId,
+            TelegramId = currentTelegramId,
+            Language = AppLanguage.Russian,
+            State = UserState.Searching, // Regular candidate search
+            CurrentCandidateProfileId = candidateId
+        };
+
+        var config = new ConfigurationBuilder().Build();
+        var searchPromptService = new SearchPromptService(
+            _botClient.Object,
+            _registrationService.Object,
+            _userRepository.Object,
+            _loc,
+            config,
+            _searchPromptLogger.Object
+        );
+
+        var registrationPromptService = new RegistrationPromptService(
+            _botClient.Object,
+            _registrationService.Object,
+            _userRepository.Object,
+            _loc,
+            _registrationPromptLogger.Object
+        );
+
+        var profilePromptService = new ProfilePromptService(
+            _botClient.Object,
+            _registrationService.Object,
+            _userRepository.Object,
+            _loc,
+            registrationPromptService,
+            _profilePromptLogger.Object
+        );
+
+        var raterDto = CreateSampleProfile(currentUserId, currentTelegramId, "Current User");
+        var candidateDto = CreateSampleProfile(candidateId, candidateTelegramId, "Candidate User");
+
+        var ratingResult = new RatingResult(
+            RatingId: Guid.NewGuid(),
+            ToTelegramId: candidateTelegramId,
+            Score: 8,
+            NewRatingCount: 6,
+            NewAverageRating: 8.0,
+            IsMutualMatch: true,
+            OriginalScore: 9,
+            RaterProfile: raterDto,
+            CandidateProfile: candidateDto
+        );
+
+        _searchService.Setup(s => s.RateCandidateAsync(currentTelegramId, candidateId, 8, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RatingResult>.Success(ratingResult));
+
+        _userRepository.Setup(r => r.GetByTelegramIdAsync(currentTelegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(currentUser);
+
+        _userRepository.Setup(r => r.GetByTelegramIdAsync(candidateTelegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new User { TelegramId = candidateTelegramId, Language = AppLanguage.Russian });
+
+        _botClient.Setup(b => b.SendRequest(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Message { Id = 200 });
+
+        _botClient.Setup(b => b.SendRequest(It.IsAny<SendPhotoRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Message { Id = 201 });
+
+        var handler = new SearchCallbackHandler(
+            _botClient.Object,
+            _searchService.Object,
+            searchPromptService,
+            profilePromptService,
+            registrationPromptService,
+            _loc
+        );
+
+        // Act
+        await handler.HandleRatingFromReplyKeyboardAsync(currentTelegramId, currentUser, 8);
+
+        // Assert
+        // 1. Clear candidate called for partner
+        _searchService.Verify(s => s.ClearCurrentCandidateAsync(candidateTelegramId, It.IsAny<CancellationToken>()), Times.Once);
+        // 2. Search continued for current user
+        _searchService.Verify(s => s.GetNextIncomingRatingAsync(currentTelegramId, It.IsAny<CancellationToken>()), Times.Once);
+        _searchService.Verify(s => s.GetNextMatchCandidateAsync(currentTelegramId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

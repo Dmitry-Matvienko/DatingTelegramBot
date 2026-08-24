@@ -144,6 +144,7 @@ public class SearchCallbackHandler(
             return;
         }
 
+        var wasViewingIncoming = user.State == UserState.Searching_ViewingIncoming;
         var candidateProfileId = user.CurrentCandidateProfileId.Value;
         var rateResult = await searchService.RateCandidateAsync(user.TelegramId, candidateProfileId, score, cancellationToken);
 
@@ -169,13 +170,16 @@ public class SearchCallbackHandler(
                     cancellationToken
                 );
 
-                // Очищаем текущего кандидата и переводим пользователей в состояние Active
-                await searchService.ClearCurrentCandidateAsync(user.TelegramId, cancellationToken);
+                // Очищаем текущего кандидата для второго пользователя
                 await searchService.ClearCurrentCandidateAsync(result.ToTelegramId, cancellationToken);
 
-                // Переключаем нижнюю клавиатуру на главное меню ("🔍 Искать анкеты" и "👤 Мой профиль")
-                await profilePromptService.SendMainMenuGreetingAsync(chatId, cancellationToken: cancellationToken);
-                return;
+                if (wasViewingIncoming)
+                {
+                    // Пользователь оценивал входящую симпатию в ответ -> переводим в Active и возвращаем в Главное меню
+                    await searchService.ClearCurrentCandidateAsync(user.TelegramId, cancellationToken);
+                    await profilePromptService.SendMainMenuGreetingAsync(chatId, cancellationToken: cancellationToken);
+                    return;
+                }
             }
             else if (score >= 6)
             {

@@ -254,7 +254,7 @@ public class TelegramUpdateRouter(
                 }
 
                 // 7. Обработка кнопок в режиме поиска (Reply Keyboard)
-                if (user.State == UserState.Searching)
+                if (user.State == UserState.Searching || user.State == UserState.Searching_ViewingIncoming)
                 {
                     if (IsReportButton(text))
                     {

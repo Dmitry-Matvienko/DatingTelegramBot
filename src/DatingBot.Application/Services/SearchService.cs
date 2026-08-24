@@ -38,7 +38,7 @@ public class SearchService(
         var raterProfile = await userProfileRepository.GetWithInterestsByUserIdAsync(nextRating.FromUserId, cancellationToken);
         if (raterProfile is null) return null;
 
-        user.State = UserState.Searching;
+        user.State = UserState.Searching_ViewingIncoming;
         user.CurrentCandidateProfileId = raterProfile.Id;
         userRepository.Update(user);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -58,7 +58,7 @@ public class SearchService(
         var raterProfile = await userProfileRepository.GetWithInterestsByUserIdAsync(rating.FromUserId, cancellationToken);
         if (raterProfile is null) return null;
 
-        user.State = UserState.Searching;
+        user.State = UserState.Searching_ViewingIncoming;
         user.CurrentCandidateProfileId = raterProfile.Id;
         userRepository.Update(user);
         await unitOfWork.SaveChangesAsync(cancellationToken);
