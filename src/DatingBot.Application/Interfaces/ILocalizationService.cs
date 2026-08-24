@@ -11,4 +11,6 @@ public interface ILocalizationService
     string GetInterestTitle(AppLanguage language, string key, string fallbackTitle);
     string GetMatchBadge(AppLanguage language, string badgeKey, params object[] args);
     string FormatCommonInterestsBadge(AppLanguage language, int count);
+    string GetRandomSearchTip(AppLanguage language);
+    IReadOnlyList<string> GetAllSearchTipKeys();
 }

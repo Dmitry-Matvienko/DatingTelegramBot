@@ -68,6 +68,10 @@ public class SearchPromptService(
             sb.AppendLine($"\n{match.MatchReasonBadge}");
         }
 
+        // Динамическая подсказка в конце анкеты
+        var tip = loc.GetRandomSearchTip(lang);
+        sb.AppendLine($"\n——\n{tip}");
+
         Message sentMessage = null!;
         var photoSent = false;
         var cardText = sb.ToString();
@@ -135,6 +139,10 @@ public class SearchPromptService(
             var interestTags = string.Join(", ", candidate.SelectedInterests.Select(i => $"{i.Icon} {loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title)}"));
             sb.AppendLine($"\n🏷 <b>{loc.Get(lang, "Label_Interests")}:</b> {interestTags}");
         }
+
+        // Динамическая подсказка в конце анкеты
+        var tip = loc.GetRandomSearchTip(lang);
+        sb.AppendLine($"\n——\n{tip}");
 
         Message sentMessage = null!;
         var photoSent = false;

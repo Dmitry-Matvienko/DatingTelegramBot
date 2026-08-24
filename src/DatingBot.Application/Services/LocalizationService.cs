@@ -1707,6 +1707,141 @@ public class LocalizationService : ILocalizationService
             [AppLanguage.Hindi] = "खोज दूरी",
             [AppLanguage.Portuguese] = "Distância de busca",
             [AppLanguage.Indonesian] = "Jarak pencarian"
+        },
+        ["Search_Tip_1"] = new()
+        {
+            [AppLanguage.Russian] = "💡 Если оценка 6+, человек сможет написать вам в лс",
+            [AppLanguage.Ukrainian] = "💡 Якщо оцінка 6+, людина зможе написати вам в ос",
+            [AppLanguage.English] = "💡 If rated 6+, the person will be able to send you a direct message",
+            [AppLanguage.Hindi] = "💡 यदि रेटिंग 6+ है, तो वह व्यक्ति आपको सीधे संदेश भेज सकेगा",
+            [AppLanguage.Portuguese] = "💡 Se a nota for 6+, a pessoa poderá enviar uma mensagem direta para você",
+            [AppLanguage.Indonesian] = "💡 Jika nilai 6+, orang tersebut dapat mengirim pesan langsung ke Anda"
+        },
+        ["Search_Tip_2"] = new()
+        {
+            [AppLanguage.Russian] = "📢 Официальный канал: @TheBestDating",
+            [AppLanguage.Ukrainian] = "📢 Офіційний канал: @TheBestDating",
+            [AppLanguage.English] = "📢 Official channel: @TheBestDating",
+            [AppLanguage.Hindi] = "📢 आधिकारिक चैनल: @TheBestDating",
+            [AppLanguage.Portuguese] = "📢 Canal oficial: @TheBestDating",
+            [AppLanguage.Indonesian] = "📢 Saluran resmi: @TheBestDating"
+        },
+        ["Search_Tip_3"] = new()
+        {
+            [AppLanguage.Russian] = "💡 Если кто-то что-то продает, это скорей всего мошенники! — жмите \"Пожаловаться\"",
+            [AppLanguage.Ukrainian] = "💡 Якщо хтось щось продає, це найімовірніше шахраї! — натискайте \"Поскаржитися\"",
+            [AppLanguage.English] = "💡 If someone is selling something, they are likely scammers! — click \"Report\"",
+            [AppLanguage.Hindi] = "💡 अगर कोई कुछ बेच रहा है, तो वे धोखेबाज़ हो सकते हैं! — \"शिकायत करें\" पर क्लिक करें",
+            [AppLanguage.Portuguese] = "💡 Se alguém estiver vendendo algo, provavelmente é golpe! — clique em \"Denunciar\"",
+            [AppLanguage.Indonesian] = "💡 Jika seseorang menjual sesuatu, kemungkinan besar itu penipuan! — klik \"Laporkan\""
+        },
+        ["Search_Tip_4"] = new()
+        {
+            [AppLanguage.Russian] = "💡 Мы не пишем пользователям первыми. Если кто-то представляется нашей поддержкой — не отвечайте и жмите Жалоба.",
+            [AppLanguage.Ukrainian] = "💡 Ми не пишемо користувачам першими. Якщо хтось представляється нашою підтримкою — не відповідайте та тисніть Скарга.",
+            [AppLanguage.English] = "💡 We never message users first. If someone claims to be our support — do not reply and hit Report.",
+            [AppLanguage.Hindi] = "💡 हम उपयोगकर्ताओं को पहले कभी संदेश नहीं भेजते। यदि कोई हमारी सहायता टीम होने का दावा करता है — तो जवाब न दें और रिपोर्ट करें।",
+            [AppLanguage.Portuguese] = "💡 Nunca enviamos mensagens primeiro. Se alguém fingir ser nosso suporte — não responda e clique em Denunciar.",
+            [AppLanguage.Indonesian] = "💡 Kami tidak pernah mengirim pesan lebih dulu. Jika ada yang mengaku dari tim dukungan kami — jangan balas dan klik Laporkan."
+        },
+        ["Search_Tip_5"] = new()
+        {
+            [AppLanguage.Russian] = "💡 Если оценка ниже 6, человеку не придет уведомление",
+            [AppLanguage.Ukrainian] = "💡 Якщо оцінка нижче 6, людині не надійде сповіщення",
+            [AppLanguage.English] = "💡 If the rating is below 6, the person will not receive a notification",
+            [AppLanguage.Hindi] = "💡 यदि रेटिंग 6 से कम है, तो व्यक्ति को सूचना नहीं मिलेगी",
+            [AppLanguage.Portuguese] = "💡 Se a nota for menor que 6, a pessoa não receberá notificação",
+            [AppLanguage.Indonesian] = "💡 Jika nilai di bawah 6, orang tersebut tidak akan menerima notifikasi"
+        },
+        ["Search_Tip_6"] = new()
+        {
+            [AppLanguage.Russian] = "💡 Поддержка никогда не пишет первой. Официальная поддержка: @KimeLowe65",
+            [AppLanguage.Ukrainian] = "💡 Підтримка ніколи не пише першою. Офіційна підтримка: @KimeLowe65",
+            [AppLanguage.English] = "💡 Support never messages first. Official support: @KimeLowe65",
+            [AppLanguage.Hindi] = "💡 सपोर्ट टीम कभी भी पहले संदेश नहीं भेजती। आधिकारिक सपोर्ट: @KimeLowe65",
+            [AppLanguage.Portuguese] = "💡 O suporte nunca envia mensagens primeiro. Suporte oficial: @KimeLowe65",
+            [AppLanguage.Indonesian] = "💡 Dukungan tidak pernah mengirim pesan lebih dulu. Dukungan resmi: @KimeLowe65"
+        },
+        ["Search_Tip_7"] = new()
+        {
+            [AppLanguage.Russian] = "💡 Вы можете изменить \"Фильтры\" поиска кандидатов в разделе \"Мой профиль\"",
+            [AppLanguage.Ukrainian] = "💡 Ви можете змінити \"Фільтри\" пошуку кандидатів у розділі \"Мій профіль\"",
+            [AppLanguage.English] = "💡 You can customize search \"Filters\" in the \"My Profile\" section",
+            [AppLanguage.Hindi] = "💡 आप \"मेरी प्रोफ़ाइल\" अनुभाग में उम्मीदवार खोज \"फ़िल्टर\" बदल सकते हैं",
+            [AppLanguage.Portuguese] = "💡 Você pode alterar os \"Filtros\" de busca na seção \"Meu Perfil\"",
+            [AppLanguage.Indonesian] = "💡 Anda dapat mengubah \"Filter\" pencarian di bagian \"Profil Saya\""
+        },
+        ["Search_Tip_8"] = new()
+        {
+            [AppLanguage.Russian] = "💡 Умный поиск бота учитывает ваше AI-описание для точного подбора близких по духу людей.",
+            [AppLanguage.Ukrainian] = "💡 Розумний пошук бота враховує ваш AI-опис для точного підбору близьких за духом людей.",
+            [AppLanguage.English] = "💡 Smart AI matching analyzes your AI bio to recommend like-minded people.",
+            [AppLanguage.Hindi] = "💡 स्मार्ट AI मैचिंग समान विचारधारा वाले लोगों को खोजने के लिए आपके AI विवरण का विश्लेषण करता है।",
+            [AppLanguage.Portuguese] = "💡 A busca inteligente analisa sua descrição por IA para encontrar pessoas parecidas com você.",
+            [AppLanguage.Indonesian] = "💡 Pencocokan cerdas menganalisis deskripsi AI Anda untuk menemukan orang yang sefrekuensi."
+        },
+        ["Search_Tip_9"] = new()
+        {
+            [AppLanguage.Russian] = "💡 Добавьте приветствие в «Мой профиль» — оно выделит вашу анкету среди других в ленте поиска.",
+            [AppLanguage.Ukrainian] = "💡 Додайте привітання в «Мій профіль» — воно виділить вашу анкету серед інших у стрічці пошуку.",
+            [AppLanguage.English] = "💡 Add a greeting in \"My Profile\" — it will make your profile stand out in the search feed.",
+            [AppLanguage.Hindi] = "💡 \"मेरी प्रोफ़ाइल\" में एक अभिवादन जोड़ें — यह फ़ीड में आपकी प्रोफ़ाइल को अलग पहचान देगा।",
+            [AppLanguage.Portuguese] = "💡 Adicione uma saudação em \"Meu Perfil\" — isso destacará seu perfil no feed de busca.",
+            [AppLanguage.Indonesian] = "💡 Tambahkan salam di \"Profil Saya\" — ini akan membuat profil Anda menonjol di beranda pencarian."
+        },
+        ["Search_Tip_10"] = new()
+        {
+            [AppLanguage.Russian] = "💡 В «Фильтрах» можно настроить дальность поиска: до 100 км, 500 км, вся страна или без ограничений.",
+            [AppLanguage.Ukrainian] = "💡 У «Фільтрах» можна налаштувати дальність пошуку: до 100 км, 500 км, уся країна або без обмежень.",
+            [AppLanguage.English] = "💡 In \"Filters\" you can adjust search distance: up to 100 km, 500 km, whole country, or unlimited.",
+            [AppLanguage.Hindi] = "💡 \"फ़िल्टर\" में आप खोज दूरी चुन सकते हैं: 100 किमी, 500 किमी, पूरा देश या असीमित।",
+            [AppLanguage.Portuguese] = "💡 Em \"Filtros\" você pode definir a distância de busca: até 100 km, 500 km, todo o país ou ilimitada.",
+            [AppLanguage.Indonesian] = "💡 Di \"Filter\" Anda dapat mengatur jarak pencarian: hingga 100 km, 500 km, seluruh negara, atau tanpa batas."
+        },
+        ["Search_Tip_11"] = new()
+        {
+            [AppLanguage.Russian] = "💡 Общие интересы выделяются в карточке и помогают быстрее найти темы для первого разговора.",
+            [AppLanguage.Ukrainian] = "💡 Спільні інтереси виділяються в картці та допомагають швидше знайти теми для першої розмови.",
+            [AppLanguage.English] = "💡 Common interests are highlighted in cards to help you easily start your first conversation.",
+            [AppLanguage.Hindi] = "💡 कार्ड में साझा रुचियां हाइलाइट की जाती हैं ताकि बातचीत शुरू करने में आसानी हो।",
+            [AppLanguage.Portuguese] = "💡 Interesses em comum são destacados no cartão para facilitar o início da conversa.",
+            [AppLanguage.Indonesian] = "💡 Minat bersama disorot pada profil untuk membantu memulai percakapan pertama."
+        },
+        ["Search_Tip_12"] = new()
+        {
+            [AppLanguage.Russian] = "💡 Если анкеты закончились, бот автоматически обновит ленту, как только появятся новые кандидаты.",
+            [AppLanguage.Ukrainian] = "💡 Якщо анкети закінчилися, бот автоматично оновить стрічку, щойно з'являться нові кандидати.",
+            [AppLanguage.English] = "💡 If you run out of profiles, the bot will automatically refresh the feed as new candidates join.",
+            [AppLanguage.Hindi] = "💡 यदि प्रोफ़ाइल समाप्त हो जाती हैं, तो नए उम्मीदवार जुड़ने पर बॉट फ़ीड को ताज़ा कर देगा।",
+            [AppLanguage.Portuguese] = "💡 Se os perfis acabarem, o bot atualizará o feed automaticamente quando surgirem novos candidatos.",
+            [AppLanguage.Indonesian] = "💡 Jika profil habis, bot akan memperbarui feed secara otomatis saat ada kandidat baru."
+        },
+        ["Search_Tip_13"] = new()
+        {
+            [AppLanguage.Russian] = "💡 Ищете общение, любовь или флирт? Измените цель знакомства в «Мой профиль» в любой момент.",
+            [AppLanguage.Ukrainian] = "💡 Шукаєте спілкування, кохання чи флірт? Змініть мету знайомства в «Мій профіль» у будь-який момент.",
+            [AppLanguage.English] = "💡 Looking for friendship, love, or flirt? Change your dating goal in \"My Profile\" anytime.",
+            [AppLanguage.Hindi] = "💡 दोस्ती, प्यार या फ़्लर्ट की तलाश है? \"मेरी प्रोफ़ाइल\" में किसी भी समय अपना लक्ष्य बदलें।",
+            [AppLanguage.Portuguese] = "💡 Procurando amizade, amor ou paquera? Mude seu objetivo em \"Meu Perfil\" a qualquer momento.",
+            [AppLanguage.Indonesian] = "💡 Mencari teman, cinta, atau kencan santai? Ubah tujuan kencan di \"Profil Saya\" kapan saja."
+        },
+        ["Search_Tip_14"] = new()
+        {
+            [AppLanguage.Russian] = "💡 Соблюдайте правила сообщества: фейки, оскорбления в анкете и запрещенный контент ведут к блокировке.",
+            [AppLanguage.Ukrainian] = "💡 Дотримуйтесь правил спільноти: фейки, образи в анкеті та заборонений контент ведуть до блокування.",
+            [AppLanguage.English] = "💡 Follow community guidelines: fakes, insults in profiles, and illicit content lead to a ban.",
+            [AppLanguage.Hindi] = "💡 समुदाय के नियमों का पालन करें: फ़ेक प्रोफ़ाइल, अपमान और प्रतिबंधित सामग्री से बैन लग सकता है।",
+            [AppLanguage.Portuguese] = "💡 Respeite as regras: perfis falsos, ofensas e conteúdo proibido levam ao banimento.",
+            [AppLanguage.Indonesian] = "💡 Patuhi aturan komunitas: profil palsu, hinaan, dan konten terlarang akan diblokir."
+        },
+        ["Search_Tip_15"] = new()
+        {
+            [AppLanguage.Russian] = "💡 Анкеты с четким и открытым фото лица получают в несколько раз больше высоких оценок.",
+            [AppLanguage.Ukrainian] = "💡 Анкети з чітким і відкритим фото обличчя отримують у кілька разів більше високих оцінок.",
+            [AppLanguage.English] = "💡 Profiles with clear, friendly face photos receive significantly more high ratings.",
+            [AppLanguage.Hindi] = "💡 स्पष्ट और अच्छे चेहरे वाले फ़ोटो वाली प्रोफ़ाइल को कहीं अधिक उच्च रेटिंग मिलती है।",
+            [AppLanguage.Portuguese] = "💡 Perfis com fotos de rosto nítidas e amigáveis recebem muito mais avaliações altas.",
+            [AppLanguage.Indonesian] = "💡 Profil dengan foto wajah yang jelas dan ramah mendapatkan lebih banyak nilai tinggi."
         }
     };
 
@@ -1909,4 +2044,31 @@ public class LocalizationService : ILocalizationService
                         : $"🎯 <i>У вас {count} общих интересов</i>"
         };
     }
+
+    private static readonly string[] SearchTipKeys =
+    [
+        "Search_Tip_1",
+        "Search_Tip_2",
+        "Search_Tip_3",
+        "Search_Tip_4",
+        "Search_Tip_5",
+        "Search_Tip_6",
+        "Search_Tip_7",
+        "Search_Tip_8",
+        "Search_Tip_9",
+        "Search_Tip_10",
+        "Search_Tip_11",
+        "Search_Tip_12",
+        "Search_Tip_13",
+        "Search_Tip_14",
+        "Search_Tip_15"
+    ];
+
+    public string GetRandomSearchTip(AppLanguage language)
+    {
+        var key = SearchTipKeys[Random.Shared.Next(SearchTipKeys.Length)];
+        return Get(language, key);
+    }
+
+    public IReadOnlyList<string> GetAllSearchTipKeys() => SearchTipKeys;
 }
