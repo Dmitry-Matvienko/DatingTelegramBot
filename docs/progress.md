@@ -1,26 +1,21 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 29
+state_version: 30
 updated: 2026-08-24
 
 ---
 
 ## Сейчас
-- **Фаза**: Реализация **интерактивной Inline URL-кнопки «💬 Написать» под карточками анкет**:
-  1. **Уведомление о симпатии**:
-     - В `SearchPromptService.SendRaterCardAsync` прикреплена Inline-кнопка «💬 Написать» (`GetRaterCardKeyboard`), позволяющая сразу перейти в диалог с оценившим пользователем.
-  2. **Взаимная симпатия (Mutual Match)**:
-     - В `SearchPromptService.SendMutualMatchNotificationAsync` прикреплена Inline-кнопка «💬 Написать» (`GetMutualMatchKeyboard`) под карточкой взаимного мэтча.
-  3. **Сквозной просмотр анкет в админ-панели**:
-     - В `AdminKeyboards.GetAdminProfileCardKeyboard` первой строкой добавлена Inline URL-кнопка «💬 Написать».
-  4. **Безопасное формирование ссылок Telegram (`TelegramUrlHelper`)**:
-     - Если указан `Username` -> `https://t.me/{username}` (без префикса `@`).
-     - Если `Username` отсутствует -> `tg://user?id={telegramId}`.
-  5. **Мультиязычность (6 языков)**:
-     - В `LocalizationService` добавлен ключ `Btn_SendMessage` для RU, UK, EN, HI, PT, ID.
-  6. **Тестирование и верификация**:
-     - Добавлен полный набор модульных тестов в `InlineSendMessageButtonTests` (20 новых тестов).
-     - Все 365 тестов успешно пройдены (100% green, 0 warnings, 0 failures).
+- **Фаза**: Исправление и оптимизация **отображения клавиатуры оценивания (1..10) при входящей симпатии**:
+  1. **Двухэтапная отправка карточки оценившего (`SendRaterCardAsync`)**:
+     - **Сообщение 1 (Карточка анкеты с фото/текстом)**: отправляется с нижней Reply-клавиатурой `SearchKeyboards.GetRatingReplyKeyboard(lang)` (кнопки `1️⃣`..`🔟`, «🚨 Пожаловаться», «🔄 Искать снова», «🏠 Главное меню»), позволяя пользователю мгновенно поставить ответную оценку.
+     - **Сообщение 2 (Подсказка с кнопкой связи)**: отправляется следом с текстом «💬 Вы можете написать этому человеку:» (`Notification_CanMessageUser`) и прикрепленной Inline URL-кнопкой «💬 Написать» (`GetRaterCardKeyboard`), открывающей диалог в Telegram.
+  2. **Мультиязычность (6 языков)**:
+     - В `LocalizationService` добавлен ключ `Notification_CanMessageUser` для RU, UK, EN, HI, PT, ID.
+  3. **Спецификация и документация**:
+     - В `docs/architecture/specs/search_and_ratings.md` (раздел 5) зафиксирован регламент двухэтапного уведомления.
+  4. **Тестирование и верификация**:
+     - Обновлены и дополнены модульные тесты в `InlineSendMessageButtonTests` (371 тест в решении: 100% green, 0 warnings, 0 failures).
 - **Далее**: Ожидание следующих задач от пользователя.
 
 ---
