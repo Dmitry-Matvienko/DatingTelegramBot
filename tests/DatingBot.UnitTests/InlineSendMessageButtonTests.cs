@@ -99,6 +99,26 @@ public class InlineSendMessageButtonTests
     }
 
     [Fact]
+    public void SearchKeyboards_GetIncomingRatingReplyKeyboard_ShouldNotContainSearchAgainButton()
+    {
+        var keyboard = SearchKeyboards.GetIncomingRatingReplyKeyboard(AppLanguage.Russian);
+
+        keyboard.Should().NotBeNull();
+        var rows = keyboard.Keyboard.ToList();
+        rows.Should().HaveCount(3);
+
+        // Row 1: 1..5
+        rows[0].Select(b => b.Text).Should().Equal("1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣");
+
+        // Row 2: 6..10
+        rows[1].Select(b => b.Text).Should().Equal("6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟");
+
+        // Row 3: Report, Main Menu (NO Search Again button)
+        rows[2].Select(b => b.Text).Should().Equal("🚨 Пожаловаться", "🏠 Главное меню");
+        rows[2].Select(b => b.Text).Should().NotContain("🔄 Искать снова");
+    }
+
+    [Fact]
     public void AdminKeyboards_GetAdminProfileCardKeyboard_ShouldIncludeSendMessageButtonAsFirstRow()
     {
         var userId = Guid.NewGuid();

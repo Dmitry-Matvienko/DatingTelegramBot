@@ -212,7 +212,7 @@ public class SearchPromptService(
         Message sentMessage = null!;
         var photoSent = false;
         var raterText = sb.ToString();
-        var ratingReplyKeyboard = SearchKeyboards.GetRatingReplyKeyboard(lang);
+        var ratingReplyKeyboard = SearchKeyboards.GetIncomingRatingReplyKeyboard(lang);
         if (!string.IsNullOrEmpty(rater.PhotoFileId) && raterText.Length <= 1024)
         {
             try

@@ -37,6 +37,33 @@ public static class SearchKeyboards
         };
     }
 
+    public static ReplyKeyboardMarkup GetIncomingRatingReplyKeyboard(AppLanguage language = AppLanguage.Russian)
+    {
+        return new ReplyKeyboardMarkup([
+            [
+                new KeyboardButton("1️⃣"),
+                new KeyboardButton("2️⃣"),
+                new KeyboardButton("3️⃣"),
+                new KeyboardButton("4️⃣"),
+                new KeyboardButton("5️⃣")
+            ],
+            [
+                new KeyboardButton("6️⃣"),
+                new KeyboardButton("7️⃣"),
+                new KeyboardButton("8️⃣"),
+                new KeyboardButton("9️⃣"),
+                new KeyboardButton("🔟")
+            ],
+            [
+                new KeyboardButton(Loc.Get(language, "Btn_Report")),
+                new KeyboardButton(Loc.Get(language, "Btn_MainMenu"))
+            ]
+        ])
+        {
+            ResizeKeyboard = true
+        };
+    }
+
     public static ReplyKeyboardMarkup GetCancelReportReplyKeyboard(AppLanguage language = AppLanguage.Russian)
     {
         return new ReplyKeyboardMarkup([

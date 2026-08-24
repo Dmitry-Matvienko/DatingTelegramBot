@@ -168,6 +168,14 @@ public class SearchCallbackHandler(
                     score,
                     cancellationToken
                 );
+
+                // Очищаем текущего кандидата и переводим пользователей в состояние Active
+                await searchService.ClearCurrentCandidateAsync(user.TelegramId, cancellationToken);
+                await searchService.ClearCurrentCandidateAsync(result.ToTelegramId, cancellationToken);
+
+                // Переключаем нижнюю клавиатуру на главное меню ("🔍 Искать анкеты" и "👤 Мой профиль")
+                await profilePromptService.SendMainMenuGreetingAsync(chatId, cancellationToken: cancellationToken);
+                return;
             }
             else if (score >= 6)
             {
