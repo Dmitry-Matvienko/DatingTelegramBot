@@ -128,6 +128,7 @@ public class SearchServiceTests
         result.Value.Score.Should().Be(10);
         result.Value.NewRatingCount.Should().Be(2);
         result.Value.NewAverageRating.Should().Be(8.0);
+        result.Value.WasRecentlyRated.Should().BeFalse();
 
         candidateProfile.RatingCount.Should().Be(2);
         candidateProfile.AverageRating.Should().Be(8.0);
@@ -157,7 +158,7 @@ public class SearchServiceTests
             FromUserId = rater.Id,
             ToUserId = candidateUser.Id,
             Score = 6, // Старая оценка пользователя
-            CreatedAt = DateTime.UtcNow.AddDays(-1)
+            CreatedAt = DateTime.UtcNow.AddDays(-2)
         };
 
         _userRepoMock.Setup(r => r.GetByTelegramIdAsync(raterTelegramId, It.IsAny<CancellationToken>()))
@@ -176,12 +177,56 @@ public class SearchServiceTests
         result.Value!.Score.Should().Be(10);
         result.Value.NewRatingCount.Should().Be(2); // Количество оценок не изменилось
         result.Value.NewAverageRating.Should().Be(9.0); // Средний балл пересчитался
+        result.Value.WasRecentlyRated.Should().BeFalse(); // Больше 24 часов назад
 
         existingRating.Score.Should().Be(10);
         candidateProfile.RatingCount.Should().Be(2);
         candidateProfile.AverageRating.Should().Be(9.0);
         _ratingRepoMock.Verify(r => r.Update(existingRating), Times.Once);
         _profileRepoMock.Verify(r => r.Update(candidateProfile), Times.Once);
+    }
+
+    [Fact]
+    public async Task Should_SetWasRecentlyRatedTrue_WhenCandidateRatedWithin24Hours()
+    {
+        // Arrange
+        const long raterTelegramId = 11111;
+        var rater = new User { Id = Guid.NewGuid(), TelegramId = raterTelegramId };
+
+        var candidateUser = new User { Id = Guid.NewGuid(), TelegramId = 22222 };
+        var candidateProfile = new UserProfile
+        {
+            Id = Guid.NewGuid(),
+            UserId = candidateUser.Id,
+            User = candidateUser,
+            RatingCount = 1,
+            AverageRating = 7.0
+        };
+
+        var existingRating = new ProfileRating
+        {
+            Id = Guid.NewGuid(),
+            FromUserId = rater.Id,
+            ToUserId = candidateUser.Id,
+            Score = 7,
+            CreatedAt = DateTime.UtcNow.AddHours(-3) // 3 часа назад (< 24ч)
+        };
+
+        _userRepoMock.Setup(r => r.GetByTelegramIdAsync(raterTelegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(rater);
+        _profileRepoMock.Setup(r => r.GetByIdAsync(candidateProfile.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(candidateProfile);
+        _ratingRepoMock.Setup(r => r.GetRatingAsync(rater.Id, candidateUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingRating);
+
+        // Act
+        var result = await _service.RateCandidateAsync(raterTelegramId, candidateProfile.Id, 8);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.WasRecentlyRated.Should().BeTrue();
+        result.Value.Score.Should().Be(8);
     }
 
     [Theory]

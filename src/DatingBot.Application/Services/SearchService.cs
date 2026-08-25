@@ -89,9 +89,11 @@ public class SearchService(
         Guid ratingId;
         int newCount;
         double newAverage;
+        var wasRecentlyRated = false;
 
         if (existingRating is not null)
         {
+            wasRecentlyRated = (DateTime.UtcNow - existingRating.CreatedAt) < TimeSpan.FromHours(24);
             ratingId = existingRating.Id;
             var oldScore = existingRating.Score;
             existingRating.Score = score;
@@ -153,7 +155,8 @@ public class SearchService(
             isMutualMatch,
             originalScore,
             raterDto,
-            candidateDto
+            candidateDto,
+            wasRecentlyRated
         ));
     }
 

@@ -401,6 +401,26 @@ public class SearchPromptService(
         }
     }
 
+    public async Task SendAlreadyRatedRecentlyNotificationAsync(long recipientTelegramId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var user = await userRepository.GetByTelegramIdAsync(recipientTelegramId, cancellationToken);
+            var lang = user?.Language ?? AppLanguage.Russian;
+
+            await botClient.SendMessage(
+                chatId: recipientTelegramId,
+                text: loc.Get(lang, "Notification_AlreadyRatedRecently"),
+                parseMode: ParseMode.Html,
+                cancellationToken: cancellationToken
+            );
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning("Не удалось отправить уведомление о недавней оценке пользователю {TelegramId}: {ErrorMessage}", recipientTelegramId, ex.Message);
+        }
+    }
+
     public async Task SendNoCandidatesMessageAsync(long chatId, CancellationToken cancellationToken = default)
     {
         var user = await userRepository.GetByTelegramIdAsync(chatId, cancellationToken);

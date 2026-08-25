@@ -78,6 +78,12 @@ public class LocalizationServiceTests
     [InlineData(AppLanguage.Russian, "ReportReason_Other")]
     [InlineData(AppLanguage.Russian, "Menu_Guide")]
     [InlineData(AppLanguage.Russian, "BotGuide_Text")]
+    [InlineData(AppLanguage.Russian, "Notification_AlreadyRatedRecently")]
+    [InlineData(AppLanguage.Ukrainian, "Notification_AlreadyRatedRecently")]
+    [InlineData(AppLanguage.English, "Notification_AlreadyRatedRecently")]
+    [InlineData(AppLanguage.Hindi, "Notification_AlreadyRatedRecently")]
+    [InlineData(AppLanguage.Portuguese, "Notification_AlreadyRatedRecently")]
+    [InlineData(AppLanguage.Indonesian, "Notification_AlreadyRatedRecently")]
     public void NewlyAddedKeys_ShouldReturnNonEmptyString(AppLanguage lang, string key)
     {
         var text = _loc.Get(lang, key);

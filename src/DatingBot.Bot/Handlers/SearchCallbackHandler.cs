@@ -151,6 +151,12 @@ public class SearchCallbackHandler(
         if (rateResult.IsSuccess && rateResult.Value is not null)
         {
             var result = rateResult.Value;
+
+            if (result.WasRecentlyRated)
+            {
+                await searchPromptService.SendAlreadyRatedRecentlyNotificationAsync(user.TelegramId, cancellationToken);
+            }
+
             if (result.IsMutualMatch && result.CandidateProfile is not null && result.RaterProfile is not null)
             {
                 // Взаимная симпатия! Отправляем уведомления обеим сторонам

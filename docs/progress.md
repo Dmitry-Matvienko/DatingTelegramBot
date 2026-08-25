@@ -1,23 +1,24 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 36
+state_version: 37
 updated: 2026-08-25
 
 ---
 
 ## Сейчас
-- **Фаза**: Реализация **кнопки «Руководство бота» и обновление Главного меню (`Bot Guide & Main Menu`)**:
-  1. **Кнопка и клавиатура Главного меню**:
-     - В `MainMenuKeyboards.GetMainMenuReplyKeyboard` добавлена кнопка `📖 Руководство бота` (`Menu_Guide`) во второй строке клавиатуры под кнопками поиска и профиля.
-  2. **Обновление приветствия Главного меню**:
-     - В `LocalizationService` ключ `MainMenuGreeting` дополнен строкой руководства бота для всех 6 языков (RU, UK, EN, HI, PT, ID).
-  3. **Текст руководства пользователя (`BotGuide_Text`)**:
-     - В `LocalizationService` добавлен подробный мультиязычный текст руководства по утвержденной структуре: принципы умного поиска по AI-описанию/городу/возрасту/дистанции, 10-балльная шкала оценок (1–5 средний балл, 6–10 симпатия, 6+ взаимно с кнопкой «💬 Написать» в лс), редактирование профиля и приватное AI-описание, кнопка жалобы и официальные контакты поддержки (@TheBestDating, @KimeLowe65).
-  4. **Маршрутизация и отправка**:
-     - В `ProfilePromptService` добавлен метод `SendBotGuideAsync`.
-     - В `TelegramUpdateRouter` подключена обработка нажатия кнопки руководства (`IsGuideButton`) и команд `/guide`, `/help`.
+- **Фаза**: Реализация **уведомления о повторной оценке пользователя в течение 24 часов (`Repeat Rating 24h Notice`)**:
+  1. **Расширение доменного контракта `RatingResult`**:
+     - В `ISearchService.cs` запись `RatingResult` дополнена флагом `bool WasRecentlyRated = false`.
+  2. **Логика детекции 24-часового окна в `SearchService`**:
+     - В `RateCandidateAsync` при обнаружении ранее сохраненной оценки `existingRating` вычисляется условие `(DateTime.UtcNow - existingRating.CreatedAt) < TimeSpan.FromHours(24)`.
+     - Флаг передается в результат `RatingResult.WasRecentlyRated`.
+  3. **Локализация для 6 языков (`Notification_AlreadyRatedRecently`)**:
+     - В `LocalizationService` добавлен ключ `Notification_AlreadyRatedRecently` для всех 6 поддерживаемых языков (RU, UK, EN, HI, PT, ID) со стандартным стилем *«ℹ️ Вы уже недавно оценивали этого пользователя.»*.
+  4. **Отправка уведомления пользователю**:
+     - В `SearchPromptService` добавлен метод `SendAlreadyRatedRecentlyNotificationAsync(long recipientTelegramId, ...)`.
+     - В `SearchCallbackHandler.HandleRatingFromReplyKeyboardAsync` при `result.WasRecentlyRated == true` пользователю отправляется локализованное уведомление перед переходом к следующей анкете.
   5. **Тестирование**:
-     - Добавлены модульные тесты в `tests/DatingBot.UnitTests/BotGuideTests.cs` (все 432 теста решения: 100% green, 0 failures, 0 warnings).
+     - Добавлены модульные тесты в `SearchServiceTests`, `SearchCallbackHandlerTests` и `LocalizationServiceTests` (все 440 тестов решения: 100% green, 0 failures, 0 warnings).
 - **Далее**: Ожидание следующих задач от пользователя.
 
 ---
@@ -77,6 +78,7 @@ updated: 2026-08-25
 - [x] Реализация выбора дальности поиска анкет (`SearchDistancePreference`: до 100 км, до 500 км, в пределах страны, без ограничений) в мастере регистрации и в фильтрах профиля, с обновлением порядка кнопок («Готово» перед «Отмена»).
 - [x] Реализация динамических рандомизированных подсказок в анкетах поиска (15 мультиязычных шаблонов, нулевая нагрузка на БД/систему, разделитель `——`).
 - [x] Реализация кнопки «Руководство бота» в главном меню, обновление текста главного меню и мультиязычное руководство пользователя (RU, UK, EN, HI, PT, ID).
+- [x] Реализация уведомления о повторной оценке пользователя в течение 24 часов в поиске анкет (RU, UK, EN, HI, PT, ID).
 
 ---
 

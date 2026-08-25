@@ -493,6 +493,15 @@ public class LocalizationService : ILocalizationService
             [AppLanguage.Portuguese] = "💌 <b>Alguém avaliou seu perfil!</b>\n\nSeu perfil recebeu uma nota de <b>{0}/10</b> ⭐!",
             [AppLanguage.Indonesian] = "💌 <b>Seseorang menilai profil Anda!</b>\n\nProfil Anda mendapat nilai <b>{0}/10</b> ⭐!"
         },
+        ["Notification_AlreadyRatedRecently"] = new()
+        {
+            [AppLanguage.Russian] = "ℹ️ Вы уже недавно оценивали этого пользователя.",
+            [AppLanguage.Ukrainian] = "ℹ️ Ви вже нещодавно оцінювали цього користувача.",
+            [AppLanguage.English] = "ℹ️ You have already recently rated this user.",
+            [AppLanguage.Hindi] = "ℹ️ आप हाल ही में इस उपयोगकर्ता का मूल्यांकन कर चुके हैं।",
+            [AppLanguage.Portuguese] = "ℹ️ Você já avaliou este usuário recentemente.",
+            [AppLanguage.Indonesian] = "ℹ️ Anda sudah menilai pengguna ini baru-baru ini."
+        },
         ["Error_NameEmpty"] = new()
         {
             [AppLanguage.Russian] = "Имя не может быть пустым.",

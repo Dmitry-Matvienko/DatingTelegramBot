@@ -13,7 +13,8 @@ public record RatingResult(
     bool IsMutualMatch,
     int OriginalScore,
     UserProfileDto? RaterProfile,
-    UserProfileDto? CandidateProfile
+    UserProfileDto? CandidateProfile,
+    bool WasRecentlyRated = false
 );
 
 public record ReportInfo(
