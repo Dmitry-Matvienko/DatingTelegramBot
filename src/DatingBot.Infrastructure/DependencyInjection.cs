@@ -57,6 +57,7 @@ public static class DependencyInjection
         services.AddSingleton<IAiEmbeddingService, Services.LocalAiEmbeddingService>();
         services.AddSingleton<IAdminSettings, Services.AdminSettings>();
         services.AddScoped<ICityDatabaseSeeder, Data.Seeds.CityDatabaseSeeder>();
+        services.AddHttpClient<IGeocodingService, Services.NominatimGeocodingService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         return services;

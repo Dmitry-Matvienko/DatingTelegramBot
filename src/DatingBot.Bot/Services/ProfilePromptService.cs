@@ -109,12 +109,13 @@ public class ProfilePromptService(
                     replyMarkup: ProfileKeyboards.GetProfileEditKeyboard(lang),
                     cancellationToken: cancellationToken
                 );
-                photoSent = true;
+                photoSent = sentMessage is not null;
             }
             catch (Exception ex)
             {
                 logger.LogWarning("Не удалось отправить фото профиля {PhotoFileId} пользователю {ChatId}: {ErrorMessage}", profile.PhotoFileId, chatId, ex.Message);
                 sentMessage = null!;
+                photoSent = false;
             }
         }
 
@@ -129,7 +130,10 @@ public class ProfilePromptService(
             );
         }
 
-        await registrationService.SaveLastBotMessageIdAsync(chatId, sentMessage.MessageId, cancellationToken);
+        if (sentMessage is not null)
+        {
+            await registrationService.SaveLastBotMessageIdAsync(chatId, sentMessage.MessageId, cancellationToken);
+        }
     }
 
     public async Task SendEditPromptAsync(long chatId, UserState state, int? previousMessageIdToDelete = null, string? customErrorMessage = null, CancellationToken cancellationToken = default)

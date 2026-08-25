@@ -97,7 +97,12 @@ public class CityRepository(AppDbContext context) : ICityRepository
             .ToListAsync(cancellationToken);
 
         results.AddRange(substringMatches);
-        if (results.Count > 0)
+        foreach (var m in substringMatches)
+        {
+            seenIds.Add(m.Id);
+        }
+
+        if (results.Count >= limit)
         {
             return results;
         }
@@ -105,19 +110,33 @@ public class CityRepository(AppDbContext context) : ICityRepository
         // 3. Нечеткий поиск при опечатках (Fuzzy search)
         if (cleanQuery.Length >= 3)
         {
+            var queryLower = cleanQuery.ToLowerInvariant();
             var prefix2 = cleanQuery[..Math.Min(2, cleanQuery.Length)];
             var candidates = await context.Cities
                 .AsNoTracking()
-                .Where(c => c.Name.StartsWith(prefix2))
+                .Where(c => c.Name.StartsWith(prefix2) && !seenIds.Contains(c.Id))
                 .OrderBy(c => c.Name)
                 .ThenBy(c => c.Id)
-                .Take(50)
+                .Take(100)
                 .ToListAsync(cancellationToken);
+
+            if (candidates.Count < (limit - results.Count) && cleanQuery.Length >= 3)
+            {
+                var prefix1 = cleanQuery[..1];
+                var candidateIds = new HashSet<int>(candidates.Select(c => c.Id).Concat(seenIds));
+                var moreCandidates = await context.Cities
+                    .AsNoTracking()
+                    .Where(c => c.Name.StartsWith(prefix1) && !candidateIds.Contains(c.Id))
+                    .OrderBy(c => c.Name)
+                    .ThenBy(c => c.Id)
+                    .Take(100)
+                    .ToListAsync(cancellationToken);
+                candidates.AddRange(moreCandidates);
+            }
 
             if (candidates.Count > 0)
             {
-                var queryLower = cleanQuery.ToLowerInvariant();
-                return candidates
+                var fuzzyMatches = candidates
                     .Select(c => new
                     {
                         City = c,
@@ -125,13 +144,22 @@ public class CityRepository(AppDbContext context) : ICityRepository
                     })
                     .Where(x => x.Distance <= 2) // Допускаем до 2 опечаток
                     .OrderBy(x => x.Distance)
-                    .Take(limit)
+                    .Take(limit - results.Count)
                     .Select(x => x.City)
                     .ToList();
+
+                results.AddRange(fuzzyMatches);
             }
         }
 
         return results;
+    }
+
+    public async Task<City> AddAsync(City city, CancellationToken cancellationToken = default)
+    {
+        context.Cities.Add(city);
+        await context.SaveChangesAsync(cancellationToken);
+        return city;
     }
 
     public async Task<IReadOnlyList<City>> GetAllAsync(CancellationToken cancellationToken = default)

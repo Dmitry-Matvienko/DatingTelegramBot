@@ -13,6 +13,7 @@ public class RegistrationMessageHandler(
     ITelegramBotClient botClient,
     IRegistrationService registrationService,
     ICityRepository cityRepository,
+    IGeocodingService geocodingService,
     RegistrationPromptService promptService,
     ILocalizationService loc)
 {
@@ -74,6 +75,12 @@ public class RegistrationMessageHandler(
                 break;
 
             case UserState.Registration_WaitingForCity:
+                if (message.Location is not null)
+                {
+                    await HandleLocationCityAsync(user, chatId, message.Location.Latitude, message.Location.Longitude, prevBotMsgId, cancellationToken);
+                    return;
+                }
+
                 if (string.IsNullOrWhiteSpace(text))
                 {
                     await promptService.SendPromptForStateAsync(chatId, UserState.Registration_WaitingForCity, prevBotMsgId, loc.Get(lang, "City_TypeManually"), cancellationToken);
@@ -88,39 +95,52 @@ public class RegistrationMessageHandler(
                     return;
                 }
 
-                // Проверяем подсказки опечаток
-                var suggestions = await cityRepository.SearchSuggestionsAsync(text, limit: 1, cancellationToken);
+                // Проверяем подсказки похожих городов (до 3 вариантов)
+                var suggestions = await cityRepository.SearchSuggestionsAsync(text, limit: 3, cancellationToken);
                 if (suggestions.Count > 0)
                 {
-                    var suggested = suggestions[0];
-                    if (!string.Equals(suggested.Name, text, StringComparison.OrdinalIgnoreCase))
+                    if (prevBotMsgId.HasValue)
                     {
-                        if (prevBotMsgId.HasValue)
-                        {
-                            await promptService.DeleteMessageSafeAsync(chatId, prevBotMsgId.Value, cancellationToken);
-                        }
-
-                        var msg = await botClient.SendMessage(
-                            chatId: chatId,
-                            text: loc.Get(lang, "City_DidYouMean", suggested.Name),
-                            parseMode: ParseMode.Html,
-                            replyMarkup: SearchKeyboards.GetCitySuggestionKeyboard(suggested.Id, suggested.Name, isEditing: false),
-                            cancellationToken: cancellationToken
-                        );
-
-                        await registrationService.SaveLastBotMessageIdAsync(chatId, msg.MessageId, cancellationToken);
-                        return;
+                        await promptService.DeleteMessageSafeAsync(chatId, prevBotMsgId.Value, cancellationToken);
                     }
-                }
 
-                var cityResult = await registrationService.SetCityAsync(user.TelegramId, text, cancellationToken);
-                if (cityResult.IsFailure)
-                {
-                    await promptService.SendPromptForStateAsync(chatId, UserState.Registration_WaitingForCity, prevBotMsgId, cityResult.ErrorMessage, cancellationToken);
+                    // 1. Сообщение с кнопками похожих городов
+                    var suggestionMsg = await botClient.SendMessage(
+                        chatId: chatId,
+                        text: loc.Get(lang, "City_SuggestionsPrompt"),
+                        parseMode: ParseMode.Html,
+                        replyMarkup: SearchKeyboards.GetCitySuggestionsKeyboard(suggestions, isEditing: false, language: lang),
+                        cancellationToken: cancellationToken
+                    );
+
+                    await registrationService.SaveLastBotMessageIdAsync(chatId, suggestionMsg.MessageId, cancellationToken);
+
+                    // 2. Сразу следующее сообщение с инструкцией и кнопкой отправки геолокации
+                    await botClient.SendMessage(
+                        chatId: chatId,
+                        text: loc.Get(lang, "City_NotFound_Or_Suggestions_Notice"),
+                        parseMode: ParseMode.Html,
+                        replyMarkup: RegistrationKeyboards.GetSendLocationReplyKeyboard(lang),
+                        cancellationToken: cancellationToken
+                    );
                     return;
                 }
 
-                await promptService.SendPromptForStateAsync(chatId, UserState.Registration_WaitingForHeight, prevBotMsgId, null, cancellationToken);
+                // Если похожих городов не найдено в БД
+                if (prevBotMsgId.HasValue)
+                {
+                    await promptService.DeleteMessageSafeAsync(chatId, prevBotMsgId.Value, cancellationToken);
+                }
+
+                var notFoundMsg = await botClient.SendMessage(
+                    chatId: chatId,
+                    text: $"❌ <b>{loc.Get(lang, "Error_CityNotFound")}</b>\n\n{loc.Get(lang, "City_NotFound_Or_Suggestions_Notice")}",
+                    parseMode: ParseMode.Html,
+                    replyMarkup: RegistrationKeyboards.GetSendLocationReplyKeyboard(lang),
+                    cancellationToken: cancellationToken
+                );
+
+                await registrationService.SaveLastBotMessageIdAsync(chatId, notFoundMsg.MessageId, cancellationToken);
                 break;
 
             case UserState.Registration_WaitingForHeight:
@@ -180,5 +200,60 @@ public class RegistrationMessageHandler(
                 await botClient.SendMessage(chatId, loc.Get(lang, "Active_ProfileActive"), cancellationToken: cancellationToken);
                 break;
         }
+    }
+
+    private async Task HandleLocationCityAsync(DbUser user, long chatId, double latitude, double longitude, int? prevBotMsgId, CancellationToken cancellationToken)
+    {
+        var lang = user.Language;
+
+        // 1. Обратное геокодирование
+        var geoResult = await geocodingService.ReverseGeocodeAsync(latitude, longitude, lang, cancellationToken);
+        string? resolvedCityName = null;
+        string? resolvedRegion = null;
+        string resolvedCountry = "Россия";
+
+        if (geoResult is not null && !string.IsNullOrWhiteSpace(geoResult.CityName))
+        {
+            resolvedCityName = geoResult.CityName;
+            resolvedRegion = geoResult.Region;
+            resolvedCountry = geoResult.Country;
+        }
+        else
+        {
+            // Резервный поиск ближайшего города в базе данных (до 30 км)
+            var nearby = await cityRepository.GetNearbyCitiesAsync(latitude, longitude, maxRadiusKm: 30, cancellationToken);
+            if (nearby.Count > 0)
+            {
+                var nearest = nearby[0].City;
+                resolvedCityName = nearest.Name;
+                resolvedRegion = nearest.Region;
+                resolvedCountry = nearest.Country;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(resolvedCityName))
+        {
+            await promptService.SendPromptForStateAsync(chatId, UserState.Registration_WaitingForCity, prevBotMsgId, loc.Get(lang, "Error_GeocodingFailed"), cancellationToken);
+            return;
+        }
+
+        // 2. Сверяем с базой данных
+        var existingCity = await cityRepository.FindExactByNameAsync(resolvedCityName, cancellationToken);
+        if (existingCity is null)
+        {
+            var newCity = new DatingBot.Domain.Entities.City
+            {
+                Name = resolvedCityName,
+                Region = resolvedRegion,
+                Country = resolvedCountry,
+                Latitude = latitude,
+                Longitude = longitude
+            };
+            await cityRepository.AddAsync(newCity, cancellationToken);
+        }
+
+        // 3. Записываем город и переходим к следующему шагу регистрации
+        await registrationService.SetCityAsync(user.TelegramId, resolvedCityName, cancellationToken);
+        await promptService.SendPromptForStateAsync(chatId, UserState.Registration_WaitingForHeight, prevBotMsgId, null, cancellationToken);
     }
 }

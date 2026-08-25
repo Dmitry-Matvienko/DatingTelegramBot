@@ -90,6 +90,7 @@ public class TelegramUpdateRouterStartTests
             _botClient.Object,
             _registrationService.Object,
             _cityRepository.Object,
+            new Mock<IGeocodingService>().Object,
             registrationPromptService,
             _loc
         );
@@ -107,6 +108,7 @@ public class TelegramUpdateRouterStartTests
             _editingService.Object,
             _registrationService.Object,
             _cityRepository.Object,
+            new Mock<IGeocodingService>().Object,
             profilePromptService,
             registrationPromptService,
             _loc
@@ -444,9 +446,9 @@ public class TelegramUpdateRouterStartTests
         var adminPromptService = new AdminPromptService(_botClient.Object, _adminService.Object, _registrationService.Object, _userRepository.Object, _loc, adminPromptLogger.Object);
         var adminBroadcastService = new AdminBroadcastService(_botClient.Object, _adminService.Object, adminBroadcastLogger.Object);
 
-        var regMsgHandler = new RegistrationMessageHandler(_botClient.Object, _registrationService.Object, _cityRepository.Object, regPromptService, _loc);
+        var regMsgHandler = new RegistrationMessageHandler(_botClient.Object, _registrationService.Object, _cityRepository.Object, new Mock<IGeocodingService>().Object, regPromptService, _loc);
         var regCbHandler = new RegistrationCallbackHandler(_botClient.Object, _registrationService.Object, _cityRepository.Object, regPromptService, _loc);
-        var editMsgHandler = new ProfileEditMessageHandler(_botClient.Object, _editingService.Object, _registrationService.Object, _cityRepository.Object, profPromptService, regPromptService, _loc);
+        var editMsgHandler = new ProfileEditMessageHandler(_botClient.Object, _editingService.Object, _registrationService.Object, _cityRepository.Object, new Mock<IGeocodingService>().Object, profPromptService, regPromptService, _loc);
         var editCbHandler = new ProfileEditCallbackHandler(_botClient.Object, _editingService.Object, _registrationService.Object, _cityRepository.Object, profPromptService, _loc);
         var searchCbHandler = new SearchCallbackHandler(_botClient.Object, _searchService.Object, searchPromptService, profPromptService, regPromptService, _loc);
         var adminCbHandler = new AdminCallbackHandler(_botClient.Object, _adminService.Object, _moderationService.Object, adminPromptService, adminBroadcastService, _userRepository.Object, _unitOfWork.Object, _loc, customConfig, adminCbLogger.Object);

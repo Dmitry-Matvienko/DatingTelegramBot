@@ -91,7 +91,7 @@ DatingBot/                                # Корень проекта == BASE_
 │   │   │   ├── Datasets/                 # cities_database.json.gz (100k+ сжатых городов)
 │   │   │   └── Seeds/                    # CityDatabaseSeeder (распаковка и пакетный импорт)
 │   │   ├── Repositories/                 # Реализации репозиториев и UnitOfWork
-│   │   └── Services/                     # LocalAiEmbeddingService (SIMD векторизация)
+│       └── Services/                     # LocalAiEmbeddingService, NominatimGeocodingService
 │   │
 │   └── DatingBot.Bot/                    # Презентационный слой Telegram (Telegram.Bot)
 │       ├── Handlers/                     # TelegramUpdateRouter, FSM хэндлеры сообщений и кнопок
@@ -101,7 +101,7 @@ DatingBot/                                # Корень проекта == BASE_
 │       ├── appsettings.json              # Базовая конфигурация (BotToken, AdminIds, InactivityReminderDays...)
 │       └── Program.cs                    # Точка входа DI, Web-хост Kestrel и Keep-Alive/Health эндпоинты
 │
-├── tests/                                # Модульные и интеграционные тесты (440 тестов)
+├── tests/                                # Модульные и интеграционные тесты (487 тестов)
 │   ├── DatingBot.UnitTests/              # xUnit модульные тесты сервисов, алгоритмов, воркеров и координатора
 │   └── DatingBot.IntegrationTests/       # Интеграционные тесты сидера БД и сценариев
 │

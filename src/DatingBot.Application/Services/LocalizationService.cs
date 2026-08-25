@@ -700,6 +700,60 @@ public class LocalizationService : ILocalizationService
             [AppLanguage.Portuguese] = "🔍 Você quis dizer: <b>{0}</b>?",
             [AppLanguage.Indonesian] = "🔍 Apakah maksud Anda: <b>{0}</b>?"
         },
+        ["City_SuggestionsPrompt"] = new()
+        {
+            [AppLanguage.Russian] = "🔍 <b>Возможно, вы имели в виду один из этих городов?</b>",
+            [AppLanguage.Ukrainian] = "🔍 <b>Можливо, ви мали на увазі одне з цих міст?</b>",
+            [AppLanguage.English] = "🔍 <b>Did you mean one of these cities?</b>",
+            [AppLanguage.Hindi] = "🔍 <b>क्या आपका मतलब इनमें से किसी शहर से था?</b>",
+            [AppLanguage.Portuguese] = "🔍 <b>Você quis dizer uma destas cidades?</b>",
+            [AppLanguage.Indonesian] = "🔍 <b>Apakah maksud Anda salah satu kota ini?</b>"
+        },
+        ["City_NotFound_Or_Suggestions_Notice"] = new()
+        {
+            [AppLanguage.Russian] = "📍 <b>Если вашего города нет в этом списке:</b>\n\n• Напишите название города ещё раз <i>(если была опечатка)</i>\n• Отправьте свою геолокацию с помощью кнопки внизу 👇",
+            [AppLanguage.Ukrainian] = "📍 <b>Якщо вашого міста немає у цьому списку:</b>\n\n• Напишіть назву міста ще раз <i>(якщо була помилка)</i>\n• Надішліть свою геолокацію за допомогою кнопки внизу 👇",
+            [AppLanguage.English] = "📍 <b>If your city is not on this list:</b>\n\n• Type the city name again <i>(in case of a typo)</i>\n• Send your geolocation using the button below 👇",
+            [AppLanguage.Hindi] = "📍 <b>यदि आपका शहर इस सूची में नहीं है:</b>\n\n• शहर का नाम दोबारा लिखें <i>(यदि टाइपो था)</i>\n• नीचे दिए गए बटन से अपनी जियोलोकेशन भेजें 👇",
+            [AppLanguage.Portuguese] = "📍 <b>Se a sua cidade não estiver nesta lista:</b>\n\n• Digite o nome da cidade novamente <i>(caso haja erro de digitação)</i>\n• Envie sua localização pelo botão abaixo 👇",
+            [AppLanguage.Indonesian] = "📍 <b>Jika kota Anda tidak ada dalam daftar ini:</b>\n\n• Ketik nama kota sekali lagi <i>(jika ada salah ketik)</i>\n• Kirim geolokasi Anda menggunakan tombol di bawah 👇"
+        },
+        ["Btn_SendLocation"] = new()
+        {
+            [AppLanguage.Russian] = "📍 Отправить геолокацию",
+            [AppLanguage.Ukrainian] = "📍 Надіслати геолокацію",
+            [AppLanguage.English] = "📍 Send Geolocation",
+            [AppLanguage.Hindi] = "📍 जियोलोकेशन भेजें",
+            [AppLanguage.Portuguese] = "📍 Enviar Localização",
+            [AppLanguage.Indonesian] = "📍 Kirim Geolokasi"
+        },
+        ["Error_CityNotFound"] = new()
+        {
+            [AppLanguage.Russian] = "Город не найден в базе данных.",
+            [AppLanguage.Ukrainian] = "Місто не знайдено у базі даних.",
+            [AppLanguage.English] = "City not found in database.",
+            [AppLanguage.Hindi] = "डेटाबेस में शहर नहीं मिला।",
+            [AppLanguage.Portuguese] = "Cidade não encontrada no banco de dados.",
+            [AppLanguage.Indonesian] = "Kota tidak ditemukan di basis data."
+        },
+        ["Error_GeocodingFailed"] = new()
+        {
+            [AppLanguage.Russian] = "❌ Не удалось определить город по геолокации. Пожалуйста, напишите название города текстом:",
+            [AppLanguage.Ukrainian] = "❌ Не вдалося визначити місто за геолокацією. Будь ласка, напишіть назву міста текстом:",
+            [AppLanguage.English] = "❌ Could not determine city from geolocation. Please type your city name:",
+            [AppLanguage.Hindi] = "❌ जियोलोकेशन से शहर की पहचान नहीं हो सकी। कृपया अपने शहर का नाम टाइप करें:",
+            [AppLanguage.Portuguese] = "❌ Não foi possível determinar a cidade pela localização. Por favor, digite o nome da cidade:",
+            [AppLanguage.Indonesian] = "❌ Gagal menentukan kota dari geolokasi. Silakan ketik nama kota Anda:"
+        },
+        ["City_DetectedFromLocation"] = new()
+        {
+            [AppLanguage.Russian] = "📍 Город определен: <b>{0}</b>",
+            [AppLanguage.Ukrainian] = "📍 Місто визначено: <b>{0}</b>",
+            [AppLanguage.English] = "📍 City detected: <b>{0}</b>",
+            [AppLanguage.Hindi] = "📍 शहर निर्धारित: <b>{0}</b>",
+            [AppLanguage.Portuguese] = "📍 Cidade detectada: <b>{0}</b>",
+            [AppLanguage.Indonesian] = "📍 Kota terdeteksi: <b>{0}</b>"
+        },
         ["City_TypeManually"] = new()
         {
             [AppLanguage.Russian] = "Пожалуйста, введите город текстом:",

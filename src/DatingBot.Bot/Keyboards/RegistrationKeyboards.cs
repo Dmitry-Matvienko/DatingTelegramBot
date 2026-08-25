@@ -97,4 +97,17 @@ public static class RegistrationKeyboards
             ]
         ]);
     }
+
+    public static ReplyKeyboardMarkup GetSendLocationReplyKeyboard(AppLanguage language = AppLanguage.Russian)
+    {
+        return new ReplyKeyboardMarkup([
+            [
+                KeyboardButton.WithRequestLocation(Loc.Get(language, "Btn_SendLocation"))
+            ]
+        ])
+        {
+            ResizeKeyboard = true,
+            OneTimeKeyboard = true
+        };
+    }
 }

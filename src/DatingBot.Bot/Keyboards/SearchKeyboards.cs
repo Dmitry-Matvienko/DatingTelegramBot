@@ -1,5 +1,6 @@
 using DatingBot.Application.Interfaces;
 using DatingBot.Application.Services;
+using DatingBot.Domain.Entities;
 using DatingBot.Domain.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
@@ -133,6 +134,26 @@ public static class SearchKeyboards
                 InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Btn_MainMenu"), "search:main_menu")
             ]
         ]);
+    }
+
+    public static InlineKeyboardMarkup GetCitySuggestionsKeyboard(IReadOnlyList<City> suggestions, bool isEditing = false, AppLanguage language = AppLanguage.Russian)
+    {
+        var prefix = isEditing ? "edit_city_confirm" : "reg_city_confirm";
+        var cancelPrefix = isEditing ? "edit_city_retry" : "reg_city_retry";
+
+        var rows = new List<InlineKeyboardButton[]>();
+        foreach (var city in suggestions)
+        {
+            var displayText = !string.IsNullOrWhiteSpace(city.Region) && !city.Name.Contains(city.Region, StringComparison.OrdinalIgnoreCase)
+                ? $"✅ {city.Name} ({city.Region})"
+                : $"✅ {city.Name}";
+
+            rows.Add([InlineKeyboardButton.WithCallbackData(displayText, $"{prefix}:{city.Id}")]);
+        }
+
+        rows.Add([InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Btn_Cancel"), cancelPrefix)]);
+
+        return new InlineKeyboardMarkup(rows);
     }
 
     public static InlineKeyboardMarkup GetCitySuggestionKeyboard(int cityId, string cityName, bool isEditing = false, AppLanguage language = AppLanguage.Russian)
