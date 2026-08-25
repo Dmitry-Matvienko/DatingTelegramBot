@@ -187,9 +187,9 @@ public class SearchCallbackHandler(
                     return;
                 }
             }
-            else if (score >= 6)
+            else if (!result.WasRecentlyRated && score >= 6)
             {
-                // Оценка >= 6 -> уведомление с кнопкой "Показать кто оценил"
+                // Оценка >= 6 и это не повторная оценка за 24 часа -> уведомление с кнопкой "Показать кто оценил"
                 await searchPromptService.SendHighRatingNotificationAsync(
                     result.ToTelegramId,
                     result.RatingId,

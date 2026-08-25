@@ -1,28 +1,20 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 38
-updated: 2026-08-25
+state_version: 39
+updated: 2026-08-26
 
 ---
 
 ## Сейчас
-- **Фаза**: Реализация **3 подсказок похожих городов при опечатках, сообщения с геолокацией и авто-добавления по GPS (`City Suggestions & Geolocation Auto-Save`)**:
-  1. **Инфраструктура геокодирования (`IGeocodingService` & `NominatimGeocodingService`)**:
-     - Создан интерфейс `IGeocodingService` и запись `GeocodingLocation`.
-     - Реализован двухступенчатый отказоустойчивый сервис обратного геокодирования `NominatimGeocodingService` (OpenStreetMap Nominatim + BigDataCloud fallback).
-     - Зарегистрирован через `AddHttpClient<IGeocodingService, NominatimGeocodingService>` в DI контейнере `DatingBot.Infrastructure`.
-  2. **Репозиторий городов (`CityRepository` & `ICityRepository`)**:
-     - Добавлен метод `AddAsync(City city)` для сохранения новых городов.
-     - Алгоритм `SearchSuggestionsAsync` оптимизирован для возвращения до `limit = 3` городов по префиксу, подстроке и расстоянию Левенштейна.
-  3. **Логика хэндлеров Telegram (`RegistrationMessageHandler` & `ProfileEditMessageHandler`)**:
-     - При опечатке бот отправляет сообщение 1 с инлайн-кнопками до 3 найденных городов и сразу сообщение 2 с инструкцией и Reply-клавиатурой `📍 Отправить геолокацию` (`KeyboardButton.WithRequestLocation`).
-     - Если похожих городов нет, выводится ошибка `Error_CityNotFound` + сообщение 2 с кнопкой геолокации.
-     - При получении `message.Location` бот выполняет реверс-геокодинг. Если город отсутствует в таблице `Cities`, он сохраняется в БД с координатами и привязывается к профилю пользователя.
-  4. **Локализация на 6 языках (`LocalizationService`)**:
-     - Добавлены 6 новых ключей (`City_SuggestionsPrompt`, `City_NotFound_Or_Suggestions_Notice`, `Btn_SendLocation`, `Error_CityNotFound`, `Error_GeocodingFailed`, `City_DetectedFromLocation`) для RU, UK, EN, HI, PT, ID.
-  5. **Тестирование и верификация**:
-     - Добавлены модульные тесты в `NominatimGeocodingServiceTests`, `CityRepositoryTests`, `RegistrationCityAndLocationHandlerTests`, `LocalizationServiceTests`.
-     - Все 487 тестов решения (486 unit + 1 integration) пройдены со 100% успехом (0 failures, 0 warnings).
+- **Фаза**: Исправление: **подавление уведомления кандидату при повторном оценивании в течение 24 часов (`Suppress Candidate Notification on Recent Re-rate`)**:
+  1. **Логика хэндлера `SearchCallbackHandler`**:
+     - В `HandleRatingFromReplyKeyboardAsync` вызов `searchPromptService.SendHighRatingNotificationAsync` ограничен условием `!result.WasRecentlyRated && score >= 6`.
+     - При повторной оценке (< 24ч) оценивающий получает сервисное уведомление `Notification_AlreadyRatedRecently`, а оцениваемому кандидату уведомление о высокой оценке не отправляется.
+  2. **Спецификация `search_and_ratings.md`**:
+     - В разделе 3 зафиксировано правило подавления повторных уведомлений кандидату при повторном оценивании в течение 24 часов.
+  3. **Тестирование и верификация**:
+     - Добавлен юнит-тест `HandleRatingFromReplyKeyboardAsync_WhenWasRecentlyRatedTrueAndScore6Plus_ShouldNotSendHighRatingNotificationToCandidate` в `SearchCallbackHandlerTests`.
+     - Все 488 тестов решения (487 unit + 1 integration) пройдены со 100% успехом (0 failures, 0 warnings).
 - **Далее**: Ожидание следующих задач от пользователя.
 
 ---
@@ -83,6 +75,7 @@ updated: 2026-08-25
 - [x] Реализация динамических рандомизированных подсказок в анкетах поиска (15 мультиязычных шаблонов, нулевая нагрузка на БД/систему, разделитель `——`).
 - [x] Реализация кнопки «Руководство бота» в главном меню, обновление текста главного меню и мультиязычное руководство пользователя (RU, UK, EN, HI, PT, ID).
 - [x] Реализация уведомления о повторной оценке пользователя в течение 24 часов в поиске анкет (RU, UK, EN, HI, PT, ID).
+- [x] Подавление отправки уведомления оцениваемому пользователю при повторной оценке в течение 24 часов.
 - [x] Реализация 3 подсказок похожих городов при опечатках, сообщения с геолокацией и авто-добавления городов по GPS в БД при регистрации и редактировании анкеты.
 
 ---

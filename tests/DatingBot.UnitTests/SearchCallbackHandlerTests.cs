@@ -552,4 +552,110 @@ public class SearchCallbackHandlerTests
                 r.Text.Contains("Вы уже недавно оценивали этого пользователя")),
             It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task HandleRatingFromReplyKeyboardAsync_WhenWasRecentlyRatedTrueAndScore6Plus_ShouldNotSendHighRatingNotificationToCandidate()
+    {
+        // Arrange
+        const long currentTelegramId = 11111;
+        var currentUserId = Guid.NewGuid();
+        var candidateId = Guid.NewGuid();
+        const long candidateTelegramId = 22222;
+
+        var currentUser = new User
+        {
+            Id = currentUserId,
+            TelegramId = currentTelegramId,
+            State = UserState.Searching,
+            Language = AppLanguage.Russian,
+            CurrentCandidateProfileId = candidateId
+        };
+
+        var config = new ConfigurationBuilder().Build();
+        var searchPromptService = new SearchPromptService(
+            _botClient.Object,
+            _registrationService.Object,
+            _userRepository.Object,
+            _loc,
+            config,
+            _searchPromptLogger.Object
+        );
+
+        var registrationPromptService = new RegistrationPromptService(
+            _botClient.Object,
+            _registrationService.Object,
+            _userRepository.Object,
+            _loc,
+            _registrationPromptLogger.Object
+        );
+
+        var profilePromptService = new ProfilePromptService(
+            _botClient.Object,
+            _registrationService.Object,
+            _userRepository.Object,
+            _loc,
+            registrationPromptService,
+            _profilePromptLogger.Object
+        );
+
+        var raterDto = CreateSampleProfile(currentUserId, currentTelegramId, "Current User");
+        var candidateDto = CreateSampleProfile(candidateId, candidateTelegramId, "Candidate User");
+
+        var ratingResult = new RatingResult(
+            RatingId: Guid.NewGuid(),
+            ToTelegramId: candidateTelegramId,
+            Score: 8,
+            NewRatingCount: 5,
+            NewAverageRating: 8.0,
+            IsMutualMatch: false,
+            OriginalScore: 0,
+            RaterProfile: raterDto,
+            CandidateProfile: candidateDto,
+            WasRecentlyRated: true
+        );
+
+        _searchService.Setup(s => s.RateCandidateAsync(currentTelegramId, candidateId, 8, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<RatingResult>.Success(ratingResult));
+
+        _searchService.Setup(s => s.GetNextIncomingRatingAsync(currentTelegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IncomingRatingDto?)null);
+
+        _searchService.Setup(s => s.GetNextMatchCandidateAsync(currentTelegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MatchCandidateDto?)null);
+
+        _userRepository.Setup(r => r.GetByTelegramIdAsync(currentTelegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(currentUser);
+
+        _userRepository.Setup(r => r.GetByTelegramIdAsync(candidateTelegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new User { TelegramId = candidateTelegramId, Language = AppLanguage.Russian });
+
+        _botClient.Setup(b => b.SendRequest(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Message { Id = 200 });
+
+        var handler = new SearchCallbackHandler(
+            _botClient.Object,
+            _searchService.Object,
+            searchPromptService,
+            profilePromptService,
+            registrationPromptService,
+            _loc
+        );
+
+        // Act
+        await handler.HandleRatingFromReplyKeyboardAsync(currentTelegramId, currentUser, 8);
+
+        // Assert
+        // 1. Уведомление отправлено текущему пользователю ("Вы уже недавно оценивали этого пользователя")
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<SendMessageRequest>(r =>
+                r.ChatId.Identifier == currentTelegramId &&
+                r.Text.Contains("Вы уже недавно оценивали этого пользователя")),
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        // 2. Уведомление кандидату НЕ отправлялось
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<SendMessageRequest>(r =>
+                r.ChatId.Identifier == candidateTelegramId),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
 }
