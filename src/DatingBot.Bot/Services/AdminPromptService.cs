@@ -176,11 +176,8 @@ public partial class AdminPromptService(
 
         var safeName = !string.IsNullOrWhiteSpace(candidate.Name) ? WebUtility.HtmlEncode(candidate.Name) : "Пользователь";
         var safeCity = !string.IsNullOrWhiteSpace(candidate.City) ? WebUtility.HtmlEncode(candidate.City) : "—";
-        var safeUsername = !string.IsNullOrWhiteSpace(candidate.Username) ? WebUtility.HtmlEncode(candidate.Username) : null;
 
-        var userAccountLink = safeUsername is null
-            ? $"<a href=\"tg://user?id={candidate.TelegramId}\">{safeName}</a>"
-            : $"<a href=\"tg://user?id={candidate.TelegramId}\">{safeName}</a> (@{safeUsername})";
+        var userAccountLink = TelegramUrlHelper.FormatUserAccountHtmlLink(candidate.TelegramId, candidate.Username, candidate.Name);
 
         var ratingStr = candidate.RatingCount > 0
             ? $"⭐ {candidate.AverageRating:F1} / 10 (оценок: {candidate.RatingCount})"
@@ -279,18 +276,10 @@ public partial class AdminPromptService(
             _ => "Не указана"
         };
 
-        var safeReporterName = !string.IsNullOrWhiteSpace(report.ReporterFirstName) ? WebUtility.HtmlEncode(report.ReporterFirstName) : "Пользователь";
-        var safeReporterUsername = !string.IsNullOrWhiteSpace(report.ReporterUsername) ? WebUtility.HtmlEncode(report.ReporterUsername) : null;
         var safeReportedName = !string.IsNullOrWhiteSpace(report.ReportedProfile.Name) ? WebUtility.HtmlEncode(report.ReportedProfile.Name) : "Пользователь";
-        var safeReportedUsername = !string.IsNullOrWhiteSpace(report.ReportedProfile.Username) ? WebUtility.HtmlEncode(report.ReportedProfile.Username) : null;
 
-        var reporterTag = safeReporterUsername is null
-            ? $"<a href=\"tg://user?id={report.ReporterTelegramId}\">{safeReporterName}</a> (ID: <code>{report.ReporterTelegramId}</code>)"
-            : $"<a href=\"tg://user?id={report.ReporterTelegramId}\">{safeReporterName}</a> (@{safeReporterUsername}, ID: <code>{report.ReporterTelegramId}</code>)";
-
-        var reportedTag = safeReportedUsername is null
-            ? $"<a href=\"tg://user?id={report.ReportedProfile.TelegramId}\">{safeReportedName}</a> (ID: <code>{report.ReportedProfile.TelegramId}</code>)"
-            : $"<a href=\"tg://user?id={report.ReportedProfile.TelegramId}\">{safeReportedName}</a> (@{safeReportedUsername}, ID: <code>{report.ReportedProfile.TelegramId}</code>)";
+        var reporterTag = $"{TelegramUrlHelper.FormatUserAccountHtmlLink(report.ReporterTelegramId, report.ReporterUsername, report.ReporterFirstName)} (ID: <code>{report.ReporterTelegramId}</code>)";
+        var reportedTag = $"{TelegramUrlHelper.FormatUserAccountHtmlLink(report.ReportedProfile.TelegramId, report.ReportedProfile.Username, report.ReportedProfile.Name)} (ID: <code>{report.ReportedProfile.TelegramId}</code>)";
 
         var cardSb = new StringBuilder();
         cardSb.AppendLine($"🚨 <b>ЖАЛОБА #{currentIndex} из {totalCount}</b>\n");

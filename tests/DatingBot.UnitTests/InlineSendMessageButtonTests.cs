@@ -43,6 +43,19 @@ public class InlineSendMessageButtonTests
     }
 
     [Theory]
+    [InlineData(123456789L, "ivan_dev", "Иван", "<a href=\"https://t.me/ivan_dev\">Иван</a> (@ivan_dev)")]
+    [InlineData(123456789L, "@ivan_dev", "Иван", "<a href=\"https://t.me/ivan_dev\">Иван</a> (@ivan_dev)")]
+    [InlineData(123456789L, null, "Иван", "<a href=\"tg://user?id=123456789\">Иван</a>")]
+    [InlineData(123456789L, "", "Иван", "<a href=\"tg://user?id=123456789\">Иван</a>")]
+    [InlineData(123456789L, null, null, "<a href=\"tg://user?id=123456789\">Пользователь</a>")]
+    [InlineData(123456789L, "dev", "<Иван & Co>", "<a href=\"https://t.me/dev\">&lt;Иван &amp; Co&gt;</a> (@dev)")]
+    public void TelegramUrlHelper_FormatUserAccountHtmlLink_ShouldFormatExpectedHtml(long telegramId, string? username, string? name, string expectedHtml)
+    {
+        var result = TelegramUrlHelper.FormatUserAccountHtmlLink(telegramId, username, name);
+        result.Should().Be(expectedHtml);
+    }
+
+    [Theory]
     [InlineData(AppLanguage.Russian, "💬 Написать")]
     [InlineData(AppLanguage.Ukrainian, "💬 Написати")]
     [InlineData(AppLanguage.English, "💬 Message")]
