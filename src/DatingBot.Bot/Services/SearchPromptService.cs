@@ -325,21 +325,24 @@ public class SearchPromptService(
             }
         }
 
-        Message followUpMessage = null!;
+        Message? followUpMessage = null;
         var inlineKeyboard = SearchKeyboards.GetRaterCardKeyboard(rater.TelegramId, rater.Username, lang);
-        try
+        if (inlineKeyboard != null)
         {
-            followUpMessage = await botClient.SendMessage(
-                chatId: chatId,
-                text: loc.Get(lang, "Notification_CanMessageUser"),
-                parseMode: ParseMode.Html,
-                replyMarkup: inlineKeyboard,
-                cancellationToken: cancellationToken
-            );
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning("Не удалось отправить сообщение с кнопкой 'Написать' пользователю {ChatId}: {ErrorMessage}", chatId, ex.Message);
+            try
+            {
+                followUpMessage = await botClient.SendMessage(
+                    chatId: chatId,
+                    text: loc.Get(lang, "Notification_CanMessageUser"),
+                    parseMode: ParseMode.Html,
+                    replyMarkup: inlineKeyboard,
+                    cancellationToken: cancellationToken
+                );
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning("Не удалось отправить сообщение с кнопкой 'Написать' пользователю {ChatId}: {ErrorMessage}", chatId, ex.Message);
+            }
         }
 
         var lastMessageId = followUpMessage?.MessageId ?? sentMessage?.MessageId;

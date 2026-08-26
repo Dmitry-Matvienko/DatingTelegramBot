@@ -44,7 +44,9 @@ public class ReferralPromptService(
         for (var i = 0; i < result.Value.Count; i++)
         {
             var item = result.Value[i];
-            var profileUrl = TelegramUrlHelper.GetUserProfileUrl(item.TelegramId, item.Username);
+            var profileUrl = !string.IsNullOrWhiteSpace(item.Username)
+                ? $"https://t.me/{item.Username.Trim().TrimStart('@')}"
+                : $"tg://user?id={item.TelegramId}";
             var encodedName = WebUtility.HtmlEncode(item.Name ?? item.Username ?? "User");
             var clickableName = $"<a href=\"{profileUrl}\">{encodedName}</a>";
             var line = string.Format(loc.Get(language, "Referral_Report_Item"), i + 1, clickableName, item.InvitedCount);

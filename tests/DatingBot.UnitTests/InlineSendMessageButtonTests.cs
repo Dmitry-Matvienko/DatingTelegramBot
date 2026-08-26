@@ -33,13 +33,13 @@ public class InlineSendMessageButtonTests
     }
 
     [Theory]
-    [InlineData(123456789L, null, "tg://user?id=123456789")]
-    [InlineData(123456789L, "", "tg://user?id=123456789")]
-    [InlineData(987654321L, "   ", "tg://user?id=987654321")]
-    public void TelegramUrlHelper_WhenUsernameIsEmptyOrNull_ShouldReturnTgUserDeepLink(long telegramId, string? username, string expectedUrl)
+    [InlineData(123456789L, null)]
+    [InlineData(123456789L, "")]
+    [InlineData(987654321L, "   ")]
+    public void TelegramUrlHelper_WhenUsernameIsEmptyOrNull_ShouldReturnNull(long telegramId, string? username)
     {
         var url = TelegramUrlHelper.GetUserProfileUrl(telegramId, username);
-        url.Should().Be(expectedUrl);
+        url.Should().BeNull();
     }
 
     [Theory]
@@ -69,12 +69,12 @@ public class InlineSendMessageButtonTests
     }
 
     [Fact]
-    public void SearchKeyboards_GetMutualMatchKeyboard_ShouldReturnInlineKeyboardMarkupWithSendMessageButton()
+    public void SearchKeyboards_GetMutualMatchKeyboard_WhenUsernameIsProvided_ShouldReturnInlineKeyboardMarkupWithSendMessageButton()
     {
         var keyboard = SearchKeyboards.GetMutualMatchKeyboard(123456789L, "match_partner", AppLanguage.Russian);
 
         keyboard.Should().NotBeNull();
-        var buttons = keyboard.InlineKeyboard.ToList();
+        var buttons = keyboard!.InlineKeyboard.ToList();
         buttons.Should().HaveCount(1);
         buttons[0].Should().HaveCount(1);
 
@@ -84,18 +84,55 @@ public class InlineSendMessageButtonTests
     }
 
     [Fact]
-    public void SearchKeyboards_GetRaterCardKeyboard_ShouldReturnInlineKeyboardMarkupWithSendMessageButton()
+    public void SearchKeyboards_GetMutualMatchKeyboard_WhenUsernameIsNull_ShouldReturnNull()
+    {
+        var keyboard = SearchKeyboards.GetMutualMatchKeyboard(123456789L, null, AppLanguage.Russian);
+        keyboard.Should().BeNull();
+    }
+
+    [Fact]
+    public void SearchKeyboards_GetRaterCardKeyboard_WhenUsernameIsNull_ShouldReturnNull()
     {
         var keyboard = SearchKeyboards.GetRaterCardKeyboard(987654321L, null, AppLanguage.Russian);
+        keyboard.Should().BeNull();
+    }
+
+    [Fact]
+    public void SearchKeyboards_GetRaterCardKeyboard_WhenUsernameIsProvided_ShouldReturnKeyboard()
+    {
+        var keyboard = SearchKeyboards.GetRaterCardKeyboard(987654321L, "rater_user", AppLanguage.Russian);
 
         keyboard.Should().NotBeNull();
-        var buttons = keyboard.InlineKeyboard.ToList();
+        var buttons = keyboard!.InlineKeyboard.ToList();
         buttons.Should().HaveCount(1);
         buttons[0].Should().HaveCount(1);
 
         var button = buttons[0].First();
         button.Text.Should().Be("💬 Написать");
-        button.Url.Should().Be("tg://user?id=987654321");
+        button.Url.Should().Be("https://t.me/rater_user");
+    }
+
+    [Fact]
+    public void AdminKeyboards_GetAdminProfileCardKeyboard_WhenUsernameIsNull_ShouldNotIncludeSendMessageButton()
+    {
+        var keyboard = AdminKeyboards.GetAdminProfileCardKeyboard(Guid.NewGuid(), 987654321L, null, Gender.Male, 1, AppLanguage.Russian);
+
+        keyboard.Should().NotBeNull();
+        var allButtons = keyboard.InlineKeyboard.SelectMany(row => row).ToList();
+        allButtons.Should().NotContain(b => b.Url != null);
+        allButtons.Should().Contain(b => b.CallbackData != null && b.CallbackData.StartsWith("adm_s_ban:"));
+        allButtons.Should().Contain(b => b.CallbackData != null && b.CallbackData.StartsWith("adm_s_del:"));
+        allButtons.Should().Contain(b => b.CallbackData != null && b.CallbackData.StartsWith("adm_s_next:"));
+    }
+
+    [Fact]
+    public void AdminKeyboards_GetAdminProfileCardKeyboard_WhenUsernameIsProvided_ShouldIncludeSendMessageButton()
+    {
+        var keyboard = AdminKeyboards.GetAdminProfileCardKeyboard(Guid.NewGuid(), 987654321L, "admin_viewed_user", Gender.Male, 1, AppLanguage.Russian);
+
+        keyboard.Should().NotBeNull();
+        var allButtons = keyboard.InlineKeyboard.SelectMany(row => row).ToList();
+        allButtons.Should().Contain(b => b.Url == "https://t.me/admin_viewed_user");
     }
 
     [Fact]
@@ -254,7 +291,7 @@ public class InlineSendMessageButtonTests
         var rater = new UserProfileDto(
             Id: Guid.NewGuid(),
             TelegramId: 999888777L,
-            Username: null,
+            Username: "rater_user",
             Gender: Gender.Female,
             TargetGender: TargetGender.Male,
             Name: "Anna",
@@ -299,11 +336,72 @@ public class InlineSendMessageButtonTests
                 r.ChatId.Identifier == chatId &&
                 r.Text.Contains("Вы можете написать этому человеку") &&
                 r.ReplyMarkup is InlineKeyboardMarkup &&
-                ((InlineKeyboardMarkup)r.ReplyMarkup).InlineKeyboard.First().First().Url == "tg://user?id=999888777"),
+                ((InlineKeyboardMarkup)r.ReplyMarkup).InlineKeyboard.First().First().Url == "https://t.me/rater_user"),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // 3. Last bot message id saved from the follow-up message
         registrationService.Verify(r => r.SaveLastBotMessageIdAsync(chatId, 101, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SearchPromptService_SendRaterCardAsync_WhenUsernameIsNull_ShouldNotSendFollowUpMessage()
+    {
+        var botClient = new Mock<ITelegramBotClient>();
+        var registrationService = new Mock<IRegistrationService>();
+        var userRepo = new Mock<IUserRepository>();
+        var config = new ConfigurationBuilder().Build();
+        var logger = new Mock<ILogger<SearchPromptService>>();
+
+        var chatId = 111222333L;
+        userRepo.Setup(r => r.GetByTelegramIdAsync(chatId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new User { TelegramId = chatId, Language = AppLanguage.Russian });
+
+        var rater = new UserProfileDto(
+            Id: Guid.NewGuid(),
+            TelegramId: 999888777L,
+            Username: null,
+            Gender: Gender.Female,
+            TargetGender: TargetGender.Male,
+            Name: "Anna",
+            Age: 24,
+            City: "Kyiv",
+            Height: 168,
+            PhotoFileId: "rater_photo",
+            DatingTarget: DatingTarget.Relationship,
+            AiDescription: "Rater bio",
+            SelectedInterests: [],
+            IsCompleted: true,
+            AgeFilters: AgeCategoryFilter.None,
+            SearchMinAge: null,
+            SearchMaxAge: null,
+            RatingCount: 10,
+            AverageRating: 8.5,
+            CityId: null,
+            AiVector: null,
+            Greeting: "Hi there!"
+        );
+
+        botClient.Setup(b => b.SendRequest(It.IsAny<SendPhotoRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Message { Id = 100 });
+
+        var sut = new SearchPromptService(botClient.Object, registrationService.Object, userRepo.Object, _loc, config, logger.Object);
+
+        await sut.SendRaterCardAsync(chatId, rater, 8);
+
+        // 1. Photo card sent with 1..10 ReplyKeyboardMarkup
+        botClient.Verify(b => b.SendRequest(
+            It.Is<SendPhotoRequest>(r =>
+                r.ChatId.Identifier == chatId &&
+                r.ReplyMarkup is ReplyKeyboardMarkup),
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        // 2. No follow-up message sent because user has no username
+        botClient.Verify(b => b.SendRequest(
+            It.Is<SendMessageRequest>(r => r.ChatId.Identifier == chatId),
+            It.IsAny<CancellationToken>()), Times.Never);
+
+        // 3. Last bot message id saved from the photo card
+        registrationService.Verify(r => r.SaveLastBotMessageIdAsync(chatId, 100, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -356,6 +454,59 @@ public class InlineSendMessageButtonTests
                 r.ChatId.Identifier == chatId &&
                 r.ReplyMarkup is InlineKeyboardMarkup &&
                 ((InlineKeyboardMarkup)r.ReplyMarkup).InlineKeyboard.First().First().Url == "https://t.me/candidate_username"),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task AdminPromptService_SendAdminCandidateCardAsync_WhenUsernameIsNull_ShouldNotIncludeSendMessageButton()
+    {
+        var botClient = new Mock<ITelegramBotClient>();
+        var adminService = new Mock<IAdminService>();
+        var registrationService = new Mock<IRegistrationService>();
+        var userRepo = new Mock<IUserRepository>();
+        var logger = new Mock<ILogger<AdminPromptService>>();
+
+        var chatId = 111222333L;
+        userRepo.Setup(r => r.GetByTelegramIdAsync(chatId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new User { TelegramId = chatId, Language = AppLanguage.Russian });
+
+        var candidate = new UserProfileDto(
+            Id: Guid.NewGuid(),
+            TelegramId: 777666555L,
+            Username: null,
+            Gender: Gender.Male,
+            TargetGender: TargetGender.Female,
+            Name: "Alex",
+            Age: 29,
+            City: "Warsaw",
+            Height: 180,
+            PhotoFileId: "admin_cand_photo",
+            DatingTarget: DatingTarget.Relationship,
+            AiDescription: "Admin candidate bio",
+            SelectedInterests: [],
+            IsCompleted: true,
+            AgeFilters: AgeCategoryFilter.None,
+            SearchMinAge: null,
+            SearchMaxAge: null,
+            RatingCount: 5,
+            AverageRating: 7.0,
+            CityId: null,
+            AiVector: null,
+            Greeting: null
+        );
+
+        botClient.Setup(b => b.SendRequest(It.IsAny<SendPhotoRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Message { Id = 100 });
+
+        var sut = new AdminPromptService(botClient.Object, adminService.Object, registrationService.Object, userRepo.Object, _loc, logger.Object);
+
+        await sut.SendAdminCandidateCardAsync(chatId, candidate, Gender.Male, 1, 10, 2);
+
+        botClient.Verify(b => b.SendRequest(
+            It.Is<SendPhotoRequest>(r =>
+                r.ChatId.Identifier == chatId &&
+                r.ReplyMarkup is InlineKeyboardMarkup &&
+                ((InlineKeyboardMarkup)r.ReplyMarkup).InlineKeyboard.SelectMany(row => row).All(b => b.Url == null)),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -428,7 +579,7 @@ public class InlineSendMessageButtonTests
         var rater = new UserProfileDto(
             Id: Guid.NewGuid(),
             TelegramId: 999888777L,
-            Username: null,
+            Username: "rater_user",
             Gender: Gender.Female,
             TargetGender: TargetGender.Male,
             Name: "Anna",
@@ -472,7 +623,7 @@ public class InlineSendMessageButtonTests
                 r.ChatId.Identifier == chatId &&
                 r.Text.Contains("Вы можете написать этому человеку") &&
                 r.ReplyMarkup is InlineKeyboardMarkup &&
-                ((InlineKeyboardMarkup)r.ReplyMarkup).InlineKeyboard.First().First().Url == "tg://user?id=999888777"),
+                ((InlineKeyboardMarkup)r.ReplyMarkup).InlineKeyboard.First().First().Url == "https://t.me/rater_user"),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // 3. Last bot message id saved from the follow-up message
