@@ -28,6 +28,7 @@ public class TelegramUpdateRouterStartTests
     private readonly Mock<ICityRepository> _cityRepository = new();
     private readonly Mock<IProfileEditingService> _editingService = new();
     private readonly Mock<IModerationService> _moderationService = new();
+    private readonly Mock<IReferralService> _referralService = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly ILocalizationService _loc = new DatingBot.Application.Services.LocalizationService();
 
@@ -155,6 +156,12 @@ public class TelegramUpdateRouterStartTests
             _loc
         );
 
+        var referralPromptService = new ReferralPromptService(
+            _botClient.Object,
+            _referralService.Object,
+            _loc
+        );
+
         _router = new TelegramUpdateRouter(
             _botClient.Object,
             _registrationService.Object,
@@ -174,6 +181,8 @@ public class TelegramUpdateRouterStartTests
             adminPromptService,
             adminCbHandler,
             adminMsgHandler,
+            _referralService.Object,
+            referralPromptService,
             routerLogger.Object
         );
     }
@@ -454,6 +463,12 @@ public class TelegramUpdateRouterStartTests
         var adminCbHandler = new AdminCallbackHandler(_botClient.Object, _adminService.Object, _moderationService.Object, adminPromptService, adminBroadcastService, _userRepository.Object, _unitOfWork.Object, _loc, customConfig, adminCbLogger.Object);
         var adminMsgHandler = new AdminMessageHandler(_botClient.Object, _adminService.Object, adminPromptService, adminBroadcastService, _userRepository.Object, _unitOfWork.Object, _loc);
 
+        var referralPromptService = new ReferralPromptService(
+            _botClient.Object,
+            _referralService.Object,
+            _loc
+        );
+
         var customRouter = new TelegramUpdateRouter(
             _botClient.Object,
             _registrationService.Object,
@@ -473,6 +488,8 @@ public class TelegramUpdateRouterStartTests
             adminPromptService,
             adminCbHandler,
             adminMsgHandler,
+            _referralService.Object,
+            referralPromptService,
             routerLogger.Object
         );
 

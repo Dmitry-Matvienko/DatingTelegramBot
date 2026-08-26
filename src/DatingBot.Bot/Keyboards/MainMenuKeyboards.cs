@@ -17,6 +17,7 @@ public static class MainMenuKeyboards
                 new KeyboardButton(Loc.Get(language, "Menu_Profile"))
             ],
             [
+                new KeyboardButton(Loc.Get(language, "Menu_Referral")),
                 new KeyboardButton(Loc.Get(language, "Menu_Guide"))
             ]
         ])

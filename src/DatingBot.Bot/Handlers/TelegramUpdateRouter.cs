@@ -30,6 +30,8 @@ public class TelegramUpdateRouter(
     AdminPromptService adminPromptService,
     AdminCallbackHandler adminCallbackHandler,
     AdminMessageHandler adminMessageHandler,
+    IReferralService referralService,
+    ReferralPromptService referralPromptService,
     ILogger<TelegramUpdateRouter> logger)
 {
     public async Task RouteUpdateAsync(Update update, CancellationToken cancellationToken = default)
@@ -122,8 +124,32 @@ public class TelegramUpdateRouter(
                 }
 
                 // 1. Команда /start
-                if (text?.Equals("/start", StringComparison.OrdinalIgnoreCase) == true)
+                if (text?.StartsWith("/start", StringComparison.OrdinalIgnoreCase) == true)
                 {
+                    var parts = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length > 1)
+                    {
+                        var startParam = parts[1].Trim();
+                        var refResult = await referralService.ProcessReferralJoinAsync(telegramId, startParam, cancellationToken);
+                        if (refResult.IsSuccess && refResult.Value is { } refInfo)
+                        {
+                            try
+                            {
+                                var notifText = string.Format(loc.Get(refInfo.ReferrerLanguage, "Referral_Notification_NewUser"), refInfo.TotalBoostDays);
+                                await botClient.SendMessage(
+                                    chatId: refInfo.ReferrerTelegramId,
+                                    text: notifText,
+                                    parseMode: ParseMode.Html,
+                                    cancellationToken: cancellationToken
+                                );
+                            }
+                            catch (Exception ex)
+                            {
+                                logger.LogWarning(ex, "Не удалось отправить уведомление рефереру {ReferrerTelegramId}", refInfo.ReferrerTelegramId);
+                            }
+                        }
+                    }
+
                     if (isAdmin)
                     {
                         user.State = UserState.Active;
@@ -333,7 +359,16 @@ public class TelegramUpdateRouter(
                     return;
                 }
 
-                // 11. Если пользователь в режиме редактирования профиля
+                // 11. Меню: "🎁 Реферальная программа" или /referral / /ref
+                if (IsReferralButton(text) || text?.Equals("/referral", StringComparison.OrdinalIgnoreCase) == true || text?.Equals("/ref", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    await registrationPromptService.DeleteMessageSafeAsync(message.Chat.Id, message.MessageId, cancellationToken);
+                    await searchService.ClearCurrentCandidateAsync(user.TelegramId, cancellationToken);
+                    await referralPromptService.SendReferralProgramInfoAsync(message.Chat.Id, user.Language, cancellationToken);
+                    return;
+                }
+
+                // 12. Если пользователь в режиме редактирования профиля
                 var isEditingHandled = await profileEditMessageHandler.HandleEditMessageAsync(user, message, cancellationToken);
                 if (isEditingHandled)
                 {
@@ -414,6 +449,31 @@ public class TelegramUpdateRouter(
                     return;
                 }
 
+                // Обработка кнопок реферальной программы
+                if (callbackQuery.Data == "ref_my_links")
+                {
+                    await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: cancellationToken);
+                    await referralPromptService.SendMyReferralLinksAsync(
+                        callbackQuery.Message?.Chat.Id ?? telegramId,
+                        user.Language,
+                        telegramId,
+                        cancellationToken
+                    );
+                    return;
+                }
+
+                if (callbackQuery.Data == "ref_create_link")
+                {
+                    await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: cancellationToken);
+                    await referralPromptService.SendCreateReferralLinkAsync(
+                        callbackQuery.Message?.Chat.Id ?? telegramId,
+                        user.Language,
+                        telegramId,
+                        cancellationToken
+                    );
+                    return;
+                }
+
                 // 2. Проверяем обработчик поиска и оценок
                 var isSearchCallback = await searchCallbackHandler.HandleSearchCallbackQueryAsync(user, callbackQuery, cancellationToken);
                 if (isSearchCallback)
@@ -466,6 +526,12 @@ public class TelegramUpdateRouter(
     {
         if (string.IsNullOrWhiteSpace(text)) return false;
         return text.StartsWith("📖") || text.Contains("Руководство") || text.Contains("Керівництво") || text.Contains("Guide") || text.Contains("गाइड") || text.Contains("Guia") || text.Contains("Panduan");
+    }
+
+    private static bool IsReferralButton(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        return text.StartsWith("🎁") || text.Contains("Реферальн") || text.Contains("Referral") || text.Contains("रेफ़रल") || text.Contains("Indicação") || text.Contains("Rujukan");
     }
 
     private static bool IsReportButton(string? text)

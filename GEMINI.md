@@ -67,42 +67,43 @@ DatingBot/                                # Корень проекта == BASE_
 │           ├── database_persistence.md   # Схема БД, Fluent API, индексы, сидирование городов
 │           ├── ai_embeddings.md          # Локальная SIMD-векторизация описаний и косинусное сходство
 │           ├── localization_ui.md        # Словарь на 6 языков, грамматические падежи, UI-клавиатуры
-│           └── inactivity_reminders.md   # Заманчивые напоминания неактивным пользователям
+│           ├── inactivity_reminders.md   # Заманчивые напоминания неактивным пользователям
+│           └── referral_system.md        # Реферальная программа, топ поиска и уведомления
 │
 ├── src/                                  # [Уровень 5] Исходный код реализации (.NET 9 / C# 13)
 │   │
 │   ├── DatingBot.Domain/                 # Ядро: 0 внешних зависимостей
-│   │   ├── Entities/                     # Сущности (User, UserProfile, City, Interest, Rating, Report, PaymentTransaction)
+│   │   ├── Entities/                     # Сущности (User, UserProfile, City, Interest, Rating, Report, PaymentTransaction, ReferralLink, ReferralRecord)
 │   │   ├── Enums/                        # Перечисления (UserState, AppLanguage, Gender, TargetGender, PaymentType...)
 │   │   └── Exceptions/                   # Доменные исключения (DomainException)
 │   │
 │   ├── DatingBot.Application/            # Сценарии использования и бизнес-сервисы
 │   │   ├── Common/                       # Result Pattern (Result, Result<T>)
-│   │   ├── DTOs/                         # Модели передачи данных (UserProfileDto, MatchCandidateDto, AdminStatsDto...)
-│   │   ├── Interfaces/                   # Интерфейсы репозиториев и сервисов
-│   │   ├── Services/                     # Бизнес-сервисы (Registration, ProfileEditing, Matchmaking, Search, Loc, Inactivity)
+│   │   ├── DTOs/                         # Модели передачи данных (UserProfileDto, MatchCandidateDto, AdminStatsDto, ReferralLinkDto...)
+│   │   ├── Interfaces/                   # Интерфейсы репозиториев и сервисов (IUserRepository, IReferralRepository, IReferralService, IBotInfoProvider...)
+│   │   ├── Services/                     # Бизнес-сервисы (Registration, ProfileEditing, Matchmaking, Search, ReferralService, Loc, Inactivity)
 │   │   └── Validators/                   # FluentValidation валидаторы (Name, Age, City, Height, AiBio)
 │   │
 │   ├── DatingBot.Infrastructure/         # Инфраструктура, MS SQL Server и EF Core
 │   │   ├── Data/
 │   │   │   ├── AppDbContext.cs           # Контекст EF Core
 │   │   │   ├── AppDbContextFactory.cs    # Фабрика для миграций EF Core CLI
-│   │   │   ├── Configurations/           # Fluent API конфигурации таблиц и индексов
+│   │   │   ├── Configurations/           # Fluent API конфигурации таблиц и индексов (ReferralLinkConfiguration...)
 │   │   │   ├── Datasets/                 # cities_database.json.gz (100k+ сжатых городов)
 │   │   │   └── Seeds/                    # CityDatabaseSeeder (распаковка и пакетный импорт)
-│   │   ├── Repositories/                 # Реализации репозиториев и UnitOfWork
+│   │   ├── Repositories/                 # Реализации репозиториев (ReferralRepository, UserRepository...) и UnitOfWork
 │       └── Services/                     # LocalAiEmbeddingService, NominatimGeocodingService
 │   │
 │   └── DatingBot.Bot/                    # Презентационный слой Telegram (Telegram.Bot)
 │       ├── Handlers/                     # TelegramUpdateRouter, FSM хэндлеры сообщений и кнопок
-│       ├── Keyboards/                    # Фабрики инлайн- и reply-клавиатур (MainMenu, Profile, Payment, Admin, TelegramUrlHelper...)
-│       ├── Services/                     # TelegramBotWorker, BotLifecycleCoordinator, IBotLifecycleCoordinator, AdminBroadcast, BotSetup...
+│       ├── Keyboards/                    # Фабрики инлайн- и reply-клавиатур (MainMenu, ReferralKeyboards, Profile, Payment, Admin, TelegramUrlHelper...)
+│       ├── Services/                     # TelegramBotWorker, BotLifecycleCoordinator, ReferralPromptService, BotInfoProvider, AdminBroadcast, BotSetup...
 │       ├── Workers/                      # DatabaseBootstrapWorker, TelegramBotWorker, MatchmakingNotificationWorker, InactivityNotificationWorker
 │       ├── appsettings.json              # Базовая конфигурация (BotToken, AdminIds, InactivityReminderDays...)
 │       └── Program.cs                    # Точка входа DI, Web-хост Kestrel и Keep-Alive/Health эндпоинты
 │
-├── tests/                                # Модульные и интеграционные тесты (488 тестов)
-│   ├── DatingBot.UnitTests/              # xUnit модульные тесты сервисов, алгоритмов, воркеров и координатора
+├── tests/                                # Модульные и интеграционные тесты (512 тестов)
+│   ├── DatingBot.UnitTests/              # xUnit модульные тесты сервисов, алгоритмов, рефералов, воркеров и координатора
 │   └── DatingBot.IntegrationTests/       # Интеграционные тесты сидера БД и сценариев
 │
 └── .agents/                              # Инструменты для ИИ-агентов (скиллы и субагенты)

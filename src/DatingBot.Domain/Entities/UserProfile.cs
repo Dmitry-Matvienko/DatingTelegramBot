@@ -33,6 +33,7 @@ public class UserProfile
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
+    public DateTime? TopBoostUntil { get; set; }
 
     public ICollection<UserProfileInterest> Interests { get; set; } = [];
 }

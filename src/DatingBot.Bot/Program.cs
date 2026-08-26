@@ -1,4 +1,5 @@
 using DatingBot.Application;
+using DatingBot.Application.Interfaces;
 using DatingBot.Bot;
 using DatingBot.Bot.Handlers;
 using DatingBot.Bot.Services;
@@ -81,6 +82,7 @@ builder.Services.AddApplicationServices();
 builder.Services.AddSingleton<ITelegramBotClient>(_ => BotSetup.CreateBotClient(builder.Configuration));
 
 // 4. Презентационный слой бота
+builder.Services.AddSingleton<IBotInfoProvider, BotInfoProvider>();
 builder.Services.AddScoped<RegistrationPromptService>();
 builder.Services.AddScoped<RegistrationMessageHandler>();
 builder.Services.AddScoped<RegistrationCallbackHandler>();
@@ -94,6 +96,7 @@ builder.Services.AddScoped<AdminPromptService>();
 builder.Services.AddSingleton<AdminBroadcastService>();
 builder.Services.AddScoped<AdminCallbackHandler>();
 builder.Services.AddScoped<AdminMessageHandler>();
+builder.Services.AddScoped<ReferralPromptService>();
 builder.Services.AddScoped<TelegramUpdateRouter>();
 
 // 5. Фоновые сервисы (порядок инициализации: БД -> Telegram Bot -> Уведомления)
