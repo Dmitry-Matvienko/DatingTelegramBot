@@ -23,26 +23,29 @@ public class SearchCallbackHandler(
         var lang = user.Language;
 
         // 1. Нажатие кнопки "👀 Показать кто оценил"
-        if (data.StartsWith("view_rater:"))
+        if (data.StartsWith("view_rater"))
         {
             await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: cancellationToken);
 
-            var rawId = data["view_rater:".Length..];
-            if (Guid.TryParse(rawId, out var ratingId))
+            if (data.StartsWith("view_rater:"))
             {
-                var incoming = await searchService.GetIncomingRatingByIdAsync(user.TelegramId, ratingId, cancellationToken);
-                if (incoming is not null)
+                var rawId = data["view_rater:".Length..];
+                if (Guid.TryParse(rawId, out var ratingId))
                 {
-                    await searchPromptService.SendRaterCardAsync(chatId, incoming.RaterProfile, incoming.ScoreReceived, cancellationToken);
-                    return true;
+                    var incoming = await searchService.GetIncomingRatingByIdAsync(user.TelegramId, ratingId, cancellationToken);
+                    if (incoming is not null)
+                    {
+                        await searchPromptService.SendRaterCardAsync(chatId, incoming.RaterProfile, incoming.ScoreReceived, incoming.RemainingQueueCount, cancellationToken);
+                        return true;
+                    }
                 }
             }
 
-            // Если конкретная оценка уже обработана, пробуем следующую входящую
+            // Если конкретная оценка уже обработана, пробуем следующую входящую из очереди
             var nextIncoming = await searchService.GetNextIncomingRatingAsync(user.TelegramId, cancellationToken);
             if (nextIncoming is not null)
             {
-                await searchPromptService.SendRaterCardAsync(chatId, nextIncoming.RaterProfile, nextIncoming.ScoreReceived, cancellationToken);
+                await searchPromptService.SendRaterCardAsync(chatId, nextIncoming.RaterProfile, nextIncoming.ScoreReceived, nextIncoming.RemainingQueueCount, cancellationToken);
             }
             else
             {
@@ -209,7 +212,7 @@ public class SearchCallbackHandler(
         var incoming = await searchService.GetNextIncomingRatingAsync(telegramId, cancellationToken);
         if (incoming is not null)
         {
-            await searchPromptService.SendRaterCardAsync(chatId, incoming.RaterProfile, incoming.ScoreReceived, cancellationToken);
+            await searchPromptService.SendRaterCardAsync(chatId, incoming.RaterProfile, incoming.ScoreReceived, incoming.RemainingQueueCount, cancellationToken);
             return;
         }
 

@@ -4,5 +4,6 @@ public record IncomingRatingDto(
     Guid RatingId,
     UserProfileDto RaterProfile,
     int ScoreReceived,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    int RemainingQueueCount = 0
 );

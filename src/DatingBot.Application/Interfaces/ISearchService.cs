@@ -33,6 +33,7 @@ public interface ISearchService
     Task<UserProfileDto?> GetNextCandidateAsync(long telegramId, CancellationToken cancellationToken = default);
     Task<IncomingRatingDto?> GetNextIncomingRatingAsync(long telegramId, CancellationToken cancellationToken = default);
     Task<IncomingRatingDto?> GetIncomingRatingByIdAsync(long telegramId, Guid ratingId, CancellationToken cancellationToken = default);
+    Task<int> GetIncomingRatingsCountAsync(long telegramId, CancellationToken cancellationToken = default);
     Task<Result<RatingResult>> RateCandidateAsync(long raterTelegramId, Guid candidateProfileId, int score, CancellationToken cancellationToken = default);
     Task<Result<ReportInfo>> ReportCandidateAsync(long reporterTelegramId, Guid candidateProfileId, ReportReason reason, string? details = null, CancellationToken cancellationToken = default);
     Task<Result> SetReportingStateAsync(long telegramId, Guid candidateProfileId, CancellationToken cancellationToken = default);

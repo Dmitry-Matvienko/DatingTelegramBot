@@ -38,8 +38,21 @@ public static class SearchKeyboards
         };
     }
 
-    public static ReplyKeyboardMarkup GetIncomingRatingReplyKeyboard(AppLanguage language = AppLanguage.Russian)
+    public static ReplyKeyboardMarkup GetIncomingRatingReplyKeyboard(bool hasMoreInQueue = false, AppLanguage language = AppLanguage.Russian)
     {
+        var actionRow = hasMoreInQueue
+            ? new[]
+            {
+                new KeyboardButton(Loc.Get(language, "Btn_Report")),
+                new KeyboardButton(Loc.Get(language, "Btn_Next")),
+                new KeyboardButton(Loc.Get(language, "Btn_MainMenu"))
+            }
+            : new[]
+            {
+                new KeyboardButton(Loc.Get(language, "Btn_Report")),
+                new KeyboardButton(Loc.Get(language, "Btn_MainMenu"))
+            };
+
         return new ReplyKeyboardMarkup([
             [
                 new KeyboardButton("1️⃣"),
@@ -55,15 +68,15 @@ public static class SearchKeyboards
                 new KeyboardButton("9️⃣"),
                 new KeyboardButton("🔟")
             ],
-            [
-                new KeyboardButton(Loc.Get(language, "Btn_Report")),
-                new KeyboardButton(Loc.Get(language, "Btn_MainMenu"))
-            ]
+            actionRow
         ])
         {
             ResizeKeyboard = true
         };
     }
+
+    public static ReplyKeyboardMarkup GetIncomingRatingReplyKeyboard(AppLanguage language)
+        => GetIncomingRatingReplyKeyboard(hasMoreInQueue: false, language);
 
     public static ReplyKeyboardMarkup GetCancelReportReplyKeyboard(AppLanguage language = AppLanguage.Russian)
     {
@@ -95,14 +108,25 @@ public static class SearchKeyboards
         ]);
     }
 
-    public static InlineKeyboardMarkup GetIncomingRatingNotificationKeyboard(Guid ratingId, AppLanguage language = AppLanguage.Russian)
+    public static InlineKeyboardMarkup GetIncomingRatingNotificationKeyboard(int queueCount = 0, Guid? ratingId = null, AppLanguage language = AppLanguage.Russian)
     {
+        var buttonText = queueCount > 0
+            ? Loc.Get(language, "Btn_ShowWhoRated_Count", queueCount)
+            : Loc.Get(language, "Btn_ShowWhoRated");
+
+        var callbackData = ratingId.HasValue
+            ? $"view_rater:{ratingId.Value}"
+            : "view_rater";
+
         return new InlineKeyboardMarkup([
             [
-                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Btn_ShowWhoRated"), $"view_rater:{ratingId}")
+                InlineKeyboardButton.WithCallbackData(buttonText, callbackData)
             ]
         ]);
     }
+
+    public static InlineKeyboardMarkup GetIncomingRatingNotificationKeyboard(Guid ratingId, AppLanguage language = AppLanguage.Russian)
+        => GetIncomingRatingNotificationKeyboard(0, ratingId, language);
 
     public static InlineKeyboardMarkup GetMutualMatchKeyboard(long telegramId, string? username, AppLanguage language = AppLanguage.Russian)
     {

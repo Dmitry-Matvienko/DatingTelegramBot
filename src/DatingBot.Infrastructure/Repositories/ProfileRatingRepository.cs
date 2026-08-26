@@ -33,10 +33,18 @@ public class ProfileRatingRepository(AppDbContext dbContext) : IProfileRatingRep
         return await dbContext.ProfileRatings
             .AsNoTracking()
             .Include(r => r.FromUser)
-            .Where(r => r.ToUserId == toUserId && r.Score >= 6)
+            .Where(r => r.ToUserId == toUserId && r.Score >= 6 && !r.IsViewed)
             .Where(r => !dbContext.ProfileRatings.Any(back => back.FromUserId == toUserId && back.ToUserId == r.FromUserId))
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<int> GetIncomingUnratedHighRatingsCountAsync(Guid toUserId, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.ProfileRatings
+            .Where(r => r.ToUserId == toUserId && r.Score >= 6 && !r.IsViewed)
+            .Where(r => !dbContext.ProfileRatings.Any(back => back.FromUserId == toUserId && back.ToUserId == r.FromUserId))
+            .CountAsync(cancellationToken);
     }
 
     public async Task<HashSet<Guid>> GetRatedUserIdsAsync(Guid fromUserId, CancellationToken cancellationToken = default)

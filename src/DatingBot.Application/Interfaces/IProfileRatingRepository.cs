@@ -8,6 +8,7 @@ public interface IProfileRatingRepository
     Task<ProfileRating?> GetRatingAsync(Guid fromUserId, Guid toUserId, CancellationToken cancellationToken = default);
     Task<ProfileRating?> GetByIdWithProfilesAsync(Guid ratingId, CancellationToken cancellationToken = default);
     Task<List<ProfileRating>> GetIncomingUnratedHighRatingsAsync(Guid toUserId, CancellationToken cancellationToken = default);
+    Task<int> GetIncomingUnratedHighRatingsCountAsync(Guid toUserId, CancellationToken cancellationToken = default);
     Task<HashSet<Guid>> GetRatedUserIdsAsync(Guid fromUserId, CancellationToken cancellationToken = default);
     Task AddAsync(ProfileRating rating, CancellationToken cancellationToken = default);
     void Update(ProfileRating rating);

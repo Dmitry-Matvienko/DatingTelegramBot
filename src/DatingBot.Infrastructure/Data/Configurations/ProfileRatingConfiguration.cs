@@ -15,6 +15,10 @@ public class ProfileRatingConfiguration : IEntityTypeConfiguration<ProfileRating
         builder.Property(r => r.Score)
             .IsRequired();
 
+        builder.Property(r => r.IsViewed)
+            .IsRequired()
+            .HasDefaultValue(false);
+
         builder.Property(r => r.CreatedAt)
             .IsRequired();
 
@@ -34,7 +38,7 @@ public class ProfileRatingConfiguration : IEntityTypeConfiguration<ProfileRating
             .HasDatabaseName("IX_ProfileRatings_FromUser_ToUser");
 
         // Составной индекс для выборки входящих высоких оценок пользователя
-        builder.HasIndex(r => new { r.ToUserId, r.Score, r.CreatedAt })
-            .HasDatabaseName("IX_ProfileRatings_ToUser_Score_CreatedAt");
+        builder.HasIndex(r => new { r.ToUserId, r.IsViewed, r.Score, r.CreatedAt })
+            .HasDatabaseName("IX_ProfileRatings_ToUser_IsViewed_Score_CreatedAt");
     }
 }

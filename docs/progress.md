@@ -1,21 +1,27 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 42
+state_version: 43
 updated: 2026-08-26
 
 ---
 
 ## Сейчас
-- **Фаза**: Реализация: **расширенная статистика в «Мои реферальные ссылки» (My Referral Links Stats & Top Days)**:
-  1. **Интерфейсы и DTO (`Application`)**:
-     - В `ReferralLinkDto` добавлено поле `RemainingBoostDays` (`int`, по умолчанию 0).
-     - В `ReferralService` реализован расчет оставшихся дней нахождения в топе поиска на основе `UserProfile.TopBoostUntil` (`Math.Ceiling(remaining.TotalDays)`).
-     - Добавлен ключ локализации `Referral_MyLinks_Info` на 6 языках (RU, UK, EN, HI, PT, ID) с отображением числа приглашенных, оставшихся дней топа и моноширинной ссылкой.
-  2. **Презентационный слой (`Bot`)**:
-     - В `ReferralPromptService.SendMyReferralLinksAsync` внедрен вывод форматированной статистики рефералов перед моноширинной ссылкой.
-  3. **Тестирование и верификация**:
-     - Обновлены и дополнены модульные тесты в `ReferralServiceTests`, `ReferralPromptServiceTests`, `TelegramUpdateRouterReferralTests`.
-     - Все 521 тест решения (520 unit + 1 integration) пройдены со 100% успехом (0 failures, 0 warnings).
+- **Фаза**: Реализация: **очередь входящих оценок (Incoming Ratings Queue) и кнопка «➡️ Далее»**:
+  1. **Доменное ядро и БД (`Domain` & `Infrastructure`)**:
+     - В сущность `ProfileRating` добавлено свойство `IsViewed` (`bool`, по умолчанию `false`).
+     - Создана миграция EF Core `Add_IsViewed_To_ProfileRating` и обновлен составной B-Tree индекс `IX_ProfileRatings_ToUser_IsViewed_Score_CreatedAt`.
+     - В `IProfileRatingRepository` и `ProfileRatingRepository` обновлен метод `GetIncomingUnratedHighRatingsAsync` с фильтром `!r.IsViewed` и добавлен оптимизированный метод `GetIncomingUnratedHighRatingsCountAsync`.
+  2. **Слой приложения (`Application`)**:
+     - В `IncomingRatingDto` добавлено поле `RemainingQueueCount` (`int`, по умолчанию 0).
+     - В `SearchService` реализована пометка `rating.IsViewed = true` при получении анкеты из очереди (`GetNextIncomingRatingAsync`, `GetIncomingRatingByIdAsync`), сброс `IsViewed = false` при повторном оценивании в новом цикле и расчет остатка очереди.
+     - Добавлены ключи локализации `Btn_Next` и `Btn_ShowWhoRated_Count` на 6 языках (RU, UK, EN, HI, PT, ID).
+  3. **Презентационный слой (`Bot`)**:
+     - В `SearchKeyboards.GetIncomingRatingNotificationKeyboard` добавлен вывод счетчика непросмотренных оценок в кнопке: `👀 Показать кто оценил ({count})`.
+     - В `SearchKeyboards.GetIncomingRatingReplyKeyboard` добавлена кнопка `➡️ Далее` (`[ 🚨 Пожаловаться ] [ ➡️ Далее ] [ 🏠 Главное меню ]`) при `RemainingQueueCount > 0`.
+     - В `SearchCallbackHandler` и `TelegramUpdateRouter` реализована обработка кнопки «➡️ Далее» и непрерывного переключения анкет из очереди без необходимости ставить оценку.
+  4. **Тестирование и верификация**:
+     - Добавлены модульные тесты в `SearchServiceTests`, `UserProfileRepositoryCandidateTests`, `InlineSendMessageButtonTests`, `SearchCallbackHandlerTests`, `TelegramUpdateRouterSearchTests`.
+     - Все 545 тестов решения (544 unit + 1 integration) пройдены со 100% успехом (0 failures, 0 warnings).
 - **Далее**: Ожидание следующих задач от пользователя.
 
 ---
@@ -81,6 +87,7 @@ updated: 2026-08-26
 - [x] Реализация системы реферальных ссылок, накопительного бонуса +3 дня в топе поиска и уведомлений рефереров (RU, UK, EN, HI, PT, ID).
 - [x] Реализация кнопки «Отчет» по реферальной программе для администраторов с выводом топ-15 пользователей, кликабельными профилями и количеством приглашенных.
 - [x] Реализация расширенной статистики в кнопке «Мои реферальные ссылки» (число приглашенных, оставшиеся дни в топе поиска и моноширинная ссылка).
+- [x] Реализация очереди входящих оценок (Incoming Ratings Queue) с авто-пометкой IsViewed, счетчиком в кнопке уведомления «👀 Показать кто оценил (N)» и Reply-кнопкой «➡️ Далее» для переключения анкет.
 
 ---
 

@@ -398,12 +398,125 @@ public class SearchServiceTests
         result!.ScoreReceived.Should().Be(9);
         result.RaterProfile.Name.Should().Be("Катя");
         result.RaterProfile.TelegramId.Should().Be(22222);
+        result.RemainingQueueCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GetNextIncomingRatingAsync_WithMultipleRatings_ShouldMarkAsViewed_AndReturnRemainingCount()
+    {
+        // Arrange
+        const long telegramId = 11111;
+        var user = new User { Id = Guid.NewGuid(), TelegramId = telegramId };
+
+        var rater1 = new User { Id = Guid.NewGuid(), TelegramId = 22222, Username = "anna" };
+        var raterProfile1 = new UserProfile
+        {
+            Id = Guid.NewGuid(),
+            UserId = rater1.Id,
+            User = rater1,
+            Name = "Анна",
+            Age = 22,
+            IsCompleted = true
+        };
+
+        var rating1 = new ProfileRating
+        {
+            Id = Guid.NewGuid(),
+            FromUserId = rater1.Id,
+            ToUserId = user.Id,
+            Score = 10,
+            IsViewed = false,
+            CreatedAt = DateTime.UtcNow.AddMinutes(-5)
+        };
+
+        var rating2 = new ProfileRating
+        {
+            Id = Guid.NewGuid(),
+            FromUserId = Guid.NewGuid(),
+            ToUserId = user.Id,
+            Score = 8,
+            IsViewed = false,
+            CreatedAt = DateTime.UtcNow.AddMinutes(-10)
+        };
+
+        _userRepoMock.Setup(r => r.GetByTelegramIdAsync(telegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        _ratingRepoMock.Setup(r => r.GetIncomingUnratedHighRatingsAsync(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ProfileRating> { rating1, rating2 });
+        _ratingRepoMock.Setup(r => r.GetByIdWithProfilesAsync(rating1.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(rating1);
+        _profileRepoMock.Setup(r => r.GetWithInterestsByUserIdAsync(rating1.FromUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(raterProfile1);
+        _interestRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Interest>());
+
+        // Act
+        var result = await _service.GetNextIncomingRatingAsync(telegramId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.ScoreReceived.Should().Be(10);
+        result.RemainingQueueCount.Should().Be(1); // 2 in queue, 1 remains
+        rating1.IsViewed.Should().BeTrue();
+        _ratingRepoMock.Verify(r => r.Update(rating1), Times.Once);
+        _unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetIncomingRatingByIdAsync_WhenAlreadyViewed_ShouldReturnNull()
+    {
+        // Arrange
+        const long telegramId = 11111;
+        var user = new User { Id = Guid.NewGuid(), TelegramId = telegramId };
+        var ratingId = Guid.NewGuid();
+
+        var viewedRating = new ProfileRating
+        {
+            Id = ratingId,
+            FromUserId = Guid.NewGuid(),
+            ToUserId = user.Id,
+            Score = 9,
+            IsViewed = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _userRepoMock.Setup(r => r.GetByTelegramIdAsync(telegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        _ratingRepoMock.Setup(r => r.GetByIdWithProfilesAsync(ratingId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(viewedRating);
+
+        // Act
+        var result = await _service.GetIncomingRatingByIdAsync(telegramId, ratingId);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetIncomingRatingsCountAsync_ShouldReturnCountFromRepository()
+    {
+        // Arrange
+        const long telegramId = 11111;
+        var user = new User { Id = Guid.NewGuid(), TelegramId = telegramId };
+
+        _userRepoMock.Setup(r => r.GetByTelegramIdAsync(telegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        _ratingRepoMock.Setup(r => r.GetIncomingUnratedHighRatingsCountAsync(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(4);
+
+        // Act
+        var count = await _service.GetIncomingRatingsCountAsync(telegramId);
+
+        // Assert
+        count.Should().Be(4);
     }
 
     private void _profileRatingRepositoryMock_Setup(Guid userId, ProfileRating rating, UserProfile raterProfile)
     {
         _ratingRepoMock.Setup(r => r.GetIncomingUnratedHighRatingsAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<ProfileRating> { rating });
+        _ratingRepoMock.Setup(r => r.GetByIdWithProfilesAsync(rating.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(rating);
         _profileRepoMock.Setup(r => r.GetWithInterestsByUserIdAsync(rating.FromUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(raterProfile);
         _interestRepoMock.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))

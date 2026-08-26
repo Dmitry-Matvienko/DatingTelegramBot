@@ -15,10 +15,21 @@ public class SearchPromptService(
     ITelegramBotClient botClient,
     IRegistrationService registrationService,
     IUserRepository userRepository,
+    IProfileRatingRepository profileRatingRepository,
     ILocalizationService loc,
     IConfiguration configuration,
     ILogger<SearchPromptService> logger)
 {
+    public SearchPromptService(
+        ITelegramBotClient botClient,
+        IRegistrationService registrationService,
+        IUserRepository userRepository,
+        ILocalizationService loc,
+        IConfiguration configuration,
+        ILogger<SearchPromptService> logger)
+        : this(botClient, registrationService, userRepository, null!, loc, configuration, logger)
+    {
+    }
     public async Task SendMatchCandidateCardAsync(long chatId, MatchCandidateDto match, CancellationToken cancellationToken = default)
     {
         var user = await userRepository.GetByTelegramIdAsync(chatId, cancellationToken);
@@ -182,7 +193,7 @@ public class SearchPromptService(
         await registrationService.SaveLastBotMessageIdAsync(chatId, sentMessage.MessageId, cancellationToken);
     }
 
-    public async Task SendRaterCardAsync(long chatId, UserProfileDto rater, int scoreReceived, CancellationToken cancellationToken = default)
+    public async Task SendRaterCardAsync(long chatId, UserProfileDto rater, int scoreReceived, int remainingQueueCount = 0, CancellationToken cancellationToken = default)
     {
         var user = await userRepository.GetByTelegramIdAsync(chatId, cancellationToken);
         var lang = user?.Language ?? AppLanguage.Russian;
@@ -220,7 +231,7 @@ public class SearchPromptService(
         Message sentMessage = null!;
         var photoSent = false;
         var raterText = sb.ToString();
-        var ratingReplyKeyboard = SearchKeyboards.GetIncomingRatingReplyKeyboard(lang);
+        var ratingReplyKeyboard = SearchKeyboards.GetIncomingRatingReplyKeyboard(hasMoreInQueue: remainingQueueCount > 0, lang);
         if (!string.IsNullOrEmpty(rater.PhotoFileId) && raterText.Length <= 1024)
         {
             try
@@ -386,12 +397,15 @@ public class SearchPromptService(
         {
             var user = await userRepository.GetByTelegramIdAsync(targetTelegramId, cancellationToken);
             var lang = user?.Language ?? AppLanguage.Russian;
+            var queueCount = user is not null && profileRatingRepository is not null
+                ? await profileRatingRepository.GetIncomingUnratedHighRatingsCountAsync(user.Id, cancellationToken)
+                : 0;
 
             await botClient.SendMessage(
                 chatId: targetTelegramId,
                 text: loc.Get(lang, "Notification_HighRating", score),
                 parseMode: ParseMode.Html,
-                replyMarkup: SearchKeyboards.GetIncomingRatingNotificationKeyboard(ratingId, lang),
+                replyMarkup: SearchKeyboards.GetIncomingRatingNotificationKeyboard(queueCount, ratingId, lang),
                 cancellationToken: cancellationToken
             );
         }
