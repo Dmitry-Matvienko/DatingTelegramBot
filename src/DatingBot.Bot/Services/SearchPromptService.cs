@@ -246,11 +246,7 @@ public class SearchPromptService(
 
         var safeRaterName = !string.IsNullOrWhiteSpace(rater.Name) ? System.Net.WebUtility.HtmlEncode(rater.Name) : "Пользователь";
         var safeRaterCity = !string.IsNullOrWhiteSpace(rater.City) ? System.Net.WebUtility.HtmlEncode(rater.City) : "—";
-        var safeRaterUsername = !string.IsNullOrWhiteSpace(rater.Username) ? System.Net.WebUtility.HtmlEncode(rater.Username) : null;
-
-        var nameWithLink = safeRaterUsername is null
-            ? $"<a href=\"tg://user?id={rater.TelegramId}\">{safeRaterName}</a>"
-            : $"<a href=\"tg://user?id={rater.TelegramId}\">{safeRaterName}</a> (@{safeRaterUsername})";
+        var nameWithLink = TelegramUrlHelper.FormatUserAccountHtmlLink(rater.TelegramId, rater.Username, rater.Name);
 
         var sb = new StringBuilder();
         sb.AppendLine(loc.Get(lang, "Notification_RatingScoreReceived", scoreReceived));
@@ -389,15 +385,11 @@ public class SearchPromptService(
 
             var safePartnerName = !string.IsNullOrWhiteSpace(partner.Name) ? System.Net.WebUtility.HtmlEncode(partner.Name) : "Пользователь";
             var safePartnerCity = !string.IsNullOrWhiteSpace(partner.City) ? System.Net.WebUtility.HtmlEncode(partner.City) : "—";
-            var safePartnerUsername = !string.IsNullOrWhiteSpace(partner.Username) ? System.Net.WebUtility.HtmlEncode(partner.Username) : null;
 
-            var partnerLink = safePartnerUsername is null
-                ? $"<a href=\"tg://user?id={partner.TelegramId}\">{safePartnerName}</a>"
-                : $"<a href=\"tg://user?id={partner.TelegramId}\">{safePartnerName}</a> (@{safePartnerUsername})";
-
-            var contactLink = safePartnerUsername is null
-                ? $"<a href=\"tg://user?id={partner.TelegramId}\">{safePartnerName}</a>"
-                : $"@{safePartnerUsername}";
+            var partnerLink = TelegramUrlHelper.FormatUserAccountHtmlLink(partner.TelegramId, partner.Username, partner.Name);
+            var contactLink = !string.IsNullOrWhiteSpace(partner.Username)
+                ? $"<a href=\"https://t.me/{partner.Username.Trim().TrimStart('@')}\">@{System.Net.WebUtility.HtmlEncode(partner.Username.Trim().TrimStart('@'))}</a>"
+                : partnerLink;
 
             var targetStr = loc.GetDatingTargetText(lang, partner.DatingTarget);
 

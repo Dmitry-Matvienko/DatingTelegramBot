@@ -1,25 +1,24 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 45
+state_version: 46
 updated: 2026-08-26
 
 ---
 
 ## Сейчас
-- **Фаза**: Исправление ошибки Telegram Bot API `BUTTON_URL_INVALID` при листании анкет без `@username` в админ-панели (**Admin Moderation BUTTON_URL_INVALID Fix**):
+- **Фаза**: Унификация и обеспечение 100% кликабельности ссылок на профили пользователей во всех клиентах Telegram (**Universal Clickable User Profile Links**):
   1. **Анализ первопричины (Root Cause)**:
-     - Согласно официальной спецификации Telegram Bot API (*https://core.telegram.org/bots/api#inlinekeyboardbutton*), ссылки вида `tg://user?id=<user_id>` строго **запрещены** для использования в инлайн-кнопках `InlineKeyboardButton.WithUrl` (они допустимы только в HTML-тексте сообщений).
-     - В `TelegramUrlHelper.GetUserProfileUrl` для пользователей без `@username` (`username == null`) генерировалась ссылка `tg://user?id={telegramId}`.
-     - При листании анкет в админ-панели (где каждая карточка имеет кнопку «💬 Написать»), если у кандидата нет никнейма `@username`, Telegram Bot API немедленно отклонял запрос с ошибкой `400 Bad Request: BUTTON_URL_INVALID`.
-     - Обычные пользователи при поиске не сталкивались с этим, так как в обычном поиске используется Reply-клавиатура оценок 1–10 (`ReplyKeyboardMarkup`) без инлайн-кнопки URL.
+     - При формировании строки «👤 Пользователь: Имя (@username)» в админ-панели и уведомлениях в `href` всегда проставлялся deep-link `tg://user?id={telegramId}` даже для пользователей, имеющих публичный `@username`.
+     - Протокол `tg://user?id=...` в Telegram (TextMention) работает нестабильно в веб-версиях (Telegram Web A/K) и Desktop-клиентах, если просматривающий не имеет общего диалога/контакта с пользователем или если у пользователя настроена приватность.
+     - Для пользователей с публичным `@username` стандартный протокол `https://t.me/{username}` является 100% гарантированно кликабельным во всех клиентах Telegram (Desktop, iOS, Android, macOS, Web).
   2. **Реализация защиты**:
-     - В `TelegramUrlHelper.GetUserProfileUrl` возвращается валидный `https://t.me/{username}` при наличии никнейма и `null`, если никнейма нет.
-     - В `AdminKeyboards.GetAdminProfileCardKeyboard` кнопка «💬 Написать» добавляется только при наличии валидного `userUrl` (при отсутствии никнейма админ может открыть профиль по клику на имя пользователя в тексте карточки через HTML-ссылку `<a href="tg://user?id=...">`).
-     - В `SearchKeyboards` (`GetMutualMatchKeyboard`, `GetRaterCardKeyboard`) и `SearchPromptService` обеспечена корректная проверка на `null` клавиатуры с кнопкой связи.
-     - В `ReferralPromptService` ссылка `tg://user?id=...` для отчета о рефералах формируется напрямую в HTML-тексте сообщения.
+     - В `TelegramUrlHelper` добавлен централизованный метод `FormatUserAccountHtmlLink(telegramId, username, displayName)`.
+     - При наличии никнейма ссылка генерируется в виде `<a href="https://t.me/{username}">{safeName}</a> (@{username})`, что обеспечивает мгновенное и безотказное открытие профиля при клике на имя в любом клиенте Telegram.
+     - При отсутствии никнейма генерируется `<a href="tg://user?id={telegramId}">{safeName}</a>`, а рядом выводится `ID: <code>{id}</code>` для удобного копирования в один клик.
+     - Метод применен во всех карточках: `AdminPromptService.SendAdminCandidateCardAsync`, `SendPendingReportCardAsync`, `SearchPromptService.SendRaterCardAsync`, `SendMutualMatchNotificationAsync`.
   3. **Тестирование и верификация**:
-     - В `InlineSendMessageButtonTests` и `AdminRoutingAndCallbackTests` добавлены тесты на валидацию URL-кнопок, отсутствие невалидных URL при `username == null` и сохранение кнопок действий в админке.
-     - Все 555 тестов решения (554 unit + 1 integration) пройдены со 100% успехом (0 failures, 0 warnings).
+     - В `InlineSendMessageButtonTests` добавлены тесты на метод `FormatUserAccountHtmlLink` для всех сценариев (с username, без username, с экранированием HTML).
+     - Все 561 тест решения (560 unit + 1 integration) пройдены со 100% успехом (0 failures, 0 warnings).
 - **Далее**: Ожидание следующих задач от пользователя.
 
 ---
