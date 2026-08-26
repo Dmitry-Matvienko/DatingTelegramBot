@@ -27,13 +27,15 @@ public class ReferralService(
 
         var botUsername = await botInfoProvider.GetBotUsernameAsync(cancellationToken);
         var linkUrl = $"https://t.me/{botUsername}?start={link.Code}";
+        var remainingDays = await GetRemainingBoostDaysAsync(user.Id, cancellationToken);
 
         return Result<ReferralLinkDto?>.Success(new ReferralLinkDto(
             link.Id,
             link.Code,
             linkUrl,
             link.InvitedCount,
-            link.CreatedAt
+            link.CreatedAt,
+            remainingDays
         ));
     }
 
@@ -42,6 +44,8 @@ public class ReferralService(
         var user = await userRepository.GetByTelegramIdAsync(telegramId, cancellationToken);
         if (user is null)
             return Result<ReferralLinkDto>.Failure("Пользователь не найден");
+
+        var remainingDays = await GetRemainingBoostDaysAsync(user.Id, cancellationToken);
 
         var existingLink = await referralRepository.GetByUserIdAsync(user.Id, cancellationToken);
         if (existingLink is not null)
@@ -53,7 +57,8 @@ public class ReferralService(
                 existingLink.Code,
                 linkUrl,
                 existingLink.InvitedCount,
-                existingLink.CreatedAt
+                existingLink.CreatedAt,
+                remainingDays
             ));
         }
 
@@ -87,8 +92,21 @@ public class ReferralService(
             newLink.Code,
             url,
             newLink.InvitedCount,
-            newLink.CreatedAt
+            newLink.CreatedAt,
+            remainingDays
         ));
+    }
+
+    private async Task<int> GetRemainingBoostDaysAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var profile = await userProfileRepository.GetByUserIdAsync(userId, cancellationToken);
+        if (profile?.TopBoostUntil != null && profile.TopBoostUntil.Value > DateTime.UtcNow)
+        {
+            var remaining = profile.TopBoostUntil.Value - DateTime.UtcNow;
+            return Math.Max(1, (int)Math.Ceiling(remaining.TotalDays));
+        }
+
+        return 0;
     }
 
     public async Task<Result<ReferralProcessedDto?>> ProcessReferralJoinAsync(long newTelegramId, string referralCode, CancellationToken cancellationToken = default)

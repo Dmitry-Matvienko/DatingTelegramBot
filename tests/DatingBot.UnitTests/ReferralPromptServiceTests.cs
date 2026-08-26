@@ -73,10 +73,10 @@ public class ReferralPromptServiceTests
     }
 
     [Fact]
-    public async Task SendMyReferralLinksAsync_WhenUserHasLink_ShouldSendMonospaceLink()
+    public async Task SendMyReferralLinksAsync_WhenUserHasLink_ShouldSendStatsAndMonospaceLink()
     {
         // Arrange
-        var dto = new ReferralLinkDto(Guid.NewGuid(), "ref_code1", "https://t.me/DatingBot?start=ref_code1", 3, DateTime.UtcNow);
+        var dto = new ReferralLinkDto(Guid.NewGuid(), "ref_code1", "https://t.me/DatingBot?start=ref_code1", 3, DateTime.UtcNow, RemainingBoostDays: 7);
         _referralService.Setup(s => s.GetUserReferralLinkAsync(12345, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<ReferralLinkDto?>.Success(dto));
 
@@ -88,7 +88,9 @@ public class ReferralPromptServiceTests
             It.Is<SendMessageRequest>(r =>
                 r.ChatId == 12345 &&
                 r.ParseMode == ParseMode.Html &&
-                r.Text == "<code>https://t.me/DatingBot?start=ref_code1</code>"),
+                r.Text.Contains("Приведено пользователей: <b>3</b>") &&
+                r.Text.Contains("Дней в топе поиска осталось: <b>7</b>") &&
+                r.Text.Contains("<code>https://t.me/DatingBot?start=ref_code1</code>")),
             It.IsAny<CancellationToken>()
         ), Times.Once);
     }

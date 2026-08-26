@@ -257,6 +257,45 @@ public class TelegramUpdateRouterReferralTests
     }
 
     [Fact]
+    public async Task RouteUpdateAsync_WhenCallbackRefMyLinks_AndUserHasLink_ShouldSendReferralStatsAndLink()
+    {
+        // Arrange
+        const long chatId = 12345;
+        var user = new User { Id = Guid.NewGuid(), TelegramId = chatId, Language = AppLanguage.Russian, State = UserState.Active };
+        var linkDto = new ReferralLinkDto(Guid.NewGuid(), "ref_active", "https://t.me/DatingBot?start=ref_active", 4, DateTime.UtcNow, RemainingBoostDays: 12);
+
+        _registrationService.Setup(r => r.GetOrCreateUserAsync(chatId, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _referralService.Setup(s => s.GetUserReferralLinkAsync(chatId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Application.Common.Result<ReferralLinkDto?>.Success(linkDto));
+
+        var update = new Update
+        {
+            CallbackQuery = new CallbackQuery
+            {
+                Id = "cb_has_link",
+                From = new Telegram.Bot.Types.User { Id = chatId },
+                Message = new Message { Chat = new Chat { Id = chatId } },
+                Data = "ref_my_links"
+            }
+        };
+
+        // Act
+        await _router.RouteUpdateAsync(update);
+
+        // Assert
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<SendMessageRequest>(r =>
+                r.ChatId == chatId &&
+                r.Text.Contains("Приведено пользователей: <b>4</b>") &&
+                r.Text.Contains("Дней в топе поиска осталось: <b>12</b>") &&
+                r.Text.Contains("<code>https://t.me/DatingBot?start=ref_active</code>")),
+            It.IsAny<CancellationToken>()
+        ), Times.Once);
+    }
+
+    [Fact]
     public async Task RouteUpdateAsync_WhenCallbackRefCreateLink_ShouldCreateLinkAndSendWithPrefix()
     {
         // Arrange
