@@ -327,4 +327,191 @@ public class AdminRoutingAndCallbackTests
         handled.Should().BeTrue();
         _adminService.Verify(a => a.GetRecentTransactionsAsync(20, It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task SendAdminCandidateCardAsync_WhenCandidateHasHtmlCharacters_ShouldProperlyHtmlEncodeFields()
+    {
+        var chatId = 12345L;
+        _userRepo.Setup(r => r.GetByTelegramIdAsync(chatId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new User { TelegramId = chatId, Language = AppLanguage.Russian });
+
+        var candidate = new UserProfileDto(
+            Id: Guid.NewGuid(),
+            TelegramId: 7661135900L,
+            Username: "danger_user",
+            Gender: Gender.Male,
+            TargetGender: TargetGender.Female,
+            Name: "Влад <3",
+            Age: 20,
+            City: "Краснодар <Юг> & Край",
+            Height: 182,
+            PhotoFileId: "photo_123",
+            DatingTarget: DatingTarget.Relationship,
+            AiDescription: "Bio with <b>tags</b> & <script>alert(1)</script>",
+            SelectedInterests: [],
+            IsCompleted: true,
+            AgeFilters: AgeCategoryFilter.None,
+            SearchMinAge: null,
+            SearchMaxAge: null,
+            RatingCount: 0,
+            AverageRating: 0.0,
+            CityId: null,
+            AiVector: null,
+            Greeting: "Всем привет <3! Ищу rock & roll"
+        );
+
+        _botClient.Setup(b => b.SendRequest(It.IsAny<SendPhotoRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Message { Id = 100 });
+
+        await _promptService.SendAdminCandidateCardAsync(chatId, candidate, Gender.Male, 5, 25, 6);
+
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<SendPhotoRequest>(r =>
+                r.Caption != null &&
+                r.Caption.Contains("Влад &lt;3") &&
+                r.Caption.Contains("Краснодар &lt;Юг&gt; &amp; Край") &&
+                r.Caption.Contains("Bio with &lt;b&gt;tags&lt;/b&gt; &amp; &lt;script&gt;alert(1)&lt;/script&gt;") &&
+                r.Caption.Contains("Всем привет &lt;3! Ищу rock &amp; roll") &&
+                !r.Caption.Contains("<3") &&
+                !r.Caption.Contains("<script>")),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SendAdminCandidateCardAsync_WhenPhotoFailsAndHtmlSendMessageFails_ShouldFallbackToPlainText()
+    {
+        var chatId = 12345L;
+        _userRepo.Setup(r => r.GetByTelegramIdAsync(chatId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new User { TelegramId = chatId, Language = AppLanguage.Russian });
+
+        var candidate = new UserProfileDto(
+            Id: Guid.NewGuid(),
+            TelegramId: 7661135900L,
+            Username: null,
+            Gender: Gender.Male,
+            TargetGender: TargetGender.Female,
+            Name: "Влад",
+            Age: 20,
+            City: "Краснодар",
+            Height: 182,
+            PhotoFileId: "expired_photo_id",
+            DatingTarget: DatingTarget.Relationship,
+            AiDescription: "Bio",
+            SelectedInterests: [],
+            IsCompleted: true,
+            AgeFilters: AgeCategoryFilter.None,
+            SearchMinAge: null,
+            SearchMaxAge: null,
+            RatingCount: 0,
+            AverageRating: 0.0,
+            CityId: null,
+            AiVector: null,
+            Greeting: "Привет"
+        );
+
+        // Photo fails (e.g. invalid photo file ID)
+        _botClient.Setup(b => b.SendRequest(It.IsAny<SendPhotoRequest>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Telegram.Bot.Exceptions.ApiRequestException("Bad Request: wrong file identifier", 400));
+
+        // HTML SendMessage fails (e.g. entity parse error)
+        _botClient.Setup(b => b.SendRequest(It.Is<SendMessageRequest>(r => r.ParseMode == ParseMode.Html), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Telegram.Bot.Exceptions.ApiRequestException("Bad Request: can't parse entities", 400));
+
+        // Plain text fallback succeeds
+        _botClient.Setup(b => b.SendRequest(It.Is<SendMessageRequest>(r => r.ParseMode == ParseMode.None), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Message { Id = 102 });
+
+        await _promptService.SendAdminCandidateCardAsync(chatId, candidate, Gender.Male, 5, 25, 6);
+
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<SendMessageRequest>(r => r.ChatId.Identifier == chatId && r.ParseMode == ParseMode.None),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SendPendingReportCardAsync_WhenReportHasHtmlCharacters_ShouldProperlyHtmlEncodeFields()
+    {
+        var chatId = 12345L;
+        _userRepo.Setup(r => r.GetByTelegramIdAsync(chatId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new User { TelegramId = chatId, Language = AppLanguage.Russian });
+
+        var reportedProfile = new UserProfileDto(
+            Id: Guid.NewGuid(),
+            TelegramId: 7661135900L,
+            Username: "reported_user",
+            Gender: Gender.Male,
+            TargetGender: TargetGender.Female,
+            Name: "Иван <3",
+            Age: 22,
+            City: "Сочи <Центр>",
+            Height: 180,
+            PhotoFileId: "photo_rep",
+            DatingTarget: DatingTarget.Relationship,
+            AiDescription: "Bio with <tag>",
+            SelectedInterests: [],
+            IsCompleted: true,
+            AgeFilters: AgeCategoryFilter.None,
+            SearchMinAge: null,
+            SearchMaxAge: null,
+            RatingCount: 0,
+            AverageRating: 0.0,
+            CityId: null,
+            AiVector: null,
+            Greeting: "Привет <3"
+        );
+
+        var report = new AdminPendingReportDto(
+            ReportId: Guid.NewGuid(),
+            ReporterUserId: Guid.NewGuid(),
+            ReporterTelegramId: 111L,
+            ReporterUsername: "reporter_user",
+            ReporterFirstName: "Заявитель <1>",
+            ReporterLanguage: AppLanguage.Russian,
+            ReportedUserId: reportedProfile.Id,
+            ReportedProfile: reportedProfile,
+            Reason: ReportReason.InappropriateContent,
+            Details: "Жалоба: нарушает <правила> & спамит",
+            CreatedAt: DateTime.UtcNow
+        );
+
+        _botClient.Setup(b => b.SendRequest(It.IsAny<SendPhotoRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Message { Id = 100 });
+
+        await _promptService.SendPendingReportCardAsync(chatId, report, 1, 10, 2);
+
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<SendPhotoRequest>(r =>
+                r.Caption != null &&
+                r.Caption.Contains("Заявитель &lt;1&gt;") &&
+                r.Caption.Contains("Иван &lt;3") &&
+                r.Caption.Contains("Сочи &lt;Центр&gt;") &&
+                r.Caption.Contains("Жалоба: нарушает &lt;правила&gt; &amp; спамит") &&
+                !r.Caption.Contains("<1>") &&
+                !r.Caption.Contains("<3") &&
+                !r.Caption.Contains("<правила>")),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAdminCallbackQueryAsync_NextInSearch_WhenAdminServiceThrows_ShouldCatchAndShowAlert()
+    {
+        var adminUser = new User { TelegramId = 123, Language = AppLanguage.Russian };
+        var query = new CallbackQuery
+        {
+            Id = "q_next_err",
+            Data = "adm_s_next:male:5",
+            From = new Telegram.Bot.Types.User { Id = 123 }
+        };
+
+        _adminService.Setup(a => a.IsAdmin(123)).Returns(true);
+        _adminService.Setup(a => a.GetAdminProfileByGenderAsync(Gender.Male, 5, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Database connection lost"));
+
+        var handled = await _callbackHandler.HandleAdminCallbackQueryAsync(adminUser, query);
+
+        handled.Should().BeTrue();
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<SendMessageRequest>(r => r.Text.Contains("Ошибка при отображении анкеты") || r.Text.Contains("Ошибка")),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

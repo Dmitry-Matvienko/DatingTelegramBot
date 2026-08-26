@@ -1591,6 +1591,15 @@ public class LocalizationService : ILocalizationService
             [AppLanguage.Portuguese] = "⚠️ Erro ao bloquear usuário.",
             [AppLanguage.Indonesian] = "⚠️ Kesalahan saat memblokir pengguna."
         },
+        ["Admin_Alert_ErrorDisplayingProfile"] = new()
+        {
+            [AppLanguage.Russian] = "⚠️ Ошибка при отображении анкеты.",
+            [AppLanguage.Ukrainian] = "⚠️ Помилка під час відображення анкети.",
+            [AppLanguage.English] = "⚠️ Error displaying profile card.",
+            [AppLanguage.Hindi] = "⚠️ प्रोफ़ाइल कार्ड प्रदर्शित करने में त्रुटि।",
+            [AppLanguage.Portuguese] = "⚠️ Erro ao exibir o cartão de perfil.",
+            [AppLanguage.Indonesian] = "⚠️ Kesalahan saat menampilkan kartu profil."
+        },
         ["Admin_Btn_Revenue"] = new()
         {
             [AppLanguage.Russian] = "💰 Доход",

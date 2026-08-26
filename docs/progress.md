@@ -1,27 +1,25 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 43
+state_version: 44
 updated: 2026-08-26
 
 ---
 
 ## Сейчас
-- **Фаза**: Реализация: **очередь входящих оценок (Incoming Ratings Queue) и кнопка «➡️ Далее»**:
-  1. **Доменное ядро и БД (`Domain` & `Infrastructure`)**:
-     - В сущность `ProfileRating` добавлено свойство `IsViewed` (`bool`, по умолчанию `false`).
-     - Создана миграция EF Core `Add_IsViewed_To_ProfileRating` и обновлен составной B-Tree индекс `IX_ProfileRatings_ToUser_IsViewed_Score_CreatedAt`.
-     - В `IProfileRatingRepository` и `ProfileRatingRepository` обновлен метод `GetIncomingUnratedHighRatingsAsync` с фильтром `!r.IsViewed` и добавлен оптимизированный метод `GetIncomingUnratedHighRatingsCountAsync`.
-  2. **Слой приложения (`Application`)**:
-     - В `IncomingRatingDto` добавлено поле `RemainingQueueCount` (`int`, по умолчанию 0).
-     - В `SearchService` реализована пометка `rating.IsViewed = true` при получении анкеты из очереди (`GetNextIncomingRatingAsync`, `GetIncomingRatingByIdAsync`), сброс `IsViewed = false` при повторном оценивании в новом цикле и расчет остатка очереди.
-     - Добавлены ключи локализации `Btn_Next` и `Btn_ShowWhoRated_Count` на 6 языках (RU, UK, EN, HI, PT, ID).
-  3. **Презентационный слой (`Bot`)**:
-     - В `SearchKeyboards.GetIncomingRatingNotificationKeyboard` добавлен вывод счетчика непросмотренных оценок в кнопке: `👀 Показать кто оценил ({count})`.
-     - В `SearchKeyboards.GetIncomingRatingReplyKeyboard` добавлена кнопка `➡️ Далее` (`[ 🚨 Пожаловаться ] [ ➡️ Далее ] [ 🏠 Главное меню ]`) при `RemainingQueueCount > 0`.
-     - В `SearchCallbackHandler` и `TelegramUpdateRouter` реализована обработка кнопки «➡️ Далее» и непрерывного переключения анкет из очереди без необходимости ставить оценку.
-  4. **Тестирование и верификация**:
-     - Добавлены модульные тесты в `SearchServiceTests`, `UserProfileRepositoryCandidateTests`, `InlineSendMessageButtonTests`, `SearchCallbackHandlerTests`, `TelegramUpdateRouterSearchTests`.
-     - Все 545 тестов решения (544 unit + 1 integration) пройдены со 100% успехом (0 failures, 0 warnings).
+- **Фаза**: Исправление ошибки зависания листания анкет в админ-панели (**Admin Moderation Browsing Freeze Fix & HTML Escaping Robustness**):
+  1. **Анализ первопричины (Root Cause)**:
+     - При листании анкет в админ-панели (вызов `adm_s_next`, `adm_search_gen`, `adm_s_ban`, `adm_s_del`) данные пользователей (`Name`, `City`, `Greeting`, `AiDescription`, `Username`) интерполировались в HTML-шаблоны без экранирования `WebUtility.HtmlEncode`.
+     - При наличии спецсимволов HTML (`<`, `>`, `&`, смайликов вроде `<3`, тегов вроде `<b>`) Telegram Bot API возвращал ошибку `400 Bad Request: can't parse entities`.
+     - Первичная попытка отправки `SendPhoto` перехватывала ошибку, но fallback `SendMessage` вызывался с тем же неэкранированным HTML текстом и `ParseMode.Html`, что приводило к необработанному `ApiRequestException`.
+     - Так как `AnswerCallbackQuery` уже был выполнен, а сообщение не отправлялось, для администратора это выглядело как полное зависание бота на анкете.
+  2. **Реализация защиты и отказоустойчивости**:
+     - В `AdminPromptService`, `SearchPromptService`, `ProfilePromptService`, `RegistrationPromptService` добавлено безопасное экранирование всех пользовательских полей через `WebUtility.HtmlEncode`.
+     - Реализован двухступенчатый отказоустойчивый fallback при ошибках Telegram API: `SendPhoto (HTML)` -> `SendMessage (HTML)` -> `SendMessage (Plain-Text)` со снятием HTML-тегов через регулярное выражение и `WebUtility.HtmlDecode`.
+     - В `AdminCallbackHandler` все вызовы поиска и листания анкет (`adm_search_gen`, `adm_s_next`, `adm_s_ban`, `adm_s_del`) изолированы блоками `try-catch` с логированием ошибки и выводом локализованного уведомления `Admin_Alert_ErrorDisplayingProfile`.
+     - В `LocalizationService` добавлен ключ `Admin_Alert_ErrorDisplayingProfile` на 6 языках (RU, UK, EN, HI, PT, ID).
+  3. **Тестирование и верификация**:
+     - В `AdminRoutingAndCallbackTests` добавлены TDD-тесты на HTML-экранирование спецсимволов, устойчивость к сбоям парсинга с fallback на plain text, экранирование карточек жалоб и изоляцию ошибок в хэндлере.
+     - Все 549 тестов решения (548 unit + 1 integration) пройдены со 100% успехом (0 failures, 0 warnings).
 - **Далее**: Ожидание следующих задач от пользователя.
 
 ---

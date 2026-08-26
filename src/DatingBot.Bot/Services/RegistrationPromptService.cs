@@ -225,9 +225,12 @@ public class RegistrationPromptService(
         var genderStr = loc.GetGenderText(lang, profile.Gender);
         var lookingForStr = loc.GetTargetGenderText(lang, profile.TargetGender);
 
+        var safeName = !string.IsNullOrWhiteSpace(profile.Name) ? System.Net.WebUtility.HtmlEncode(profile.Name) : "Пользователь";
+        var safeCity = !string.IsNullOrWhiteSpace(profile.City) ? System.Net.WebUtility.HtmlEncode(profile.City) : "—";
+
         var sb = new StringBuilder();
-        sb.AppendLine($"🎉 <b>{profile.Name}</b>, {profile.Age}\n");
-        sb.AppendLine($"📍 {loc.Get(lang, "Label_City")}: <b>{profile.City}</b>");
+        sb.AppendLine($"🎉 <b>{safeName}</b>, {profile.Age}\n");
+        sb.AppendLine($"📍 {loc.Get(lang, "Label_City")}: <b>{safeCity}</b>");
         if (profile.Height.HasValue)
         {
             sb.AppendLine($"📏 {loc.Get(lang, "Label_Height")}: <b>{profile.Height} cm</b>");
@@ -237,7 +240,7 @@ public class RegistrationPromptService(
 
         if (profile.SelectedInterests.Count > 0)
         {
-            var interestTags = string.Join(", ", profile.SelectedInterests.Select(i => $"{i.Icon} {loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title)}"));
+            var interestTags = string.Join(", ", profile.SelectedInterests.Select(i => $"{i.Icon} {System.Net.WebUtility.HtmlEncode(loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title))}"));
             sb.AppendLine($"\n🏷 <b>{loc.Get(lang, "Label_Interests")}:</b> {interestTags}");
         }
 
@@ -256,24 +259,39 @@ public class RegistrationPromptService(
                     replyMarkup: ProfileKeyboards.GetProfileEditKeyboard(lang),
                     cancellationToken: cancellationToken
                 );
-                photoSent = true;
+                photoSent = sentCard is not null;
             }
             catch (Exception ex)
             {
                 logger.LogWarning("Не удалось отправить фото регистрации {PhotoFileId} пользователю {ChatId}: {ErrorMessage}", profile.PhotoFileId, chatId, ex.Message);
                 sentCard = null!;
+                photoSent = false;
             }
         }
 
         if (!photoSent)
         {
-            sentCard = await botClient.SendMessage(
-                chatId: chatId,
-                text: cardText,
-                parseMode: ParseMode.Html,
-                replyMarkup: ProfileKeyboards.GetProfileEditKeyboard(lang),
-                cancellationToken: cancellationToken
-            );
+            try
+            {
+                sentCard = await botClient.SendMessage(
+                    chatId: chatId,
+                    text: cardText,
+                    parseMode: ParseMode.Html,
+                    replyMarkup: ProfileKeyboards.GetProfileEditKeyboard(lang),
+                    cancellationToken: cancellationToken
+                );
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning("Не удалось отправить HTML сообщение завершения регистрации {ChatId}: {ErrorMessage}. Пробуем в plain-text режиме.", chatId, ex.Message);
+                var plainText = System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(cardText, "<.*?>", string.Empty));
+                sentCard = await botClient.SendMessage(
+                    chatId: chatId,
+                    text: plainText,
+                    replyMarkup: ProfileKeyboards.GetProfileEditKeyboard(lang),
+                    cancellationToken: cancellationToken
+                );
+            }
         }
 
         await botClient.SendMessage(
@@ -283,6 +301,9 @@ public class RegistrationPromptService(
             cancellationToken: cancellationToken
         );
 
-        await registrationService.SaveLastBotMessageIdAsync(chatId, sentCard.MessageId, cancellationToken);
+        if (sentCard is not null)
+        {
+            await registrationService.SaveLastBotMessageIdAsync(chatId, sentCard.MessageId, cancellationToken);
+        }
     }
 }
