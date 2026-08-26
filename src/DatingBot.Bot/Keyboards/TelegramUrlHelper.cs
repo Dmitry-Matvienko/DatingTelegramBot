@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace DatingBot.Bot.Keyboards;
 
 public static class TelegramUrlHelper
@@ -20,5 +22,29 @@ public static class TelegramUrlHelper
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Формирует безопасную HTML-ссылку на аккаунт пользователя.
+    /// Если у пользователя есть никнейм (@username) -> формирует гарантированно кликабельную HTTPS-ссылку https://t.me/username во всех клиентах Telegram.
+    /// Если никнейма нет -> формирует deep-link tg://user?id={telegramId}.
+    /// </summary>
+    public static string FormatUserAccountHtmlLink(long telegramId, string? username, string? displayName)
+    {
+        var safeName = !string.IsNullOrWhiteSpace(displayName)
+            ? WebUtility.HtmlEncode(displayName)
+            : "Пользователь";
+
+        if (!string.IsNullOrWhiteSpace(username))
+        {
+            var cleanUsername = username.Trim().TrimStart('@');
+            if (!string.IsNullOrEmpty(cleanUsername))
+            {
+                var safeUsername = WebUtility.HtmlEncode(cleanUsername);
+                return $"<a href=\"https://t.me/{safeUsername}\">{safeName}</a> (@{safeUsername})";
+            }
+        }
+
+        return $"<a href=\"tg://user?id={telegramId}\">{safeName}</a>";
     }
 }
