@@ -54,6 +54,7 @@ public static class DependencyInjection
         services.AddScoped<IProfileReportRepository, ProfileReportRepository>();
         services.AddScoped<ICityRepository, CityRepository>();
         services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
+        services.AddScoped<IReferralRepository, ReferralRepository>();
         services.AddSingleton<IAiEmbeddingService, Services.LocalAiEmbeddingService>();
         services.AddSingleton<IAdminSettings, Services.AdminSettings>();
         services.AddScoped<ICityDatabaseSeeder, Data.Seeds.CityDatabaseSeeder>();

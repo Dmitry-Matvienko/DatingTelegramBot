@@ -50,14 +50,14 @@
 ```
 
 ### 3.1. `DatingBot.Domain` (Ядро)
-- Содержит чистые модели данных (`User`, `UserProfile`, `City`, `Interest`, `ProfileRating`, `ProfileReport`, `PaymentTransaction`).
+- Содержит чистые модели данных (`User`, `UserProfile`, `City`, `Interest`, `ProfileRating`, `ProfileReport`, `PaymentTransaction`, `ReferralLink`, `ReferralRecord`).
 - Перечисления бизнес-домена (`UserState`, `AppLanguage`, `Gender`, `TargetGender`, `DatingTarget`, `InterestType`, `MatchTier`, `ReportReason`, `AgeCategoryFilter`, `PaymentType`).
 - Доменные исключения (`DomainException`).
 - **Зависимости:** 0 внешних пакетов.
 
 ### 3.2. `DatingBot.Application` (Бизнес-сценарии)
-- Абстракции хранилищ (`IUserRepository`, `IUserProfileRepository`, `ICityRepository`, `IInterestRepository`, `IProfileRatingRepository`, `IProfileReportRepository`, `IPaymentTransactionRepository`, `IUnitOfWork`).
-- Бизнес-сервисы (`IRegistrationService`, `IProfileEditingService`, `IMatchmakingService`, `ISearchService`, `ILocalizationService`, `IAiEmbeddingService`, `IAdminService`, `IModerationService`, `IInactivityReminderService`).
+- Абстракции хранилищ (`IUserRepository`, `IUserProfileRepository`, `ICityRepository`, `IInterestRepository`, `IProfileRatingRepository`, `IProfileReportRepository`, `IPaymentTransactionRepository`, `IReferralRepository`, `IUnitOfWork`).
+- Бизнес-сервисы (`IRegistrationService`, `IProfileEditingService`, `IMatchmakingService`, `ISearchService`, `ILocalizationService`, `IAiEmbeddingService`, `IAdminService`, `IModerationService`, `IInactivityReminderService`, `IReferralService`).
 - DTO (Data Transfer Objects) и маппинг.
 - Валидаторы входных данных на FluentValidation.
 - Шаблон возврата результатов `Result` / `Result<T>`.
@@ -66,7 +66,7 @@
 ### 3.3. `DatingBot.Infrastructure` (Инфраструктура и БД)
 - `AppDbContext` (EF Core) и фабрика контекста `AppDbContextFactory` для миграций.
 - Fluent API конфигурации таблиц (`IEntityTypeConfiguration<T>`).
-- Реализации репозиториев с оптимизацией AsNoTracking, индексами и гео-вычислениями по формуле гаверсинусов.
+- Реализации репозиториев с оптимизацией AsNoTracking, индексами и гео-вычислениями по формуле гаверсинусов (`ReferralRepository`, `UserRepository`, и др.).
 - Сидер базы данных городов (`CityDatabaseSeeder`) с авто-распаковкой встроенного Gzip-датасета 100k+ городов.
 - Локальный сервис AI-векторизации (`LocalAiEmbeddingService`) на базе n-граммного хеширования и SIMD-косинусного сходства.
 - **Зависимости:** `Application`, `Domain`, `Microsoft.EntityFrameworkCore.SqlServer`.
@@ -74,10 +74,10 @@
 ### 3.4. `DatingBot.Bot` (Презентационный слой Telegram и Хостинг)
 - Точка входа `Program.cs`, Kestrel Web-хост, конфигурация DI, Keep-Alive эндпоинты (`/`, `/ping`, `/health`, `/healthz`).
 - Координатор жизненного цикла `IBotLifecycleCoordinator` / `BotLifecycleCoordinator`.
-- `TelegramUpdateRouter` — диспетчер сообщений и callback-запросов.
+- `TelegramUpdateRouter` — диспетчер сообщений, callback-запросов и реферальных параметров запуска `/start ref_...`.
 - Обработчики FSM (`RegistrationMessageHandler`, `RegistrationCallbackHandler`, `ProfileEditMessageHandler`, `ProfileEditCallbackHandler`, `SearchCallbackHandler`, `AdminCallbackHandler`, `AdminMessageHandler`, `AdminModerationCallbackHandler`).
-- Фабрики инлайн- и reply-клавиатур (`LanguageKeyboards`, `MainMenuKeyboards`, `ProfileKeyboards`, `RegistrationKeyboards`, `SearchKeyboards`, `AdminKeyboards`, `PaymentKeyboards`).
-- Сервисы формирования визуальных карточек (`ProfilePromptService`, `SearchPromptService`, `RegistrationPromptService`, `AdminPromptService`, `AdminBroadcastService`).
+- Фабрики инлайн- и reply-клавиатур (`LanguageKeyboards`, `MainMenuKeyboards`, `ProfileKeyboards`, `RegistrationKeyboards`, `SearchKeyboards`, `AdminKeyboards`, `PaymentKeyboards`, `ReferralKeyboards`).
+- Сервисы формирования визуальных карточек (`ProfilePromptService`, `SearchPromptService`, `RegistrationPromptService`, `AdminPromptService`, `AdminBroadcastService`, `ReferralPromptService`, `BotInfoProvider`).
 - Фоновые воркеры (`DatabaseBootstrapWorker`, `TelegramBotWorker`, `MatchmakingNotificationWorker`, `InactivityNotificationWorker`).
 - **Зависимости:** `Application`, `Infrastructure`, `Telegram.Bot`, `Microsoft.AspNetCore.App`.
 

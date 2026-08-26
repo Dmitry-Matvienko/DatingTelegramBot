@@ -17,6 +17,8 @@ public class AppDbContext : DbContext
     public DbSet<ProfileReport> ProfileReports => Set<ProfileReport>();
     public DbSet<City> Cities => Set<City>();
     public DbSet<PaymentTransaction> PaymentTransactions => Set<PaymentTransaction>();
+    public DbSet<ReferralLink> ReferralLinks => Set<ReferralLink>();
+    public DbSet<ReferralRecord> ReferralRecords => Set<ReferralRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -83,8 +83,9 @@ public class BotGuideTests
         rows[0].First().Text.Should().Be(_loc.Get(lang, "Menu_Search"));
         rows[0].Last().Text.Should().Be(_loc.Get(lang, "Menu_Profile"));
 
-        rows[1].Should().HaveCount(1);
-        rows[1].First().Text.Should().Be(_loc.Get(lang, "Menu_Guide"));
+        rows[1].Should().HaveCount(2);
+        rows[1].First().Text.Should().Be(_loc.Get(lang, "Menu_Referral"));
+        rows[1].Last().Text.Should().Be(_loc.Get(lang, "Menu_Guide"));
     }
 
     [Fact]

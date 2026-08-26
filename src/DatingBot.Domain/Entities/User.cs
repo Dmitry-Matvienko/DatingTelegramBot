@@ -17,6 +17,8 @@ public class User
     public DateTime LastActiveAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastInactivityReminderSentAt { get; set; }
     public DateTime? SearchCycleStartedAt { get; set; }
+    public Guid? ReferredByUserId { get; set; }
 
     public UserProfile? Profile { get; set; }
+    public ReferralLink? ReferralLink { get; set; }
 }

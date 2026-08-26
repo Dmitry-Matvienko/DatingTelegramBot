@@ -1,20 +1,30 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 39
+state_version: 40
 updated: 2026-08-26
 
 ---
 
 ## Сейчас
-- **Фаза**: Исправление: **подавление уведомления кандидату при повторном оценивании в течение 24 часов (`Suppress Candidate Notification on Recent Re-rate`)**:
-  1. **Логика хэндлера `SearchCallbackHandler`**:
-     - В `HandleRatingFromReplyKeyboardAsync` вызов `searchPromptService.SendHighRatingNotificationAsync` ограничен условием `!result.WasRecentlyRated && score >= 6`.
-     - При повторной оценке (< 24ч) оценивающий получает сервисное уведомление `Notification_AlreadyRatedRecently`, а оцениваемому кандидату уведомление о высокой оценке не отправляется.
-  2. **Спецификация `search_and_ratings.md`**:
-     - В разделе 3 зафиксировано правило подавления повторных уведомлений кандидату при повторном оценивании в течение 24 часов.
-  3. **Тестирование и верификация**:
-     - Добавлен юнит-тест `HandleRatingFromReplyKeyboardAsync_WhenWasRecentlyRatedTrueAndScore6Plus_ShouldNotSendHighRatingNotificationToCandidate` в `SearchCallbackHandlerTests`.
-     - Все 488 тестов решения (487 unit + 1 integration) пройдены со 100% успехом (0 failures, 0 warnings).
+- **Фаза**: Реализация: **система реферальных ссылок и продвижения в топ (Referral System & Top Boost)**:
+  1. **Доменное ядро (`Domain`)**:
+     - Созданы сущности `ReferralLink` (уникальный `Code`, `UserId`, `InvitedCount`) и `ReferralRecord` (`ReferrerUserId`, `ReferredUserId`, `ReferralLinkId`).
+     - Добавлено поле `TopBoostUntil` (`DateTime?`) в `UserProfile` и `ReferredByUserId` (`Guid?`) в `User`.
+  2. **База данных и миграции (`Infrastructure`)**:
+     - Добавлены конфигурации `ReferralLinkConfiguration` и `ReferralRecordConfiguration` с уникальными индексами.
+     - Создан `ReferralRepository` и сгенерирована миграция `Add_Referral_System_And_TopBoost`.
+  3. **Бизнес-сценарии (`Application`)**:
+     - Создан `IReferralService` / `ReferralService` с методами `GetUserReferralLinkAsync`, `CreateOrGetReferralLinkAsync` и `ProcessReferralJoinAsync`.
+     - Накопительное начисление +3 дня к `TopBoostUntil` за каждого приглашенного нового пользователя с защитой от самореферала и повторных переходов.
+     - Интерфейс `IBotInfoProvider` и 7 ключей словаря на 6 языках (RU, UK, EN, HI, PT, ID) в `LocalizationService`.
+  4. **Презентационный слой (`Bot`)**:
+     - Добавлена кнопка «🎁 Реферальная программа» в главное меню (`MainMenuKeyboards`), а также команды `/referral` и `/ref`.
+     - Созданы клавиатуры `ReferralKeyboards` с inline-кнопками «📋 Мои реферальные ссылки» (`ref_my_links`) и «➕ Создать ссылку» (`ref_create_link`).
+     - Создан сервис `ReferralPromptService` с моноширинным форматированием ссылок `<code>...</code>` и сообщения `<code>У вас еще нет ссылок</code>` для моментального копирования по клику.
+     - В `TelegramUpdateRouter` подключена обработка глубоких ссылок `/start ref_...` с начислением бонуса и отправкой сервисного уведомления рефереру с показом итогового количества дней топа.
+  5. **Тестирование и верификация**:
+     - Написаны модульные тесты: `ReferralServiceTests`, `TelegramUpdateRouterReferralTests`, `ReferralPromptServiceTests`.
+     - Все 512 тестов решения (511 unit + 1 integration) пройдены со 100% успехом (0 failures, 0 warnings).
 - **Далее**: Ожидание следующих задач от пользователя.
 
 ---
@@ -77,6 +87,7 @@ updated: 2026-08-26
 - [x] Реализация уведомления о повторной оценке пользователя в течение 24 часов в поиске анкет (RU, UK, EN, HI, PT, ID).
 - [x] Подавление отправки уведомления оцениваемому пользователю при повторной оценке в течение 24 часов.
 - [x] Реализация 3 подсказок похожих городов при опечатках, сообщения с геолокацией и авто-добавления городов по GPS в БД при регистрации и редактировании анкеты.
+- [x] Реализация системы реферальных ссылок, накопительного бонуса +3 дня в топе поиска и уведомлений рефереров (RU, UK, EN, HI, PT, ID).
 
 ---
 
