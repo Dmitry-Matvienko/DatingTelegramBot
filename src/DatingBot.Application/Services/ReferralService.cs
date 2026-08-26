@@ -173,6 +173,12 @@ public class ReferralService(
         ));
     }
 
+    public async Task<Result<IReadOnlyList<ReferralTopUserDto>>> GetTopReferrersAsync(int count = 15, CancellationToken cancellationToken = default)
+    {
+        var topReferrers = await referralRepository.GetTopReferrersAsync(count, cancellationToken);
+        return Result<IReadOnlyList<ReferralTopUserDto>>.Success(topReferrers);
+    }
+
     private static string GenerateRandomCode(int length)
     {
         Span<char> result = stackalloc char[length];

@@ -102,7 +102,7 @@ DatingBot/                                # Корень проекта == BASE_
 │       ├── appsettings.json              # Базовая конфигурация (BotToken, AdminIds, InactivityReminderDays...)
 │       └── Program.cs                    # Точка входа DI, Web-хост Kestrel и Keep-Alive/Health эндпоинты
 │
-├── tests/                                # Модульные и интеграционные тесты (512 тестов)
+├── tests/                                # Модульные и интеграционные тесты (520 тестов)
 │   ├── DatingBot.UnitTests/              # xUnit модульные тесты сервисов, алгоритмов, рефералов, воркеров и координатора
 │   └── DatingBot.IntegrationTests/       # Интеграционные тесты сидера БД и сценариев
 │

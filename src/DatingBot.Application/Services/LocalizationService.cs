@@ -1986,6 +1986,42 @@ public class LocalizationService : ILocalizationService
             [AppLanguage.Hindi] = "बधाई हो! एक नया उपयोगकर्ता आपके लिंक से जुड़ा है। आपकी प्रोफ़ाइल खोज के शीर्ष पर 3 दिन अधिक रहेगी। कुल: {0} दिन।",
             [AppLanguage.Portuguese] = "Parabéns! Um novo usuário entrou pelo seu link. Seu perfil ficará no topo das buscas por mais 3 dias. Total: {0} dias.",
             [AppLanguage.Indonesian] = "Selamat! Pengguna baru telah bergabung melalui tautan Anda. Profil Anda akan berada di posisi teratas selama 3 hari lebih lama. Total: {0} hari."
+        },
+        ["Btn_ReferralReport"] = new()
+        {
+            [AppLanguage.Russian] = "📊 Отчет",
+            [AppLanguage.Ukrainian] = "📊 Звіт",
+            [AppLanguage.English] = "📊 Report",
+            [AppLanguage.Hindi] = "📊 रिपोर्ट",
+            [AppLanguage.Portuguese] = "📊 Relatório",
+            [AppLanguage.Indonesian] = "📊 Laporan"
+        },
+        ["Referral_Report_Title"] = new()
+        {
+            [AppLanguage.Russian] = "📊 <b>Топ-15 пользователей по реферальной программе:</b>\n",
+            [AppLanguage.Ukrainian] = "📊 <b>Топ-15 користувачів за реферальною програмою:</b>\n",
+            [AppLanguage.English] = "📊 <b>Top 15 users in the referral program:</b>\n",
+            [AppLanguage.Hindi] = "📊 <b>रेफ़रल कार्यक्रम में शीर्ष 15 उपयोगकर्ता:</b>\n",
+            [AppLanguage.Portuguese] = "📊 <b>Top 15 usuários no programa de indicação:</b>\n",
+            [AppLanguage.Indonesian] = "📊 <b>15 Pengguna teratas dalam program rujukan:</b>\n"
+        },
+        ["Referral_Report_Empty"] = new()
+        {
+            [AppLanguage.Russian] = "Пока никто из пользователей не пригласил новых участников.",
+            [AppLanguage.Ukrainian] = "Поки що ніхто з користувачів не запросив нових учасників.",
+            [AppLanguage.English] = "No users have invited new members yet.",
+            [AppLanguage.Hindi] = "अभी तक किसी भी उपयोगकर्ता ने नए सदस्यों को आमंत्रित नहीं किया है।",
+            [AppLanguage.Portuguese] = "Nenhum usuário convidou novos membros ainda.",
+            [AppLanguage.Indonesian] = "Belum ada pengguna yang mengundang anggota baru."
+        },
+        ["Referral_Report_Item"] = new()
+        {
+            [AppLanguage.Russian] = "{0}. {1} — <b>{2}</b> чел.",
+            [AppLanguage.Ukrainian] = "{0}. {1} — <b>{2}</b> люд.",
+            [AppLanguage.English] = "{0}. {1} — <b>{2}</b> users",
+            [AppLanguage.Hindi] = "{0}. {1} — <b>{2}</b> लोग",
+            [AppLanguage.Portuguese] = "{0}. {1} — <b>{2}</b> pessoas",
+            [AppLanguage.Indonesian] = "{0}. {1} — <b>{2}</b> orang"
         }
     };
 

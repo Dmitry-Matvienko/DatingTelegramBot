@@ -6,15 +6,19 @@ namespace DatingBot.Bot.Keyboards;
 
 public static class ReferralKeyboards
 {
-    public static InlineKeyboardMarkup GetReferralMenuInlineKeyboard(AppLanguage language, ILocalizationService loc)
+    public static InlineKeyboardMarkup GetReferralMenuInlineKeyboard(AppLanguage language, ILocalizationService loc, bool isAdmin = false)
     {
-        return new InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton.WithCallbackData(loc.Get(language, "Btn_MyReferralLinks"), "ref_my_links")
-            ],
-            [
-                InlineKeyboardButton.WithCallbackData(loc.Get(language, "Btn_CreateReferralLink"), "ref_create_link")
-            ]
-        ]);
+        var rows = new List<InlineKeyboardButton[]>
+        {
+            new[] { InlineKeyboardButton.WithCallbackData(loc.Get(language, "Btn_MyReferralLinks"), "ref_my_links") },
+            new[] { InlineKeyboardButton.WithCallbackData(loc.Get(language, "Btn_CreateReferralLink"), "ref_create_link") }
+        };
+
+        if (isAdmin)
+        {
+            rows.Add(new[] { InlineKeyboardButton.WithCallbackData(loc.Get(language, "Btn_ReferralReport"), "ref_admin_report") });
+        }
+
+        return new InlineKeyboardMarkup(rows);
     }
 }

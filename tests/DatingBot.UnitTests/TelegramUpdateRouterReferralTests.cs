@@ -331,4 +331,120 @@ public class TelegramUpdateRouterReferralTests
             It.IsAny<CancellationToken>()
         ), Times.Once);
     }
+
+    [Fact]
+    public async Task RouteUpdateAsync_WhenReferralMenuButtonPressedByAdmin_ShouldIncludeAdminReportButton()
+    {
+        // Arrange
+        const long adminChatId = 999999;
+        var adminUser = new User { Id = Guid.NewGuid(), TelegramId = adminChatId, Language = AppLanguage.Russian, State = UserState.Active };
+
+        _registrationService.Setup(r => r.GetOrCreateUserAsync(adminChatId, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(adminUser);
+
+        _adminService.Setup(a => a.IsAdmin(adminChatId)).Returns(true);
+
+        var update = new Update
+        {
+            Message = new Message
+            {
+                Chat = new Chat { Id = adminChatId },
+                From = new Telegram.Bot.Types.User { Id = adminChatId },
+                Text = "🎁 Реферальная программа"
+            }
+        };
+
+        // Act
+        await _router.RouteUpdateAsync(update);
+
+        // Assert
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<SendMessageRequest>(r =>
+                r.ChatId == adminChatId &&
+                r.ReplyMarkup != null &&
+                ((Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup)r.ReplyMarkup).InlineKeyboard.Any(row => row.Any(btn => btn.CallbackData == "ref_admin_report"))),
+            It.IsAny<CancellationToken>()
+        ), Times.Once);
+    }
+
+    [Fact]
+    public async Task RouteUpdateAsync_WhenCallbackRefAdminReportFromAdmin_ShouldSendReferralReport()
+    {
+        // Arrange
+        const long adminChatId = 999999;
+        var adminUser = new User { Id = Guid.NewGuid(), TelegramId = adminChatId, Language = AppLanguage.Russian, State = UserState.Active };
+
+        _registrationService.Setup(r => r.GetOrCreateUserAsync(adminChatId, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(adminUser);
+
+        _adminService.Setup(a => a.IsAdmin(adminChatId)).Returns(true);
+
+        _referralService.Setup(s => s.GetTopReferrersAsync(15, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Application.Common.Result<IReadOnlyList<ReferralTopUserDto>>.Success(new List<ReferralTopUserDto>
+            {
+                new(Guid.NewGuid(), 111, "alice", "Alice", 10)
+            }));
+
+        var update = new Update
+        {
+            CallbackQuery = new CallbackQuery
+            {
+                Id = "cb_report_admin",
+                From = new Telegram.Bot.Types.User { Id = adminChatId },
+                Message = new Message { Chat = new Chat { Id = adminChatId } },
+                Data = "ref_admin_report"
+            }
+        };
+
+        // Act
+        await _router.RouteUpdateAsync(update);
+
+        // Assert
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<AnswerCallbackQueryRequest>(r => r.CallbackQueryId == "cb_report_admin"),
+            It.IsAny<CancellationToken>()
+        ), Times.Once);
+
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<SendMessageRequest>(r =>
+                r.ChatId == adminChatId &&
+                r.Text.Contains("Топ-15 пользователей по реферальной программе")),
+            It.IsAny<CancellationToken>()
+        ), Times.Once);
+    }
+
+    [Fact]
+    public async Task RouteUpdateAsync_WhenCallbackRefAdminReportFromNonAdmin_ShouldIgnoreReport()
+    {
+        // Arrange
+        const long regularChatId = 12345;
+        var regularUser = new User { Id = Guid.NewGuid(), TelegramId = regularChatId, Language = AppLanguage.Russian, State = UserState.Active };
+
+        _registrationService.Setup(r => r.GetOrCreateUserAsync(regularChatId, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(regularUser);
+
+        _adminService.Setup(a => a.IsAdmin(regularChatId)).Returns(false);
+
+        var update = new Update
+        {
+            CallbackQuery = new CallbackQuery
+            {
+                Id = "cb_report_regular",
+                From = new Telegram.Bot.Types.User { Id = regularChatId },
+                Message = new Message { Chat = new Chat { Id = regularChatId } },
+                Data = "ref_admin_report"
+            }
+        };
+
+        // Act
+        await _router.RouteUpdateAsync(update);
+
+        // Assert
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<AnswerCallbackQueryRequest>(r => r.CallbackQueryId == "cb_report_regular"),
+            It.IsAny<CancellationToken>()
+        ), Times.Once);
+
+        _referralService.Verify(s => s.GetTopReferrersAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 }
