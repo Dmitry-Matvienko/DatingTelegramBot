@@ -259,6 +259,15 @@ public class LocalizationService : ILocalizationService
             [AppLanguage.Portuguese] = "📖 Guia do Bot",
             [AppLanguage.Indonesian] = "📖 Panduan Bot"
         },
+        ["Menu_Referral"] = new()
+        {
+            [AppLanguage.Russian] = "🎁 Реферальная программа",
+            [AppLanguage.Ukrainian] = "🎁 Реферальна програма",
+            [AppLanguage.English] = "🎁 Referral Program",
+            [AppLanguage.Hindi] = "🎁 रेफ़रल कार्यक्रम",
+            [AppLanguage.Portuguese] = "🎁 Programa de Indicação",
+            [AppLanguage.Indonesian] = "🎁 Program Rujukan"
+        },
         ["Menu_Language"] = new()
         {
             [AppLanguage.Russian] = "🌐 Язык",
@@ -1923,6 +1932,105 @@ public class LocalizationService : ILocalizationService
             [AppLanguage.Hindi] = "💡 स्पष्ट और अच्छे चेहरे वाले फ़ोटो वाली प्रोफ़ाइल को कहीं अधिक उच्च रेटिंग मिलती है।",
             [AppLanguage.Portuguese] = "💡 Perfis com fotos de rosto nítidas e amigáveis recebem muito mais avaliações altas.",
             [AppLanguage.Indonesian] = "💡 Profil dengan foto wajah yang jelas dan ramah mendapatkan lebih banyak nilai tinggi."
+        },
+        ["Referral_Info"] = new()
+        {
+            [AppLanguage.Russian] = "Приведите новых пользователей, и взамен мы будем продвигать вашу анкету в топы.\n\n1 новый пользователь приведенный вами - 3 дня в топе поиска(накопительный эффект)",
+            [AppLanguage.Ukrainian] = "Приведіть нових користувачів, і натомість ми просуватимемо вашу анкету в топи.\n\n1 новий користувач приведений вами - 3 дні в топі пошуку(накопичувальний ефект)",
+            [AppLanguage.English] = "Invite new users, and in return we will boost your profile to the top.\n\n1 new user invited by you - 3 days in top search (cumulative effect)",
+            [AppLanguage.Hindi] = "नए उपयोगकर्ताओं को लाएं, और बदले में हम आपकी प्रोफ़ाइल को शीर्ष पर प्रमोट करेंगे।\n\nआपके द्वारा लाया गया 1 नया उपयोगकर्ता - खोज के शीर्ष पर 3 दिन (संचयी प्रभाव)",
+            [AppLanguage.Portuguese] = "Convide novos usuários e, em troca, destacaremos seu perfil no topo.\n\n1 novo usuário indicado por você - 3 dias no topo das buscas (efeito cumulativo)",
+            [AppLanguage.Indonesian] = "Undang pengguna baru, dan kami akan mempromosikan profil Anda ke posisi teratas.\n\n1 pengguna baru yang Anda undang - 3 hari di posisi teratas pencarian (efek kumulatif)"
+        },
+        ["Btn_MyReferralLinks"] = new()
+        {
+            [AppLanguage.Russian] = "Мои реферальные ссылки",
+            [AppLanguage.Ukrainian] = "Мої реферальні посилання",
+            [AppLanguage.English] = "My referral links",
+            [AppLanguage.Hindi] = "मेरे रेफ़रल लिंक",
+            [AppLanguage.Portuguese] = "Meus links de indicação",
+            [AppLanguage.Indonesian] = "Tautan rujukan saya"
+        },
+        ["Btn_CreateReferralLink"] = new()
+        {
+            [AppLanguage.Russian] = "Создать ссылку",
+            [AppLanguage.Ukrainian] = "Створити посилання",
+            [AppLanguage.English] = "Create link",
+            [AppLanguage.Hindi] = "लिंक बनाएं",
+            [AppLanguage.Portuguese] = "Criar link",
+            [AppLanguage.Indonesian] = "Buat tautan"
+        },
+        ["Referral_NoLinksYet"] = new()
+        {
+            [AppLanguage.Russian] = "<code>У вас еще нет ссылок</code>",
+            [AppLanguage.Ukrainian] = "<code>У вас ще немає посилань</code>",
+            [AppLanguage.English] = "<code>You do not have any links yet</code>",
+            [AppLanguage.Hindi] = "<code>आपके पास अभी तक कोई लिंक नहीं है</code>",
+            [AppLanguage.Portuguese] = "<code>Você ainda não tem links</code>",
+            [AppLanguage.Indonesian] = "<code>Anda belum memiliki tautan</code>"
+        },
+        ["Referral_MyLinks_Info"] = new()
+        {
+            [AppLanguage.Russian] = "👥 Приведено пользователей: <b>{0}</b>\n⏳ Дней в топе поиска осталось: <b>{1}</b>\n\n<code>{2}</code>",
+            [AppLanguage.Ukrainian] = "👥 Запрошено користувачів: <b>{0}</b>\n⏳ Днів у топі пошуку залишилося: <b>{1}</b>\n\n<code>{2}</code>",
+            [AppLanguage.English] = "👥 Users invited: <b>{0}</b>\n⏳ Days left in top search: <b>{1}</b>\n\n<code>{2}</code>",
+            [AppLanguage.Hindi] = "👥 आमंत्रित उपयोगकर्ता: <b>{0}</b>\n⏳ खोज के शीर्ष पर शेष दिन: <b>{1}</b>\n\n<code>{2}</code>",
+            [AppLanguage.Portuguese] = "👥 Usuários convidados: <b>{0}</b>\n⏳ Dias restantes no topo das buscas: <b>{1}</b>\n\n<code>{2}</code>",
+            [AppLanguage.Indonesian] = "👥 Pengguna yang diundang: <b>{0}</b>\n⏳ Hari tersisa di pencarian teratas: <b>{1}</b>\n\n<code>{2}</code>"
+        },
+        ["Referral_LinkCreated_Prefix"] = new()
+        {
+            [AppLanguage.Russian] = "Вот ваша реферальная ссылка, будь всегда в топе",
+            [AppLanguage.Ukrainian] = "Ось ваше реферальне посилання, будь завжди в топі",
+            [AppLanguage.English] = "Here is your referral link, always stay on top",
+            [AppLanguage.Hindi] = "यह आपका रेफ़रल लिंक है, हमेशा शीर्ष पर रहें",
+            [AppLanguage.Portuguese] = "Aqui está seu link de indicação, fique sempre no topo",
+            [AppLanguage.Indonesian] = "Ini tautan rujukan Anda, selalu berada di posisi teratas"
+        },
+        ["Referral_Notification_NewUser"] = new()
+        {
+            [AppLanguage.Russian] = "Поздравляю! По вашей ссылке перешёл новый пользователь. Ваша анкета будет в топах на 3 дня дольше. Итого: {0} дн.",
+            [AppLanguage.Ukrainian] = "Вітаємо! За вашим посиланням перейшов новий користувач. Ваша анкета буде в топах на 3 дні довше. Разом: {0} дн.",
+            [AppLanguage.English] = "Congratulations! A new user joined via your link. Your profile will stay in top search for 3 days longer. Total: {0} days.",
+            [AppLanguage.Hindi] = "बधाई हो! एक नया उपयोगकर्ता आपके लिंक से जुड़ा है। आपकी प्रोफ़ाइल खोज के शीर्ष पर 3 दिन अधिक रहेगी। कुल: {0} दिन।",
+            [AppLanguage.Portuguese] = "Parabéns! Um novo usuário entrou pelo seu link. Seu perfil ficará no topo das buscas por mais 3 dias. Total: {0} dias.",
+            [AppLanguage.Indonesian] = "Selamat! Pengguna baru telah bergabung melalui tautan Anda. Profil Anda akan berada di posisi teratas selama 3 hari lebih lama. Total: {0} hari."
+        },
+        ["Btn_ReferralReport"] = new()
+        {
+            [AppLanguage.Russian] = "📊 Отчет",
+            [AppLanguage.Ukrainian] = "📊 Звіт",
+            [AppLanguage.English] = "📊 Report",
+            [AppLanguage.Hindi] = "📊 रिपोर्ट",
+            [AppLanguage.Portuguese] = "📊 Relatório",
+            [AppLanguage.Indonesian] = "📊 Laporan"
+        },
+        ["Referral_Report_Title"] = new()
+        {
+            [AppLanguage.Russian] = "📊 <b>Топ-15 пользователей по реферальной программе:</b>\n",
+            [AppLanguage.Ukrainian] = "📊 <b>Топ-15 користувачів за реферальною програмою:</b>\n",
+            [AppLanguage.English] = "📊 <b>Top 15 users in the referral program:</b>\n",
+            [AppLanguage.Hindi] = "📊 <b>रेफ़रल कार्यक्रम में शीर्ष 15 उपयोगकर्ता:</b>\n",
+            [AppLanguage.Portuguese] = "📊 <b>Top 15 usuários no programa de indicação:</b>\n",
+            [AppLanguage.Indonesian] = "📊 <b>15 Pengguna teratas dalam program rujukan:</b>\n"
+        },
+        ["Referral_Report_Empty"] = new()
+        {
+            [AppLanguage.Russian] = "Пока никто из пользователей не пригласил новых участников.",
+            [AppLanguage.Ukrainian] = "Поки що ніхто з користувачів не запросив нових учасників.",
+            [AppLanguage.English] = "No users have invited new members yet.",
+            [AppLanguage.Hindi] = "अभी तक किसी भी उपयोगकर्ता ने नए सदस्यों को आमंत्रित नहीं किया है।",
+            [AppLanguage.Portuguese] = "Nenhum usuário convidou novos membros ainda.",
+            [AppLanguage.Indonesian] = "Belum ada pengguna yang mengundang anggota baru."
+        },
+        ["Referral_Report_Item"] = new()
+        {
+            [AppLanguage.Russian] = "{0}. {1} — <b>{2}</b> чел.",
+            [AppLanguage.Ukrainian] = "{0}. {1} — <b>{2}</b> люд.",
+            [AppLanguage.English] = "{0}. {1} — <b>{2}</b> users",
+            [AppLanguage.Hindi] = "{0}. {1} — <b>{2}</b> लोग",
+            [AppLanguage.Portuguese] = "{0}. {1} — <b>{2}</b> pessoas",
+            [AppLanguage.Indonesian] = "{0}. {1} — <b>{2}</b> orang"
         }
     };
 

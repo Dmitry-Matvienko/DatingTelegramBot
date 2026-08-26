@@ -64,6 +64,9 @@ public class UserProfileConfiguration : IEntityTypeConfiguration<UserProfile>
             .IsRequired()
             .HasDefaultValue(0.0);
 
+        builder.Property(p => p.TopBoostUntil)
+            .IsRequired(false);
+
         builder.HasIndex(p => new { p.IsCompleted, p.Gender, p.TargetGender, p.DatingTarget })
             .HasDatabaseName("IX_UserProfiles_Matchmaking_Filter");
 

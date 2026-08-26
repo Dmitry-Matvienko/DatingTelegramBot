@@ -15,6 +15,7 @@ public static class DependencyInjection
         services.AddScoped<IModerationService, ModerationService>();
         services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<IInactivityReminderService, InactivityReminderService>();
+        services.AddScoped<IReferralService, ReferralService>();
         services.AddSingleton<ILocalizationService, LocalizationService>();
         return services;
     }
