@@ -15,10 +15,21 @@ public class SearchPromptService(
     ITelegramBotClient botClient,
     IRegistrationService registrationService,
     IUserRepository userRepository,
+    IProfileRatingRepository profileRatingRepository,
     ILocalizationService loc,
     IConfiguration configuration,
     ILogger<SearchPromptService> logger)
 {
+    public SearchPromptService(
+        ITelegramBotClient botClient,
+        IRegistrationService registrationService,
+        IUserRepository userRepository,
+        ILocalizationService loc,
+        IConfiguration configuration,
+        ILogger<SearchPromptService> logger)
+        : this(botClient, registrationService, userRepository, null!, loc, configuration, logger)
+    {
+    }
     public async Task SendMatchCandidateCardAsync(long chatId, MatchCandidateDto match, CancellationToken cancellationToken = default)
     {
         var user = await userRepository.GetByTelegramIdAsync(chatId, cancellationToken);
@@ -29,9 +40,12 @@ public class SearchPromptService(
         var genderStr = loc.GetGenderText(lang, candidate.Gender);
         var lookingForStr = loc.GetTargetGenderText(lang, candidate.TargetGender);
 
+        var safeName = !string.IsNullOrWhiteSpace(candidate.Name) ? System.Net.WebUtility.HtmlEncode(candidate.Name) : "Пользователь";
+        var safeCity = !string.IsNullOrWhiteSpace(candidate.City) ? System.Net.WebUtility.HtmlEncode(candidate.City) : "—";
+
         var sb = new StringBuilder();
-        sb.AppendLine($"👤 <b>{candidate.Name}</b>, {candidate.Age}");
-        sb.AppendLine($"📍 {loc.Get(lang, "Label_City")}: <b>{candidate.City}</b>");
+        sb.AppendLine($"👤 <b>{safeName}</b>, {candidate.Age}");
+        sb.AppendLine($"📍 {loc.Get(lang, "Label_City")}: <b>{safeCity}</b>");
         if (candidate.Height.HasValue)
         {
             sb.AppendLine($"📏 {loc.Get(lang, "Label_Height")}: <b>{candidate.Height} cm</b>");
@@ -41,24 +55,24 @@ public class SearchPromptService(
 
         if (!string.IsNullOrWhiteSpace(candidate.Greeting))
         {
-            sb.AppendLine($"\n💬 <i>\"{candidate.Greeting}\"</i>");
+            sb.AppendLine($"\n💬 <i>\"{System.Net.WebUtility.HtmlEncode(candidate.Greeting)}\"</i>");
         }
 
         // Разделение интересов: общие и другие
         if (match.CommonInterests.Count > 0)
         {
-            var commonTags = string.Join(", ", match.CommonInterests.Select(i => $"{i.Icon} {loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title)}"));
+            var commonTags = string.Join(", ", match.CommonInterests.Select(i => $"{i.Icon} {System.Net.WebUtility.HtmlEncode(loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title))}"));
             sb.AppendLine($"\n✨ <b>{loc.Get(lang, "Label_CommonInterests")}:</b> {commonTags}");
 
             if (match.OtherInterests.Count > 0)
             {
-                var otherTags = string.Join(", ", match.OtherInterests.Select(i => $"{i.Icon} {loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title)}"));
+                var otherTags = string.Join(", ", match.OtherInterests.Select(i => $"{i.Icon} {System.Net.WebUtility.HtmlEncode(loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title))}"));
                 sb.AppendLine($"🏷 <b>{loc.Get(lang, "Label_OtherInterests")}:</b> {otherTags}");
             }
         }
         else if (candidate.SelectedInterests.Count > 0)
         {
-            var interestTags = string.Join(", ", candidate.SelectedInterests.Select(i => $"{i.Icon} {loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title)}"));
+            var interestTags = string.Join(", ", candidate.SelectedInterests.Select(i => $"{i.Icon} {System.Net.WebUtility.HtmlEncode(loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title))}"));
             sb.AppendLine($"\n🏷 <b>{loc.Get(lang, "Label_Interests")}:</b> {interestTags}");
         }
 
@@ -87,27 +101,45 @@ public class SearchPromptService(
                     replyMarkup: SearchKeyboards.GetRatingReplyKeyboard(lang),
                     cancellationToken: cancellationToken
                 );
-                photoSent = true;
+                photoSent = sentMessage is not null;
             }
             catch (Exception ex)
             {
                 logger.LogWarning("Не удалось отправить фото кандидата {PhotoFileId} пользователю {ChatId}: {ErrorMessage}", candidate.PhotoFileId, chatId, ex.Message);
                 sentMessage = null!;
+                photoSent = false;
             }
         }
 
         if (!photoSent)
         {
-            sentMessage = await botClient.SendMessage(
-                chatId: chatId,
-                text: cardText,
-                parseMode: ParseMode.Html,
-                replyMarkup: SearchKeyboards.GetRatingReplyKeyboard(lang),
-                cancellationToken: cancellationToken
-            );
+            try
+            {
+                sentMessage = await botClient.SendMessage(
+                    chatId: chatId,
+                    text: cardText,
+                    parseMode: ParseMode.Html,
+                    replyMarkup: SearchKeyboards.GetRatingReplyKeyboard(lang),
+                    cancellationToken: cancellationToken
+                );
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning("Не удалось отправить HTML сообщение кандидата {ChatId}: {ErrorMessage}. Пробуем в plain-text режиме.", chatId, ex.Message);
+                var plainText = System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(cardText, "<.*?>", string.Empty));
+                sentMessage = await botClient.SendMessage(
+                    chatId: chatId,
+                    text: plainText,
+                    replyMarkup: SearchKeyboards.GetRatingReplyKeyboard(lang),
+                    cancellationToken: cancellationToken
+                );
+            }
         }
 
-        await registrationService.SaveLastBotMessageIdAsync(chatId, sentMessage.MessageId, cancellationToken);
+        if (sentMessage is not null)
+        {
+            await registrationService.SaveLastBotMessageIdAsync(chatId, sentMessage.MessageId, cancellationToken);
+        }
     }
 
     public async Task SendCandidateCardAsync(long chatId, UserProfileDto candidate, CancellationToken cancellationToken = default)
@@ -119,9 +151,12 @@ public class SearchPromptService(
         var genderStr = loc.GetGenderText(lang, candidate.Gender);
         var lookingForStr = loc.GetTargetGenderText(lang, candidate.TargetGender);
 
+        var safeName = !string.IsNullOrWhiteSpace(candidate.Name) ? System.Net.WebUtility.HtmlEncode(candidate.Name) : "Пользователь";
+        var safeCity = !string.IsNullOrWhiteSpace(candidate.City) ? System.Net.WebUtility.HtmlEncode(candidate.City) : "—";
+
         var sb = new StringBuilder();
-        sb.AppendLine($"👤 <b>{candidate.Name}</b>, {candidate.Age}");
-        sb.AppendLine($"📍 {loc.Get(lang, "Label_City")}: <b>{candidate.City}</b>");
+        sb.AppendLine($"👤 <b>{safeName}</b>, {candidate.Age}");
+        sb.AppendLine($"📍 {loc.Get(lang, "Label_City")}: <b>{safeCity}</b>");
         if (candidate.Height.HasValue)
         {
             sb.AppendLine($"📏 {loc.Get(lang, "Label_Height")}: <b>{candidate.Height} cm</b>");
@@ -131,12 +166,12 @@ public class SearchPromptService(
 
         if (!string.IsNullOrWhiteSpace(candidate.Greeting))
         {
-            sb.AppendLine($"\n💬 <i>\"{candidate.Greeting}\"</i>");
+            sb.AppendLine($"\n💬 <i>\"{System.Net.WebUtility.HtmlEncode(candidate.Greeting)}\"</i>");
         }
 
         if (candidate.SelectedInterests.Count > 0)
         {
-            var interestTags = string.Join(", ", candidate.SelectedInterests.Select(i => $"{i.Icon} {loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title)}"));
+            var interestTags = string.Join(", ", candidate.SelectedInterests.Select(i => $"{i.Icon} {System.Net.WebUtility.HtmlEncode(loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title))}"));
             sb.AppendLine($"\n🏷 <b>{loc.Get(lang, "Label_Interests")}:</b> {interestTags}");
         }
 
@@ -159,30 +194,48 @@ public class SearchPromptService(
                     replyMarkup: SearchKeyboards.GetRatingReplyKeyboard(lang),
                     cancellationToken: cancellationToken
                 );
-                photoSent = true;
+                photoSent = sentMessage is not null;
             }
             catch (Exception ex)
             {
                 logger.LogWarning("Не удалось отправить фото кандидата {PhotoFileId} пользователю {ChatId}: {ErrorMessage}", candidate.PhotoFileId, chatId, ex.Message);
                 sentMessage = null!;
+                photoSent = false;
             }
         }
 
         if (!photoSent)
         {
-            sentMessage = await botClient.SendMessage(
-                chatId: chatId,
-                text: candidateText,
-                parseMode: ParseMode.Html,
-                replyMarkup: SearchKeyboards.GetRatingReplyKeyboard(lang),
-                cancellationToken: cancellationToken
-            );
+            try
+            {
+                sentMessage = await botClient.SendMessage(
+                    chatId: chatId,
+                    text: candidateText,
+                    parseMode: ParseMode.Html,
+                    replyMarkup: SearchKeyboards.GetRatingReplyKeyboard(lang),
+                    cancellationToken: cancellationToken
+                );
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning("Не удалось отправить HTML сообщение кандидата {ChatId}: {ErrorMessage}. Пробуем в plain-text режиме.", chatId, ex.Message);
+                var plainText = System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(candidateText, "<.*?>", string.Empty));
+                sentMessage = await botClient.SendMessage(
+                    chatId: chatId,
+                    text: plainText,
+                    replyMarkup: SearchKeyboards.GetRatingReplyKeyboard(lang),
+                    cancellationToken: cancellationToken
+                );
+            }
         }
 
-        await registrationService.SaveLastBotMessageIdAsync(chatId, sentMessage.MessageId, cancellationToken);
+        if (sentMessage is not null)
+        {
+            await registrationService.SaveLastBotMessageIdAsync(chatId, sentMessage.MessageId, cancellationToken);
+        }
     }
 
-    public async Task SendRaterCardAsync(long chatId, UserProfileDto rater, int scoreReceived, CancellationToken cancellationToken = default)
+    public async Task SendRaterCardAsync(long chatId, UserProfileDto rater, int scoreReceived, int remainingQueueCount = 0, CancellationToken cancellationToken = default)
     {
         var user = await userRepository.GetByTelegramIdAsync(chatId, cancellationToken);
         var lang = user?.Language ?? AppLanguage.Russian;
@@ -191,14 +244,18 @@ public class SearchPromptService(
         var genderStr = loc.GetGenderText(lang, rater.Gender);
         var lookingForStr = loc.GetTargetGenderText(lang, rater.TargetGender);
 
-        var nameWithLink = string.IsNullOrEmpty(rater.Username)
-            ? $"<a href=\"tg://user?id={rater.TelegramId}\">{rater.Name}</a>"
-            : $"<a href=\"tg://user?id={rater.TelegramId}\">{rater.Name}</a> (@{rater.Username})";
+        var safeRaterName = !string.IsNullOrWhiteSpace(rater.Name) ? System.Net.WebUtility.HtmlEncode(rater.Name) : "Пользователь";
+        var safeRaterCity = !string.IsNullOrWhiteSpace(rater.City) ? System.Net.WebUtility.HtmlEncode(rater.City) : "—";
+        var safeRaterUsername = !string.IsNullOrWhiteSpace(rater.Username) ? System.Net.WebUtility.HtmlEncode(rater.Username) : null;
+
+        var nameWithLink = safeRaterUsername is null
+            ? $"<a href=\"tg://user?id={rater.TelegramId}\">{safeRaterName}</a>"
+            : $"<a href=\"tg://user?id={rater.TelegramId}\">{safeRaterName}</a> (@{safeRaterUsername})";
 
         var sb = new StringBuilder();
         sb.AppendLine(loc.Get(lang, "Notification_RatingScoreReceived", scoreReceived));
         sb.AppendLine($"👤 <b>{nameWithLink}</b>, {rater.Age}");
-        sb.AppendLine($"📍 {loc.Get(lang, "Label_City")}: <b>{rater.City}</b>");
+        sb.AppendLine($"📍 {loc.Get(lang, "Label_City")}: <b>{safeRaterCity}</b>");
         if (rater.Height.HasValue)
         {
             sb.AppendLine($"📏 {loc.Get(lang, "Label_Height")}: <b>{rater.Height} cm</b>");
@@ -208,19 +265,19 @@ public class SearchPromptService(
 
         if (!string.IsNullOrWhiteSpace(rater.Greeting))
         {
-            sb.AppendLine($"\n💬 <i>\"{rater.Greeting}\"</i>");
+            sb.AppendLine($"\n💬 <i>\"{System.Net.WebUtility.HtmlEncode(rater.Greeting)}\"</i>");
         }
 
         if (rater.SelectedInterests.Count > 0)
         {
-            var interestTags = string.Join(", ", rater.SelectedInterests.Select(i => $"{i.Icon} {loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title)}"));
+            var interestTags = string.Join(", ", rater.SelectedInterests.Select(i => $"{i.Icon} {System.Net.WebUtility.HtmlEncode(loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title))}"));
             sb.AppendLine($"\n🏷 <b>{loc.Get(lang, "Label_Interests")}:</b> {interestTags}");
         }
 
         Message sentMessage = null!;
         var photoSent = false;
         var raterText = sb.ToString();
-        var ratingReplyKeyboard = SearchKeyboards.GetIncomingRatingReplyKeyboard(lang);
+        var ratingReplyKeyboard = SearchKeyboards.GetIncomingRatingReplyKeyboard(hasMoreInQueue: remainingQueueCount > 0, lang);
         if (!string.IsNullOrEmpty(rater.PhotoFileId) && raterText.Length <= 1024)
         {
             try
@@ -233,24 +290,39 @@ public class SearchPromptService(
                     replyMarkup: ratingReplyKeyboard,
                     cancellationToken: cancellationToken
                 );
-                photoSent = true;
+                photoSent = sentMessage is not null;
             }
             catch (Exception ex)
             {
                 logger.LogWarning("Не удалось отправить фото оценившего {PhotoFileId} пользователю {ChatId}: {ErrorMessage}", rater.PhotoFileId, chatId, ex.Message);
                 sentMessage = null!;
+                photoSent = false;
             }
         }
 
         if (!photoSent)
         {
-            sentMessage = await botClient.SendMessage(
-                chatId: chatId,
-                text: raterText,
-                parseMode: ParseMode.Html,
-                replyMarkup: ratingReplyKeyboard,
-                cancellationToken: cancellationToken
-            );
+            try
+            {
+                sentMessage = await botClient.SendMessage(
+                    chatId: chatId,
+                    text: raterText,
+                    parseMode: ParseMode.Html,
+                    replyMarkup: ratingReplyKeyboard,
+                    cancellationToken: cancellationToken
+                );
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning("Не удалось отправить HTML сообщение оценившего {ChatId}: {ErrorMessage}. Пробуем в plain-text режиме.", chatId, ex.Message);
+                var plainText = System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(raterText, "<.*?>", string.Empty));
+                sentMessage = await botClient.SendMessage(
+                    chatId: chatId,
+                    text: plainText,
+                    replyMarkup: ratingReplyKeyboard,
+                    cancellationToken: cancellationToken
+                );
+            }
         }
 
         Message followUpMessage = null!;
@@ -270,8 +342,11 @@ public class SearchPromptService(
             logger.LogWarning("Не удалось отправить сообщение с кнопкой 'Написать' пользователю {ChatId}: {ErrorMessage}", chatId, ex.Message);
         }
 
-        var lastMessageId = followUpMessage?.MessageId ?? sentMessage.MessageId;
-        await registrationService.SaveLastBotMessageIdAsync(chatId, lastMessageId, cancellationToken);
+        var lastMessageId = followUpMessage?.MessageId ?? sentMessage?.MessageId;
+        if (lastMessageId.HasValue)
+        {
+            await registrationService.SaveLastBotMessageIdAsync(chatId, lastMessageId.Value, cancellationToken);
+        }
     }
 
     public async Task SendReportReasonsPromptAsync(long chatId, Guid candidateProfileId, CancellationToken cancellationToken = default)
@@ -309,13 +384,17 @@ public class SearchPromptService(
             var user = await userRepository.GetByTelegramIdAsync(recipientTelegramId, cancellationToken);
             var lang = user?.Language ?? AppLanguage.Russian;
 
-            var partnerLink = string.IsNullOrEmpty(partner.Username)
-                ? $"<a href=\"tg://user?id={partner.TelegramId}\">{partner.Name}</a>"
-                : $"<a href=\"tg://user?id={partner.TelegramId}\">{partner.Name}</a> (@{partner.Username})";
+            var safePartnerName = !string.IsNullOrWhiteSpace(partner.Name) ? System.Net.WebUtility.HtmlEncode(partner.Name) : "Пользователь";
+            var safePartnerCity = !string.IsNullOrWhiteSpace(partner.City) ? System.Net.WebUtility.HtmlEncode(partner.City) : "—";
+            var safePartnerUsername = !string.IsNullOrWhiteSpace(partner.Username) ? System.Net.WebUtility.HtmlEncode(partner.Username) : null;
 
-            var contactLink = string.IsNullOrEmpty(partner.Username)
-                ? $"<a href=\"tg://user?id={partner.TelegramId}\">{partner.Name}</a>"
-                : $"@{partner.Username}";
+            var partnerLink = safePartnerUsername is null
+                ? $"<a href=\"tg://user?id={partner.TelegramId}\">{safePartnerName}</a>"
+                : $"<a href=\"tg://user?id={partner.TelegramId}\">{safePartnerName}</a> (@{safePartnerUsername})";
+
+            var contactLink = safePartnerUsername is null
+                ? $"<a href=\"tg://user?id={partner.TelegramId}\">{safePartnerName}</a>"
+                : $"@{safePartnerUsername}";
 
             var targetStr = loc.GetDatingTargetText(lang, partner.DatingTarget);
 
@@ -324,19 +403,19 @@ public class SearchPromptService(
             sb.AppendLine($"👤 <b>{partnerLink}</b> ({partnerScore}/10 ⭐)");
             sb.AppendLine(loc.Get(lang, "Notification_MutualScore", myScore));
             sb.AppendLine(loc.Get(lang, "Notification_MutualContact", contactLink));
-            sb.AppendLine($"👤 {partner.Name}, {partner.Age}");
-            sb.AppendLine($"📍 {partner.City}");
+            sb.AppendLine($"👤 {safePartnerName}, {partner.Age}");
+            sb.AppendLine($"📍 {safePartnerCity}");
             if (partner.Height.HasValue) sb.AppendLine($"📏 {partner.Height} cm");
             sb.AppendLine($"🎯 {targetStr}");
 
             if (!string.IsNullOrWhiteSpace(partner.Greeting))
             {
-                sb.AppendLine($"💬 <i>\"{partner.Greeting}\"</i>");
+                sb.AppendLine($"💬 <i>\"{System.Net.WebUtility.HtmlEncode(partner.Greeting)}\"</i>");
             }
 
             if (partner.SelectedInterests.Count > 0)
             {
-                var interestTags = string.Join(", ", partner.SelectedInterests.Select(i => $"{i.Icon} {loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title)}"));
+                var interestTags = string.Join(", ", partner.SelectedInterests.Select(i => $"{i.Icon} {System.Net.WebUtility.HtmlEncode(loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title))}"));
                 sb.AppendLine($"🏷 {interestTags}");
             }
 
@@ -365,13 +444,27 @@ public class SearchPromptService(
 
             if (!photoSent)
             {
-                await botClient.SendMessage(
-                    chatId: recipientTelegramId,
-                    text: matchText,
-                    parseMode: ParseMode.Html,
-                    replyMarkup: keyboard,
-                    cancellationToken: cancellationToken
-                );
+                try
+                {
+                    await botClient.SendMessage(
+                        chatId: recipientTelegramId,
+                        text: matchText,
+                        parseMode: ParseMode.Html,
+                        replyMarkup: keyboard,
+                        cancellationToken: cancellationToken
+                    );
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning("Не удалось отправить HTML сообщение о взаимной симпатии пользователю {TelegramId}: {ErrorMessage}. Пробуем в plain-text режиме.", recipientTelegramId, ex.Message);
+                    var plainText = System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(matchText, "<.*?>", string.Empty));
+                    await botClient.SendMessage(
+                        chatId: recipientTelegramId,
+                        text: plainText,
+                        replyMarkup: keyboard,
+                        cancellationToken: cancellationToken
+                    );
+                }
             }
         }
         catch (Exception ex)
@@ -386,12 +479,15 @@ public class SearchPromptService(
         {
             var user = await userRepository.GetByTelegramIdAsync(targetTelegramId, cancellationToken);
             var lang = user?.Language ?? AppLanguage.Russian;
+            var queueCount = user is not null && profileRatingRepository is not null
+                ? await profileRatingRepository.GetIncomingUnratedHighRatingsCountAsync(user.Id, cancellationToken)
+                : 0;
 
             await botClient.SendMessage(
                 chatId: targetTelegramId,
                 text: loc.Get(lang, "Notification_HighRating", score),
                 parseMode: ParseMode.Html,
-                replyMarkup: SearchKeyboards.GetIncomingRatingNotificationKeyboard(ratingId, lang),
+                replyMarkup: SearchKeyboards.GetIncomingRatingNotificationKeyboard(queueCount, ratingId, lang),
                 cancellationToken: cancellationToken
             );
         }

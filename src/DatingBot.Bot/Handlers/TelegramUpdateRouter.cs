@@ -291,6 +291,12 @@ public class TelegramUpdateRouter(
                         return;
                     }
 
+                    if (IsNextButton(text))
+                    {
+                        await searchCallbackHandler.ShowNextCandidateOrIncomingAsync(message.Chat.Id, user.TelegramId, cancellationToken);
+                        return;
+                    }
+
                     if (IsSearchAgainButton(text))
                     {
                         await searchService.ResetHistoryForCityAsync(user.TelegramId, cancellationToken);
@@ -554,6 +560,12 @@ public class TelegramUpdateRouter(
     {
         if (string.IsNullOrWhiteSpace(text)) return false;
         return text.StartsWith("🚨") || text.Contains("Пожаловаться") || text.Contains("Поскаржитися") || text.Contains("Report") || text.Contains("शिकायत") || text.Contains("Denunciar") || text.Contains("Laporkan");
+    }
+
+    private static bool IsNextButton(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        return text.StartsWith("➡️") || text.Contains("Далее") || text.Contains("Далі") || text.Contains("Next") || text.Contains("आगे") || text.Contains("Próximo") || text.Contains("Selanjutnya");
     }
 
     private static bool IsSearchAgainButton(string? text)

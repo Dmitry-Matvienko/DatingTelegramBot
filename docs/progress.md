@@ -1,21 +1,25 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 42
+state_version: 44
 updated: 2026-08-26
 
 ---
 
 ## Сейчас
-- **Фаза**: Реализация: **расширенная статистика в «Мои реферальные ссылки» (My Referral Links Stats & Top Days)**:
-  1. **Интерфейсы и DTO (`Application`)**:
-     - В `ReferralLinkDto` добавлено поле `RemainingBoostDays` (`int`, по умолчанию 0).
-     - В `ReferralService` реализован расчет оставшихся дней нахождения в топе поиска на основе `UserProfile.TopBoostUntil` (`Math.Ceiling(remaining.TotalDays)`).
-     - Добавлен ключ локализации `Referral_MyLinks_Info` на 6 языках (RU, UK, EN, HI, PT, ID) с отображением числа приглашенных, оставшихся дней топа и моноширинной ссылкой.
-  2. **Презентационный слой (`Bot`)**:
-     - В `ReferralPromptService.SendMyReferralLinksAsync` внедрен вывод форматированной статистики рефералов перед моноширинной ссылкой.
+- **Фаза**: Исправление ошибки зависания листания анкет в админ-панели (**Admin Moderation Browsing Freeze Fix & HTML Escaping Robustness**):
+  1. **Анализ первопричины (Root Cause)**:
+     - При листании анкет в админ-панели (вызов `adm_s_next`, `adm_search_gen`, `adm_s_ban`, `adm_s_del`) данные пользователей (`Name`, `City`, `Greeting`, `AiDescription`, `Username`) интерполировались в HTML-шаблоны без экранирования `WebUtility.HtmlEncode`.
+     - При наличии спецсимволов HTML (`<`, `>`, `&`, смайликов вроде `<3`, тегов вроде `<b>`) Telegram Bot API возвращал ошибку `400 Bad Request: can't parse entities`.
+     - Первичная попытка отправки `SendPhoto` перехватывала ошибку, но fallback `SendMessage` вызывался с тем же неэкранированным HTML текстом и `ParseMode.Html`, что приводило к необработанному `ApiRequestException`.
+     - Так как `AnswerCallbackQuery` уже был выполнен, а сообщение не отправлялось, для администратора это выглядело как полное зависание бота на анкете.
+  2. **Реализация защиты и отказоустойчивости**:
+     - В `AdminPromptService`, `SearchPromptService`, `ProfilePromptService`, `RegistrationPromptService` добавлено безопасное экранирование всех пользовательских полей через `WebUtility.HtmlEncode`.
+     - Реализован двухступенчатый отказоустойчивый fallback при ошибках Telegram API: `SendPhoto (HTML)` -> `SendMessage (HTML)` -> `SendMessage (Plain-Text)` со снятием HTML-тегов через регулярное выражение и `WebUtility.HtmlDecode`.
+     - В `AdminCallbackHandler` все вызовы поиска и листания анкет (`adm_search_gen`, `adm_s_next`, `adm_s_ban`, `adm_s_del`) изолированы блоками `try-catch` с логированием ошибки и выводом локализованного уведомления `Admin_Alert_ErrorDisplayingProfile`.
+     - В `LocalizationService` добавлен ключ `Admin_Alert_ErrorDisplayingProfile` на 6 языках (RU, UK, EN, HI, PT, ID).
   3. **Тестирование и верификация**:
-     - Обновлены и дополнены модульные тесты в `ReferralServiceTests`, `ReferralPromptServiceTests`, `TelegramUpdateRouterReferralTests`.
-     - Все 521 тест решения (520 unit + 1 integration) пройдены со 100% успехом (0 failures, 0 warnings).
+     - В `AdminRoutingAndCallbackTests` добавлены TDD-тесты на HTML-экранирование спецсимволов, устойчивость к сбоям парсинга с fallback на plain text, экранирование карточек жалоб и изоляцию ошибок в хэндлере.
+     - Все 549 тестов решения (548 unit + 1 integration) пройдены со 100% успехом (0 failures, 0 warnings).
 - **Далее**: Ожидание следующих задач от пользователя.
 
 ---
@@ -81,6 +85,7 @@ updated: 2026-08-26
 - [x] Реализация системы реферальных ссылок, накопительного бонуса +3 дня в топе поиска и уведомлений рефереров (RU, UK, EN, HI, PT, ID).
 - [x] Реализация кнопки «Отчет» по реферальной программе для администраторов с выводом топ-15 пользователей, кликабельными профилями и количеством приглашенных.
 - [x] Реализация расширенной статистики в кнопке «Мои реферальные ссылки» (число приглашенных, оставшиеся дни в топе поиска и моноширинная ссылка).
+- [x] Реализация очереди входящих оценок (Incoming Ratings Queue) с авто-пометкой IsViewed, счетчиком в кнопке уведомления «👀 Показать кто оценил (N)» и Reply-кнопкой «➡️ Далее» для переключения анкет.
 
 ---
 

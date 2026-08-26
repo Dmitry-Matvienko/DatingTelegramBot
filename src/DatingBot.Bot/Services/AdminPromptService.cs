@@ -1,4 +1,6 @@
+using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using DatingBot.Application.DTOs;
 using DatingBot.Application.Interfaces;
 using DatingBot.Bot.Keyboards;
@@ -10,7 +12,7 @@ using Telegram.Bot.Types.Enums;
 
 namespace DatingBot.Bot.Services;
 
-public class AdminPromptService(
+public partial class AdminPromptService(
     ITelegramBotClient botClient,
     IAdminService adminService,
     IRegistrationService registrationService,
@@ -18,6 +20,14 @@ public class AdminPromptService(
     ILocalizationService loc,
     ILogger<AdminPromptService> logger)
 {
+    private static readonly Regex HtmlTagRegex = new("<.*?>", RegexOptions.Compiled);
+
+    private static string StripHtmlTags(string html)
+    {
+        if (string.IsNullOrEmpty(html)) return string.Empty;
+        var stripped = HtmlTagRegex.Replace(html, string.Empty);
+        return WebUtility.HtmlDecode(stripped);
+    }
     public async Task SendAdminWelcomeAsync(long chatId, int? prevMessageId = null, CancellationToken cancellationToken = default)
     {
         var user = await userRepository.GetByTelegramIdAsync(chatId, cancellationToken);
@@ -164,9 +174,13 @@ public class AdminPromptService(
         var genderStr = loc.GetGenderText(lang, candidate.Gender);
         var lookingForStr = loc.GetTargetGenderText(lang, candidate.TargetGender);
 
-        var userAccountLink = string.IsNullOrEmpty(candidate.Username)
-            ? $"<a href=\"tg://user?id={candidate.TelegramId}\">{candidate.Name}</a>"
-            : $"<a href=\"tg://user?id={candidate.TelegramId}\">{candidate.Name}</a> (@{candidate.Username})";
+        var safeName = !string.IsNullOrWhiteSpace(candidate.Name) ? WebUtility.HtmlEncode(candidate.Name) : "Пользователь";
+        var safeCity = !string.IsNullOrWhiteSpace(candidate.City) ? WebUtility.HtmlEncode(candidate.City) : "—";
+        var safeUsername = !string.IsNullOrWhiteSpace(candidate.Username) ? WebUtility.HtmlEncode(candidate.Username) : null;
+
+        var userAccountLink = safeUsername is null
+            ? $"<a href=\"tg://user?id={candidate.TelegramId}\">{safeName}</a>"
+            : $"<a href=\"tg://user?id={candidate.TelegramId}\">{safeName}</a> (@{safeUsername})";
 
         var ratingStr = candidate.RatingCount > 0
             ? $"⭐ {candidate.AverageRating:F1} / 10 (оценок: {candidate.RatingCount})"
@@ -175,9 +189,9 @@ public class AdminPromptService(
         var sb = new StringBuilder();
         sb.AppendLine($"📋 <b>Анкета #{currentIndex} из {totalCount}</b>\n");
         sb.AppendLine($"👤 <b>Пользователь:</b> {userAccountLink} (ID: <code>{candidate.TelegramId}</code>)");
-        sb.AppendLine($"🏷 <b>Имя:</b> {candidate.Name}");
+        sb.AppendLine($"🏷 <b>Имя:</b> {safeName}");
         sb.AppendLine($"🎂 <b>Возраст:</b> {candidate.Age}");
-        sb.AppendLine($"📍 <b>Город:</b> {candidate.City}");
+        sb.AppendLine($"📍 <b>Город:</b> {safeCity}");
         sb.AppendLine($"📏 <b>Рост:</b> {(candidate.Height.HasValue ? $"{candidate.Height} см" : "не указан")}");
         sb.AppendLine($"🚻 <b>Пол:</b> {genderStr} (ищет: {lookingForStr})");
         sb.AppendLine($"🎯 <b>Цель знакомства:</b> {targetStr}");
@@ -185,18 +199,18 @@ public class AdminPromptService(
 
         if (candidate.SelectedInterests.Count > 0)
         {
-            var interestTags = string.Join(", ", candidate.SelectedInterests.Select(i => $"{i.Icon} {loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title)}"));
+            var interestTags = string.Join(", ", candidate.SelectedInterests.Select(i => $"{i.Icon} {WebUtility.HtmlEncode(loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title))}"));
             sb.AppendLine($"\n🏷 <b>Интересы:</b> {interestTags}");
         }
 
         if (!string.IsNullOrWhiteSpace(candidate.AiDescription))
         {
-            sb.AppendLine($"\n🧠 <b>Скрытое описание для ИИ:</b>\n<i>\"{candidate.AiDescription}\"</i>");
+            sb.AppendLine($"\n🧠 <b>Скрытое описание для ИИ:</b>\n<i>\"{WebUtility.HtmlEncode(candidate.AiDescription)}\"</i>");
         }
 
         if (!string.IsNullOrWhiteSpace(candidate.Greeting))
         {
-            sb.AppendLine($"\n💬 <b>Приветствие:</b>\n<i>\"{candidate.Greeting}\"</i>");
+            sb.AppendLine($"\n💬 <b>Приветствие:</b>\n<i>\"{WebUtility.HtmlEncode(candidate.Greeting)}\"</i>");
         }
 
         var keyboard = AdminKeyboards.GetAdminProfileCardKeyboard(candidate.Id, candidate.TelegramId, candidate.Username, gender, nextOffset, lang);
@@ -225,13 +239,26 @@ public class AdminPromptService(
 
         if (!photoSent)
         {
-            await botClient.SendMessage(
-                chatId: chatId,
-                text: cardText,
-                parseMode: ParseMode.Html,
-                replyMarkup: keyboard,
-                cancellationToken: cancellationToken
-            );
+            try
+            {
+                await botClient.SendMessage(
+                    chatId: chatId,
+                    text: cardText,
+                    parseMode: ParseMode.Html,
+                    replyMarkup: keyboard,
+                    cancellationToken: cancellationToken
+                );
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning("Не удалось отправить HTML сообщение профиля в админке {ChatId}: {ErrorMessage}. Пробуем отправку в plain-text режиме.", chatId, ex.Message);
+                await botClient.SendMessage(
+                    chatId: chatId,
+                    text: StripHtmlTags(cardText),
+                    replyMarkup: keyboard,
+                    cancellationToken: cancellationToken
+                );
+            }
         }
     }
 
@@ -252,13 +279,18 @@ public class AdminPromptService(
             _ => "Не указана"
         };
 
-        var reporterTag = string.IsNullOrEmpty(report.ReporterUsername)
-            ? $"<a href=\"tg://user?id={report.ReporterTelegramId}\">{report.ReporterFirstName ?? "Пользователь"}</a> (ID: <code>{report.ReporterTelegramId}</code>)"
-            : $"<a href=\"tg://user?id={report.ReporterTelegramId}\">{report.ReporterFirstName ?? "Пользователь"}</a> (@{report.ReporterUsername}, ID: <code>{report.ReporterTelegramId}</code>)";
+        var safeReporterName = !string.IsNullOrWhiteSpace(report.ReporterFirstName) ? WebUtility.HtmlEncode(report.ReporterFirstName) : "Пользователь";
+        var safeReporterUsername = !string.IsNullOrWhiteSpace(report.ReporterUsername) ? WebUtility.HtmlEncode(report.ReporterUsername) : null;
+        var safeReportedName = !string.IsNullOrWhiteSpace(report.ReportedProfile.Name) ? WebUtility.HtmlEncode(report.ReportedProfile.Name) : "Пользователь";
+        var safeReportedUsername = !string.IsNullOrWhiteSpace(report.ReportedProfile.Username) ? WebUtility.HtmlEncode(report.ReportedProfile.Username) : null;
 
-        var reportedTag = string.IsNullOrEmpty(report.ReportedProfile.Username)
-            ? $"<a href=\"tg://user?id={report.ReportedProfile.TelegramId}\">{report.ReportedProfile.Name}</a> (ID: <code>{report.ReportedProfile.TelegramId}</code>)"
-            : $"<a href=\"tg://user?id={report.ReportedProfile.TelegramId}\">{report.ReportedProfile.Name}</a> (@{report.ReportedProfile.Username}, ID: <code>{report.ReportedProfile.TelegramId}</code>)";
+        var reporterTag = safeReporterUsername is null
+            ? $"<a href=\"tg://user?id={report.ReporterTelegramId}\">{safeReporterName}</a> (ID: <code>{report.ReporterTelegramId}</code>)"
+            : $"<a href=\"tg://user?id={report.ReporterTelegramId}\">{safeReporterName}</a> (@{safeReporterUsername}, ID: <code>{report.ReporterTelegramId}</code>)";
+
+        var reportedTag = safeReportedUsername is null
+            ? $"<a href=\"tg://user?id={report.ReportedProfile.TelegramId}\">{safeReportedName}</a> (ID: <code>{report.ReportedProfile.TelegramId}</code>)"
+            : $"<a href=\"tg://user?id={report.ReportedProfile.TelegramId}\">{safeReportedName}</a> (@{safeReportedUsername}, ID: <code>{report.ReportedProfile.TelegramId}</code>)";
 
         var cardSb = new StringBuilder();
         cardSb.AppendLine($"🚨 <b>ЖАЛОБА #{currentIndex} из {totalCount}</b>\n");
@@ -267,22 +299,22 @@ public class AdminPromptService(
         cardSb.AppendLine($"📌 <b>Причина:</b> <b>{reasonStr}</b>");
         if (!string.IsNullOrWhiteSpace(report.Details))
         {
-            cardSb.AppendLine($"📝 <b>Комментарий заявителя:</b> <i>\"{report.Details}\"</i>");
+            cardSb.AppendLine($"📝 <b>Комментарий заявителя:</b> <i>\"{WebUtility.HtmlEncode(report.Details)}\"</i>");
         }
         cardSb.AppendLine("\n📋 <b>Данные анкеты нарушителя:</b>");
-        cardSb.AppendLine($"🏷 <b>Имя:</b> {report.ReportedProfile.Name}, <b>Возраст:</b> {report.ReportedProfile.Age}");
-        cardSb.AppendLine($"📍 <b>Город:</b> {report.ReportedProfile.City}");
+        cardSb.AppendLine($"🏷 <b>Имя:</b> {safeReportedName}, <b>Возраст:</b> {report.ReportedProfile.Age}");
+        cardSb.AppendLine($"📍 <b>Город:</b> {WebUtility.HtmlEncode(report.ReportedProfile.City ?? "—")}");
         cardSb.AppendLine($"🚻 <b>Пол:</b> {genderStr} (ищет: {lookingForStr})");
         cardSb.AppendLine($"🎯 <b>Цель:</b> {targetStr}");
 
         if (!string.IsNullOrWhiteSpace(report.ReportedProfile.AiDescription))
         {
-            cardSb.AppendLine($"\n🧠 <b>Скрытое описание для ИИ:</b>\n<i>\"{report.ReportedProfile.AiDescription}\"</i>");
+            cardSb.AppendLine($"\n🧠 <b>Скрытое описание для ИИ:</b>\n<i>\"{WebUtility.HtmlEncode(report.ReportedProfile.AiDescription)}\"</i>");
         }
 
         if (!string.IsNullOrWhiteSpace(report.ReportedProfile.Greeting))
         {
-            cardSb.AppendLine($"\n💬 <b>Приветствие:</b>\n<i>\"{report.ReportedProfile.Greeting}\"</i>");
+            cardSb.AppendLine($"\n💬 <b>Приветствие:</b>\n<i>\"{WebUtility.HtmlEncode(report.ReportedProfile.Greeting)}\"</i>");
         }
 
         var keyboard = AdminKeyboards.GetAdminPendingReportKeyboard(report.ReportId, nextSkip, totalCount, lang);
@@ -311,13 +343,26 @@ public class AdminPromptService(
 
         if (!reportPhotoSent)
         {
-            await botClient.SendMessage(
-                chatId: chatId,
-                text: reportCardText,
-                parseMode: ParseMode.Html,
-                replyMarkup: keyboard,
-                cancellationToken: cancellationToken
-            );
+            try
+            {
+                await botClient.SendMessage(
+                    chatId: chatId,
+                    text: reportCardText,
+                    parseMode: ParseMode.Html,
+                    replyMarkup: keyboard,
+                    cancellationToken: cancellationToken
+                );
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning("Не удалось отправить HTML сообщение жалобы админу {ChatId}: {ErrorMessage}. Пробуем отправку в plain-text режиме.", chatId, ex.Message);
+                await botClient.SendMessage(
+                    chatId: chatId,
+                    text: StripHtmlTags(reportCardText),
+                    replyMarkup: keyboard,
+                    cancellationToken: cancellationToken
+                );
+            }
         }
     }
 

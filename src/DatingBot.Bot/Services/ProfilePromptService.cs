@@ -61,9 +61,12 @@ public class ProfilePromptService(
             _ => loc.Get(lang, "Distance_UpTo500Km")
         };
 
+        var safeName = !string.IsNullOrWhiteSpace(profile.Name) ? System.Net.WebUtility.HtmlEncode(profile.Name) : "Пользователь";
+        var safeCity = !string.IsNullOrWhiteSpace(profile.City) ? System.Net.WebUtility.HtmlEncode(profile.City) : "—";
+
         var sb = new StringBuilder();
-        sb.AppendLine($"👤 <b>{profile.Name}</b>, {profile.Age}\n");
-        sb.AppendLine($"📍 <b>{loc.Get(lang, "Label_City")}:</b> {profile.City}");
+        sb.AppendLine($"👤 <b>{safeName}</b>, {profile.Age}\n");
+        sb.AppendLine($"📍 <b>{loc.Get(lang, "Label_City")}:</b> {safeCity}");
         sb.AppendLine($"📏 <b>{loc.Get(lang, "Label_Height")}:</b> {(profile.Height.HasValue ? $"{profile.Height} cm" : "-")}");
         sb.AppendLine($"🚻 <b>{loc.Get(lang, "Label_Gender")}:</b> {genderStr}");
         sb.AppendLine($"🔍 <b>{loc.Get(lang, "Label_LookingFor")}:</b> {lookingForStr}");
@@ -78,17 +81,17 @@ public class ProfilePromptService(
 
         if (!string.IsNullOrWhiteSpace(profile.AiDescription))
         {
-            sb.AppendLine($"\n{loc.Get(lang, "Label_AiBioSecret")}\n<i>\"{profile.AiDescription}\"</i>");
+            sb.AppendLine($"\n{loc.Get(lang, "Label_AiBioSecret")}\n<i>\"{System.Net.WebUtility.HtmlEncode(profile.AiDescription)}\"</i>");
         }
 
         if (!string.IsNullOrWhiteSpace(profile.Greeting))
         {
-            sb.AppendLine($"\n💬 <b>{loc.Get(lang, "Label_Greeting")}:</b>\n<i>\"{profile.Greeting}\"</i>");
+            sb.AppendLine($"\n💬 <b>{loc.Get(lang, "Label_Greeting")}:</b>\n<i>\"{System.Net.WebUtility.HtmlEncode(profile.Greeting)}\"</i>");
         }
 
         if (profile.SelectedInterests.Count > 0)
         {
-            var interestTags = string.Join(", ", profile.SelectedInterests.Select(i => $"{i.Icon} {loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title)}"));
+            var interestTags = string.Join(", ", profile.SelectedInterests.Select(i => $"{i.Icon} {System.Net.WebUtility.HtmlEncode(loc.GetInterestTitle(lang, i.Code.ToString().ToLowerInvariant(), i.Title))}"));
             sb.AppendLine($"\n🏷 <b>{loc.Get(lang, "Label_Interests")}:</b> {interestTags}");
         }
 
@@ -121,13 +124,27 @@ public class ProfilePromptService(
 
         if (!photoSent)
         {
-            sentMessage = await botClient.SendMessage(
-                chatId: chatId,
-                text: cardText,
-                parseMode: ParseMode.Html,
-                replyMarkup: ProfileKeyboards.GetProfileEditKeyboard(lang),
-                cancellationToken: cancellationToken
-            );
+            try
+            {
+                sentMessage = await botClient.SendMessage(
+                    chatId: chatId,
+                    text: cardText,
+                    parseMode: ParseMode.Html,
+                    replyMarkup: ProfileKeyboards.GetProfileEditKeyboard(lang),
+                    cancellationToken: cancellationToken
+                );
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning("Не удалось отправить HTML сообщение профиля {ChatId}: {ErrorMessage}. Пробуем в plain-text режиме.", chatId, ex.Message);
+                var plainText = System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(cardText, "<.*?>", string.Empty));
+                sentMessage = await botClient.SendMessage(
+                    chatId: chatId,
+                    text: plainText,
+                    replyMarkup: ProfileKeyboards.GetProfileEditKeyboard(lang),
+                    cancellationToken: cancellationToken
+                );
+            }
         }
 
         if (sentMessage is not null)

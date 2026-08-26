@@ -259,7 +259,57 @@ public class UserProfileRepositoryCandidateTests
     }
 
     [Fact]
-    public void ProfileRating_ShouldHave_CompositeIndex_On_ToUser_Score_CreatedAt()
+    public async Task GetIncomingUnratedHighRatingsAsync_ShouldExcludeViewedRatings()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var repo = new ProfileRatingRepository(context);
+
+        var me = new User { Id = Guid.NewGuid(), TelegramId = 600, State = UserState.Active };
+        var rater1 = new User { Id = Guid.NewGuid(), TelegramId = 601, State = UserState.Active };
+        var rater2 = new User { Id = Guid.NewGuid(), TelegramId = 602, State = UserState.Active };
+        context.Users.AddRange(me, rater1, rater2);
+
+        // rater1 оценил me на 9, но оценка уже была просмотрена (IsViewed = true)
+        var rating1 = new ProfileRating
+        {
+            Id = Guid.NewGuid(),
+            FromUserId = rater1.Id,
+            FromUser = rater1,
+            ToUserId = me.Id,
+            Score = 9,
+            IsViewed = true,
+            CreatedAt = DateTime.UtcNow.AddMinutes(-10)
+        };
+
+        // rater2 оценил me на 8, еще не просмотрена (IsViewed = false)
+        var rating2 = new ProfileRating
+        {
+            Id = Guid.NewGuid(),
+            FromUserId = rater2.Id,
+            FromUser = rater2,
+            ToUserId = me.Id,
+            Score = 8,
+            IsViewed = false,
+            CreatedAt = DateTime.UtcNow.AddMinutes(-5)
+        };
+
+        context.ProfileRatings.AddRange(rating1, rating2);
+        await context.SaveChangesAsync();
+
+        // Act
+        var unratedIncoming = await repo.GetIncomingUnratedHighRatingsAsync(me.Id);
+        var unratedCount = await repo.GetIncomingUnratedHighRatingsCountAsync(me.Id);
+
+        // Assert
+        unratedIncoming.Should().HaveCount(1);
+        unratedIncoming[0].FromUserId.Should().Be(rater2.Id);
+        unratedIncoming[0].Score.Should().Be(8);
+        unratedCount.Should().Be(1);
+    }
+
+    [Fact]
+    public void ProfileRating_ShouldHave_CompositeIndex_On_ToUser_IsViewed_Score_CreatedAt()
     {
         // Arrange
         using var context = CreateInMemoryDbContext();
@@ -270,8 +320,12 @@ public class UserProfileRepositoryCandidateTests
 
         // Assert
         indexes.Should().NotBeNull();
-        var compositeIndex = indexes!.FirstOrDefault(i => i.GetDatabaseName() == "IX_ProfileRatings_ToUser_Score_CreatedAt");
+        var compositeIndex = indexes!.FirstOrDefault(i => i.GetDatabaseName() == "IX_ProfileRatings_ToUser_IsViewed_Score_CreatedAt");
         compositeIndex.Should().NotBeNull();
-        compositeIndex!.Properties.Select(p => p.Name).Should().ContainInOrder(nameof(ProfileRating.ToUserId), nameof(ProfileRating.Score), nameof(ProfileRating.CreatedAt));
+        compositeIndex!.Properties.Select(p => p.Name).Should().ContainInOrder(
+            nameof(ProfileRating.ToUserId),
+            nameof(ProfileRating.IsViewed),
+            nameof(ProfileRating.Score),
+            nameof(ProfileRating.CreatedAt));
     }
 }

@@ -322,6 +322,15 @@ public class LocalizationService : ILocalizationService
             [AppLanguage.Portuguese] = "🔄 Buscar novamente",
             [AppLanguage.Indonesian] = "🔄 Cari lagi"
         },
+        ["Btn_Next"] = new()
+        {
+            [AppLanguage.Russian] = "➡️ Далее",
+            [AppLanguage.Ukrainian] = "➡️ Далі",
+            [AppLanguage.English] = "➡️ Next",
+            [AppLanguage.Hindi] = "➡️ आगे",
+            [AppLanguage.Portuguese] = "➡️ Próximo",
+            [AppLanguage.Indonesian] = "➡️ Selanjutnya"
+        },
         ["Btn_Back"] = new()
         {
             [AppLanguage.Russian] = "◀️ Назад",
@@ -816,6 +825,15 @@ public class LocalizationService : ILocalizationService
             [AppLanguage.Hindi] = "👀 देखें किसने रेट किया",
             [AppLanguage.Portuguese] = "👀 Ver quem avaliou",
             [AppLanguage.Indonesian] = "👀 Lihat siapa yang menilai"
+        },
+        ["Btn_ShowWhoRated_Count"] = new()
+        {
+            [AppLanguage.Russian] = "👀 Показать кто оценил ({0})",
+            [AppLanguage.Ukrainian] = "👀 Показати хто оцінив ({0})",
+            [AppLanguage.English] = "👀 Show who rated ({0})",
+            [AppLanguage.Hindi] = "👀 देखें किसने रेट किया ({0})",
+            [AppLanguage.Portuguese] = "👀 Ver quem avaliou ({0})",
+            [AppLanguage.Indonesian] = "👀 Lihat siapa yang menilai ({0})"
         },
         ["Label_Name"] = new()
         {
@@ -1572,6 +1590,15 @@ public class LocalizationService : ILocalizationService
             [AppLanguage.Hindi] = "⚠️ उपयोगकर्ता को ब्लॉक करने में त्रुटि।",
             [AppLanguage.Portuguese] = "⚠️ Erro ao bloquear usuário.",
             [AppLanguage.Indonesian] = "⚠️ Kesalahan saat memblokir pengguna."
+        },
+        ["Admin_Alert_ErrorDisplayingProfile"] = new()
+        {
+            [AppLanguage.Russian] = "⚠️ Ошибка при отображении анкеты.",
+            [AppLanguage.Ukrainian] = "⚠️ Помилка під час відображення анкети.",
+            [AppLanguage.English] = "⚠️ Error displaying profile card.",
+            [AppLanguage.Hindi] = "⚠️ प्रोफ़ाइल कार्ड प्रदर्शित करने में त्रुटि।",
+            [AppLanguage.Portuguese] = "⚠️ Erro ao exibir o cartão de perfil.",
+            [AppLanguage.Indonesian] = "⚠️ Kesalahan saat menampilkan kartu profil."
         },
         ["Admin_Btn_Revenue"] = new()
         {

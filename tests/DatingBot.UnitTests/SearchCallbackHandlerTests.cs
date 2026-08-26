@@ -658,4 +658,95 @@ public class SearchCallbackHandlerTests
                 r.ChatId.Identifier == candidateTelegramId),
             It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    [Fact]
+    public async Task HandleSearchCallbackQueryAsync_WhenViewRater_ShouldCallGetIncomingRatingByIdAsync_AndSendRaterCard()
+    {
+        // Arrange
+        const long telegramId = 123456789L;
+        var user = new User { Id = Guid.NewGuid(), TelegramId = telegramId, Language = AppLanguage.Russian };
+        var ratingId = Guid.NewGuid();
+        var raterDto = CreateSampleProfile(Guid.NewGuid(), 987654321L, "Катя");
+        var incomingDto = new IncomingRatingDto(ratingId, raterDto, 9, DateTime.UtcNow, RemainingQueueCount: 2);
+
+        var config = new ConfigurationBuilder().Build();
+        var searchPromptService = new SearchPromptService(_botClient.Object, _registrationService.Object, _userRepository.Object, _loc, config, _searchPromptLogger.Object);
+        var registrationPromptService = new RegistrationPromptService(_botClient.Object, _registrationService.Object, _userRepository.Object, _loc, _registrationPromptLogger.Object);
+        var profilePromptService = new ProfilePromptService(_botClient.Object, _registrationService.Object, _userRepository.Object, _loc, registrationPromptService, _profilePromptLogger.Object);
+
+        _searchService.Setup(s => s.GetIncomingRatingByIdAsync(telegramId, ratingId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(incomingDto);
+
+        _userRepository.Setup(r => r.GetByTelegramIdAsync(telegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _botClient.Setup(b => b.SendRequest(It.IsAny<AnswerCallbackQueryRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _botClient.Setup(b => b.SendRequest(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Message { Id = 101 });
+
+        var handler = new SearchCallbackHandler(_botClient.Object, _searchService.Object, searchPromptService, profilePromptService, registrationPromptService, _loc);
+        var callbackQuery = new CallbackQuery
+        {
+            Id = "cb_1",
+            Data = $"view_rater:{ratingId}",
+            Message = new Message { Id = 10, Chat = new Chat { Id = telegramId } }
+        };
+
+        // Act
+        var handled = await handler.HandleSearchCallbackQueryAsync(user, callbackQuery);
+
+        // Assert
+        handled.Should().BeTrue();
+        _searchService.Verify(s => s.GetIncomingRatingByIdAsync(telegramId, ratingId, It.IsAny<CancellationToken>()), Times.Once);
+        _botClient.Verify(b => b.SendRequest(It.IsAny<AnswerCallbackQueryRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleSearchCallbackQueryAsync_WhenViewRaterByIdFails_ShouldFallbackToNextInQueue()
+    {
+        // Arrange
+        const long telegramId = 123456789L;
+        var user = new User { Id = Guid.NewGuid(), TelegramId = telegramId, Language = AppLanguage.Russian };
+        var ratingId = Guid.NewGuid();
+        var raterDto = CreateSampleProfile(Guid.NewGuid(), 987654321L, "Оля");
+        var nextIncomingDto = new IncomingRatingDto(Guid.NewGuid(), raterDto, 8, DateTime.UtcNow, RemainingQueueCount: 0);
+
+        var config = new ConfigurationBuilder().Build();
+        var searchPromptService = new SearchPromptService(_botClient.Object, _registrationService.Object, _userRepository.Object, _loc, config, _searchPromptLogger.Object);
+        var registrationPromptService = new RegistrationPromptService(_botClient.Object, _registrationService.Object, _userRepository.Object, _loc, _registrationPromptLogger.Object);
+        var profilePromptService = new ProfilePromptService(_botClient.Object, _registrationService.Object, _userRepository.Object, _loc, registrationPromptService, _profilePromptLogger.Object);
+
+        // ratingId уже был просмотрен -> null
+        _searchService.Setup(s => s.GetIncomingRatingByIdAsync(telegramId, ratingId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IncomingRatingDto?)null);
+
+        // берем следующий из очереди
+        _searchService.Setup(s => s.GetNextIncomingRatingAsync(telegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(nextIncomingDto);
+
+        _userRepository.Setup(r => r.GetByTelegramIdAsync(telegramId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        _botClient.Setup(b => b.SendRequest(It.IsAny<AnswerCallbackQueryRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _botClient.Setup(b => b.SendRequest(It.IsAny<SendMessageRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Message { Id = 102 });
+
+        var handler = new SearchCallbackHandler(_botClient.Object, _searchService.Object, searchPromptService, profilePromptService, registrationPromptService, _loc);
+        var callbackQuery = new CallbackQuery
+        {
+            Id = "cb_2",
+            Data = $"view_rater:{ratingId}",
+            Message = new Message { Id = 20, Chat = new Chat { Id = telegramId } }
+        };
+
+        // Act
+        var handled = await handler.HandleSearchCallbackQueryAsync(user, callbackQuery);
+
+        // Assert
+        handled.Should().BeTrue();
+        _searchService.Verify(s => s.GetIncomingRatingByIdAsync(telegramId, ratingId, It.IsAny<CancellationToken>()), Times.Once);
+        _searchService.Verify(s => s.GetNextIncomingRatingAsync(telegramId, It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

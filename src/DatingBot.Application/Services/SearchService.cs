@@ -38,13 +38,22 @@ public class SearchService(
         var raterProfile = await userProfileRepository.GetWithInterestsByUserIdAsync(nextRating.FromUserId, cancellationToken);
         if (raterProfile is null) return null;
 
+        // Помечаем оценку как просмотренную, чтобы исключить её из очереди при последующих просмотрах
+        var ratingEntity = await profileRatingRepository.GetByIdWithProfilesAsync(nextRating.Id, cancellationToken);
+        if (ratingEntity is not null)
+        {
+            ratingEntity.IsViewed = true;
+            profileRatingRepository.Update(ratingEntity);
+        }
+
         user.State = UserState.Searching_ViewingIncoming;
         user.CurrentCandidateProfileId = raterProfile.Id;
         userRepository.Update(user);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         var raterDto = await MapToDtoAsync(raterProfile, cancellationToken);
-        return new IncomingRatingDto(nextRating.Id, raterDto, nextRating.Score, nextRating.CreatedAt);
+        var remainingQueueCount = incomingRatings.Count - 1;
+        return new IncomingRatingDto(nextRating.Id, raterDto, nextRating.Score, nextRating.CreatedAt, remainingQueueCount);
     }
 
     public async Task<IncomingRatingDto?> GetIncomingRatingByIdAsync(long telegramId, Guid ratingId, CancellationToken cancellationToken = default)
@@ -53,18 +62,30 @@ public class SearchService(
         if (user is null) return null;
 
         var rating = await profileRatingRepository.GetByIdWithProfilesAsync(ratingId, cancellationToken);
-        if (rating is null || rating.ToUserId != user.Id) return null;
+        if (rating is null || rating.ToUserId != user.Id || rating.IsViewed) return null;
 
         var raterProfile = await userProfileRepository.GetWithInterestsByUserIdAsync(rating.FromUserId, cancellationToken);
         if (raterProfile is null) return null;
+
+        rating.IsViewed = true;
+        profileRatingRepository.Update(rating);
 
         user.State = UserState.Searching_ViewingIncoming;
         user.CurrentCandidateProfileId = raterProfile.Id;
         userRepository.Update(user);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
+        var remainingCount = await profileRatingRepository.GetIncomingUnratedHighRatingsCountAsync(user.Id, cancellationToken);
         var raterDto = await MapToDtoAsync(raterProfile, cancellationToken);
-        return new IncomingRatingDto(rating.Id, raterDto, rating.Score, rating.CreatedAt);
+        return new IncomingRatingDto(rating.Id, raterDto, rating.Score, rating.CreatedAt, remainingCount);
+    }
+
+    public async Task<int> GetIncomingRatingsCountAsync(long telegramId, CancellationToken cancellationToken = default)
+    {
+        var user = await userRepository.GetByTelegramIdAsync(telegramId, cancellationToken);
+        if (user is null) return 0;
+
+        return await profileRatingRepository.GetIncomingUnratedHighRatingsCountAsync(user.Id, cancellationToken);
     }
 
     public async Task<Result<RatingResult>> RateCandidateAsync(long raterTelegramId, Guid candidateProfileId, int score, CancellationToken cancellationToken = default)
@@ -98,6 +119,7 @@ public class SearchService(
             var oldScore = existingRating.Score;
             existingRating.Score = score;
             existingRating.CreatedAt = DateTime.UtcNow;
+            existingRating.IsViewed = false;
             profileRatingRepository.Update(existingRating);
 
             newCount = candidate.RatingCount > 0 ? candidate.RatingCount : 1;

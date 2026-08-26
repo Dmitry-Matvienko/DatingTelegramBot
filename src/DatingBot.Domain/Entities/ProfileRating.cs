@@ -11,5 +11,6 @@ public class ProfileRating
     public User ToUser { get; set; } = null!;
 
     public int Score { get; set; } // 1 - 10
+    public bool IsViewed { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

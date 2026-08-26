@@ -113,9 +113,54 @@ public class InlineSendMessageButtonTests
         // Row 2: 6..10
         rows[1].Select(b => b.Text).Should().Equal("6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟");
 
-        // Row 3: Report, Main Menu (NO Search Again button)
+        // Row 3: Report, Main Menu (NO Search Again button, NO Next button when queue has 1 or less)
         rows[2].Select(b => b.Text).Should().Equal("🚨 Пожаловаться", "🏠 Главное меню");
         rows[2].Select(b => b.Text).Should().NotContain("🔄 Искать снова");
+        rows[2].Select(b => b.Text).Should().NotContain("➡️ Далее");
+    }
+
+    [Fact]
+    public void SearchKeyboards_GetIncomingRatingReplyKeyboard_WhenHasMoreInQueue_ShouldIncludeNextButton()
+    {
+        var keyboard = SearchKeyboards.GetIncomingRatingReplyKeyboard(hasMoreInQueue: true, AppLanguage.Russian);
+
+        keyboard.Should().NotBeNull();
+        var rows = keyboard.Keyboard.ToList();
+        rows.Should().HaveCount(3);
+
+        // Row 3: Report, Next, Main Menu
+        rows[2].Select(b => b.Text).Should().Equal("🚨 Пожаловаться", "➡️ Далее", "🏠 Главное меню");
+    }
+
+    [Theory]
+    [InlineData(AppLanguage.Russian, "➡️ Далее")]
+    [InlineData(AppLanguage.Ukrainian, "➡️ Далі")]
+    [InlineData(AppLanguage.English, "➡️ Next")]
+    [InlineData(AppLanguage.Hindi, "➡️ आगे")]
+    [InlineData(AppLanguage.Portuguese, "➡️ Próximo")]
+    [InlineData(AppLanguage.Indonesian, "➡️ Selanjutnya")]
+    public void SearchKeyboards_GetIncomingRatingReplyKeyboard_ShouldLocalizeNextButton(AppLanguage lang, string expectedText)
+    {
+        var keyboard = SearchKeyboards.GetIncomingRatingReplyKeyboard(hasMoreInQueue: true, lang);
+        var rows = keyboard.Keyboard.ToList();
+        rows[2].Select(b => b.Text).Should().Contain(expectedText);
+    }
+
+    [Theory]
+    [InlineData(3, AppLanguage.Russian, "👀 Показать кто оценил (3)")]
+    [InlineData(1, AppLanguage.Russian, "👀 Показать кто оценил (1)")]
+    [InlineData(2, AppLanguage.Ukrainian, "👀 Показати хто оцінив (2)")]
+    [InlineData(5, AppLanguage.English, "👀 Show who rated (5)")]
+    [InlineData(0, AppLanguage.Russian, "👀 Показать кто оценил")]
+    public void SearchKeyboards_GetIncomingRatingNotificationKeyboard_ShouldIncludeCountWhenProvided(int count, AppLanguage lang, string expectedText)
+    {
+        var ratingId = Guid.NewGuid();
+        var keyboard = SearchKeyboards.GetIncomingRatingNotificationKeyboard(count, ratingId, lang);
+
+        keyboard.Should().NotBeNull();
+        var button = keyboard.InlineKeyboard.First().First();
+        button.Text.Should().Be(expectedText);
+        button.CallbackData.Should().Be($"view_rater:{ratingId}");
     }
 
     [Fact]
