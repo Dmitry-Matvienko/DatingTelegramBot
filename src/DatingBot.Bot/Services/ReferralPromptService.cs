@@ -73,9 +73,16 @@ public class ReferralPromptService(
             return;
         }
 
+        var text = string.Format(
+            loc.Get(language, "Referral_MyLinks_Info"),
+            result.Value.InvitedCount,
+            result.Value.RemainingBoostDays,
+            result.Value.LinkUrl
+        );
+
         await botClient.SendMessage(
             chatId: chatId,
-            text: $"<code>{result.Value.LinkUrl}</code>",
+            text: text,
             parseMode: ParseMode.Html,
             cancellationToken: cancellationToken
         );

@@ -1,26 +1,21 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 41
+state_version: 42
 updated: 2026-08-26
 
 ---
 
 ## Сейчас
-- **Фаза**: Реализация: **отчет по реферальной программе для администраторов (Admin Referral Leaderboard Report)**:
+- **Фаза**: Реализация: **расширенная статистика в «Мои реферальные ссылки» (My Referral Links Stats & Top Days)**:
   1. **Интерфейсы и DTO (`Application`)**:
-     - Создан `ReferralTopUserDto` (`UserId`, `TelegramId`, `Username`, `Name`, `InvitedCount`).
-     - Методы `GetTopReferrersAsync(count = 15)` добавлены в `IReferralRepository` и `IReferralService`.
-     - Реализована сортировка по убыванию `InvitedCount`, фильтрация `InvitedCount > 0` и проекция данных пользователя.
-     - Добавлены 4 новых мультиязычных ключа в `LocalizationService` (RU, UK, EN, HI, PT, ID): `Btn_ReferralReport`, `Referral_Report_Title`, `Referral_Report_Empty`, `Referral_Report_Item`.
-  2. **Репозиторий (`Infrastructure`)**:
-     - В `ReferralRepository` реализован метод `GetTopReferrersAsync` с AsNoTracking, Take(count) и подтягиванием имени/юзернейма.
-  3. **Презентационный слой (`Bot`)**:
-     - В `ReferralKeyboards` добавлен параметр `bool isAdmin = false` и генерация кнопки «📊 Отчет» (`ref_admin_report`) для администраторов.
-     - В `ReferralPromptService` реализован метод `SendReferralReportAsync` с формированием кликабельных ссылок (`https://t.me/` или `tg://user?id=...`), экранированием HTML и форматированием количества приглашенных.
-     - В `TelegramUpdateRouter` подключена передача признака администратора в реферальное меню и обработка callback-запроса `ref_admin_report` с верификацией прав `adminService.IsAdmin`.
-  4. **Тестирование и верификация**:
-     - Написаны модульные тесты в `ReferralServiceTests`, `ReferralPromptServiceTests`, `TelegramUpdateRouterReferralTests`.
-     - Все 520 тестов решения (519 unit + 1 integration) пройдены со 100% успехом (0 failures, 0 warnings).
+     - В `ReferralLinkDto` добавлено поле `RemainingBoostDays` (`int`, по умолчанию 0).
+     - В `ReferralService` реализован расчет оставшихся дней нахождения в топе поиска на основе `UserProfile.TopBoostUntil` (`Math.Ceiling(remaining.TotalDays)`).
+     - Добавлен ключ локализации `Referral_MyLinks_Info` на 6 языках (RU, UK, EN, HI, PT, ID) с отображением числа приглашенных, оставшихся дней топа и моноширинной ссылкой.
+  2. **Презентационный слой (`Bot`)**:
+     - В `ReferralPromptService.SendMyReferralLinksAsync` внедрен вывод форматированной статистики рефералов перед моноширинной ссылкой.
+  3. **Тестирование и верификация**:
+     - Обновлены и дополнены модульные тесты в `ReferralServiceTests`, `ReferralPromptServiceTests`, `TelegramUpdateRouterReferralTests`.
+     - Все 521 тест решения (520 unit + 1 integration) пройдены со 100% успехом (0 failures, 0 warnings).
 - **Далее**: Ожидание следующих задач от пользователя.
 
 ---
@@ -85,6 +80,7 @@ updated: 2026-08-26
 - [x] Реализация 3 подсказок похожих городов при опечатках, сообщения с геолокацией и авто-добавления городов по GPS в БД при регистрации и редактировании анкеты.
 - [x] Реализация системы реферальных ссылок, накопительного бонуса +3 дня в топе поиска и уведомлений рефереров (RU, UK, EN, HI, PT, ID).
 - [x] Реализация кнопки «Отчет» по реферальной программе для администраторов с выводом топ-15 пользователей, кликабельными профилями и количеством приглашенных.
+- [x] Реализация расширенной статистики в кнопке «Мои реферальные ссылки» (число приглашенных, оставшиеся дни в топе поиска и моноширинная ссылка).
 
 ---
 

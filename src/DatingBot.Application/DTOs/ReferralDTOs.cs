@@ -7,7 +7,8 @@ public record ReferralLinkDto(
     string Code,
     string LinkUrl,
     int InvitedCount,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    int RemainingBoostDays = 0
 );
 
 public record ReferralProcessedDto(

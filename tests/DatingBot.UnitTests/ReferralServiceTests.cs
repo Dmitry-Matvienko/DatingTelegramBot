@@ -67,10 +67,11 @@ public class ReferralServiceTests
     }
 
     [Fact]
-    public async Task GetUserReferralLinkAsync_WhenLinkExists_ShouldReturnLinkDtoWithUrl()
+    public async Task GetUserReferralLinkAsync_WhenLinkExists_ShouldReturnLinkDtoWithUrlAndRemainingBoostDays()
     {
         // Arrange
         var user = new User { Id = Guid.NewGuid(), TelegramId = 12345 };
+        var profile = new UserProfile { Id = Guid.NewGuid(), UserId = user.Id, TopBoostUntil = DateTime.UtcNow.AddDays(4.5) };
         var link = new ReferralLink
         {
             Id = Guid.NewGuid(),
@@ -84,6 +85,8 @@ public class ReferralServiceTests
             .ReturnsAsync(user);
         _referralRepository.Setup(r => r.GetByUserIdAsync(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(link);
+        _userProfileRepository.Setup(r => r.GetByUserIdAsync(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(profile);
 
         // Act
         var result = await _service.GetUserReferralLinkAsync(12345);
@@ -94,6 +97,7 @@ public class ReferralServiceTests
         result.Value!.Code.Should().Be("ref_abc12345");
         result.Value.LinkUrl.Should().Be("https://t.me/DatingBot?start=ref_abc12345");
         result.Value.InvitedCount.Should().Be(5);
+        result.Value.RemainingBoostDays.Should().Be(5);
     }
 
     [Fact]

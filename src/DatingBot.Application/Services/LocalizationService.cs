@@ -1969,6 +1969,15 @@ public class LocalizationService : ILocalizationService
             [AppLanguage.Portuguese] = "<code>Você ainda não tem links</code>",
             [AppLanguage.Indonesian] = "<code>Anda belum memiliki tautan</code>"
         },
+        ["Referral_MyLinks_Info"] = new()
+        {
+            [AppLanguage.Russian] = "👥 Приведено пользователей: <b>{0}</b>\n⏳ Дней в топе поиска осталось: <b>{1}</b>\n\n<code>{2}</code>",
+            [AppLanguage.Ukrainian] = "👥 Запрошено користувачів: <b>{0}</b>\n⏳ Днів у топі пошуку залишилося: <b>{1}</b>\n\n<code>{2}</code>",
+            [AppLanguage.English] = "👥 Users invited: <b>{0}</b>\n⏳ Days left in top search: <b>{1}</b>\n\n<code>{2}</code>",
+            [AppLanguage.Hindi] = "👥 आमंत्रित उपयोगकर्ता: <b>{0}</b>\n⏳ खोज के शीर्ष पर शेष दिन: <b>{1}</b>\n\n<code>{2}</code>",
+            [AppLanguage.Portuguese] = "👥 Usuários convidados: <b>{0}</b>\n⏳ Dias restantes no topo das buscas: <b>{1}</b>\n\n<code>{2}</code>",
+            [AppLanguage.Indonesian] = "👥 Pengguna yang diundang: <b>{0}</b>\n⏳ Hari tersisa di pencarian teratas: <b>{1}</b>\n\n<code>{2}</code>"
+        },
         ["Referral_LinkCreated_Prefix"] = new()
         {
             [AppLanguage.Russian] = "Вот ваша реферальная ссылка, будь всегда в топе",
