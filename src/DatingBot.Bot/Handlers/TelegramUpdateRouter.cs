@@ -364,7 +364,7 @@ public class TelegramUpdateRouter(
                 {
                     await registrationPromptService.DeleteMessageSafeAsync(message.Chat.Id, message.MessageId, cancellationToken);
                     await searchService.ClearCurrentCandidateAsync(user.TelegramId, cancellationToken);
-                    await referralPromptService.SendReferralProgramInfoAsync(message.Chat.Id, user.Language, cancellationToken);
+                    await referralPromptService.SendReferralProgramInfoAsync(message.Chat.Id, user.Language, isAdmin, cancellationToken);
                     return;
                 }
 
@@ -469,6 +469,22 @@ public class TelegramUpdateRouter(
                         callbackQuery.Message?.Chat.Id ?? telegramId,
                         user.Language,
                         telegramId,
+                        cancellationToken
+                    );
+                    return;
+                }
+
+                if (callbackQuery.Data == "ref_admin_report")
+                {
+                    await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: cancellationToken);
+                    if (!adminService.IsAdmin(telegramId))
+                    {
+                        return;
+                    }
+
+                    await referralPromptService.SendReferralReportAsync(
+                        callbackQuery.Message?.Chat.Id ?? telegramId,
+                        user.Language,
                         cancellationToken
                     );
                     return;

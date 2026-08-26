@@ -114,4 +114,84 @@ public class ReferralPromptServiceTests
             It.IsAny<CancellationToken>()
         ), Times.Once);
     }
+
+    [Fact]
+    public async Task SendReferralProgramInfoAsync_WhenIsAdminTrue_ShouldIncludeReportButton()
+    {
+        // Act
+        await _service.SendReferralProgramInfoAsync(12345, AppLanguage.Russian, isAdmin: true);
+
+        // Assert
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<SendMessageRequest>(r =>
+                r.ChatId == 12345 &&
+                r.ReplyMarkup != null &&
+                ((Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup)r.ReplyMarkup).InlineKeyboard.Any(row => row.Any(btn => btn.CallbackData == "ref_admin_report"))),
+            It.IsAny<CancellationToken>()
+        ), Times.Once);
+    }
+
+    [Fact]
+    public async Task SendReferralProgramInfoAsync_WhenIsAdminFalse_ShouldNotIncludeReportButton()
+    {
+        // Act
+        await _service.SendReferralProgramInfoAsync(12345, AppLanguage.Russian, isAdmin: false);
+
+        // Assert
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<SendMessageRequest>(r =>
+                r.ChatId == 12345 &&
+                r.ReplyMarkup != null &&
+                ((Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup)r.ReplyMarkup).InlineKeyboard.All(row => row.All(btn => btn.CallbackData != "ref_admin_report"))),
+            It.IsAny<CancellationToken>()
+        ), Times.Once);
+    }
+
+    [Fact]
+    public async Task SendReferralReportAsync_WhenEmpty_ShouldSendEmptyMessage()
+    {
+        // Arrange
+        _referralService.Setup(s => s.GetTopReferrersAsync(15, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<IReadOnlyList<ReferralTopUserDto>>.Success(new List<ReferralTopUserDto>()));
+
+        // Act
+        await _service.SendReferralReportAsync(12345, AppLanguage.Russian);
+
+        // Assert
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<SendMessageRequest>(r =>
+                r.ChatId == 12345 &&
+                r.ParseMode == ParseMode.Html &&
+                r.Text == _loc.Get(AppLanguage.Russian, "Referral_Report_Empty")),
+            It.IsAny<CancellationToken>()
+        ), Times.Once);
+    }
+
+    [Fact]
+    public async Task SendReferralReportAsync_WhenHasReferrers_ShouldSendFormattedListWithClickableLinksAndCounts()
+    {
+        // Arrange
+        var list = new List<ReferralTopUserDto>
+        {
+            new(Guid.NewGuid(), 111, "alice_username", "Alice", 10),
+            new(Guid.NewGuid(), 222, null, "Bob", 5)
+        };
+
+        _referralService.Setup(s => s.GetTopReferrersAsync(15, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<IReadOnlyList<ReferralTopUserDto>>.Success(list));
+
+        // Act
+        await _service.SendReferralReportAsync(12345, AppLanguage.Russian);
+
+        // Assert
+        _botClient.Verify(b => b.SendRequest(
+            It.Is<SendMessageRequest>(r =>
+                r.ChatId == 12345 &&
+                r.ParseMode == ParseMode.Html &&
+                r.Text.Contains("Топ-15 пользователей по реферальной программе") &&
+                r.Text.Contains("<a href=\"https://t.me/alice_username\">Alice</a> — <b>10</b> чел.") &&
+                r.Text.Contains("<a href=\"tg://user?id=222\">Bob</a> — <b>5</b> чел.")),
+            It.IsAny<CancellationToken>()
+        ), Times.Once);
+    }
 }

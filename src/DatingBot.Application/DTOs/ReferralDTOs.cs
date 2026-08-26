@@ -15,3 +15,11 @@ public record ReferralProcessedDto(
     AppLanguage ReferrerLanguage,
     int TotalBoostDays
 );
+
+public record ReferralTopUserDto(
+    Guid UserId,
+    long TelegramId,
+    string? Username,
+    string? Name,
+    int InvitedCount
+);

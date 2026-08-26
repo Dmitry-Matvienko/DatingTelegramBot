@@ -1,3 +1,4 @@
+using DatingBot.Application.DTOs;
 using DatingBot.Application.Interfaces;
 using DatingBot.Application.Services;
 using DatingBot.Domain.Entities;
@@ -296,5 +297,29 @@ public class ReferralServiceTests
         result.Value.TotalBoostDays.Should().Be(7); // 4 + 3 = 7
 
         referrerProfile.TopBoostUntil.Value.Should().BeCloseTo(existingBoost.AddDays(3), TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task GetTopReferrersAsync_ShouldReturnTopReferrersFromRepository()
+    {
+        // Arrange
+        IReadOnlyList<ReferralTopUserDto> list =
+        [
+            new(Guid.NewGuid(), 111, "user1", "Alice", 10),
+            new(Guid.NewGuid(), 222, null, "Bob", 5)
+        ];
+
+        _referralRepository.Setup(r => r.GetTopReferrersAsync(15, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(list);
+
+        // Act
+        var result = await _service.GetTopReferrersAsync(15);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Should().HaveCount(2);
+        result.Value![0].Name.Should().Be("Alice");
+        result.Value[0].InvitedCount.Should().Be(10);
     }
 }
