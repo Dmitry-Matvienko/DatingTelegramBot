@@ -176,20 +176,26 @@ public static class AdminKeyboards
     public static InlineKeyboardMarkup GetAdminProfileCardKeyboard(Guid userId, long telegramId, string? username, Gender gender, int nextOffset, AppLanguage language = AppLanguage.Russian)
     {
         var genderStr = gender == Gender.Male ? "male" : "female";
-        var userUrl = TelegramUrlHelper.GetUserProfileUrl(telegramId, username);
+        var rows = new List<InlineKeyboardButton[]>();
 
-        return new InlineKeyboardMarkup([
-            [
+        var userUrl = TelegramUrlHelper.GetUserProfileUrl(telegramId, username);
+        if (!string.IsNullOrWhiteSpace(userUrl))
+        {
+            rows.Add([
                 InlineKeyboardButton.WithUrl(Loc.Get(language, "Btn_SendMessage"), userUrl)
-            ],
-            [
-                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Search_Btn_Block"), $"adm_s_ban:{userId}:{genderStr}:{nextOffset}"),
-                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Search_Btn_Delete"), $"adm_s_del:{userId}:{genderStr}:{nextOffset}")
-            ],
-            [
-                InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Search_Btn_Next"), $"adm_s_next:{genderStr}:{nextOffset}")
-            ]
+            ]);
+        }
+
+        rows.Add([
+            InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Search_Btn_Block"), $"adm_s_ban:{userId}:{genderStr}:{nextOffset}"),
+            InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Search_Btn_Delete"), $"adm_s_del:{userId}:{genderStr}:{nextOffset}")
         ]);
+
+        rows.Add([
+            InlineKeyboardButton.WithCallbackData(Loc.Get(language, "Admin_Search_Btn_Next"), $"adm_s_next:{genderStr}:{nextOffset}")
+        ]);
+
+        return new InlineKeyboardMarkup(rows);
     }
 
     public static InlineKeyboardMarkup GetAdminPendingReportKeyboard(Guid reportId, int nextSkip, int totalCount, AppLanguage language = AppLanguage.Russian)

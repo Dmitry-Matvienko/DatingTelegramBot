@@ -1,25 +1,25 @@
 # Летопись прогресса проекта DatingBot
 
-state_version: 44
+state_version: 45
 updated: 2026-08-26
 
 ---
 
 ## Сейчас
-- **Фаза**: Исправление ошибки зависания листания анкет в админ-панели (**Admin Moderation Browsing Freeze Fix & HTML Escaping Robustness**):
+- **Фаза**: Исправление ошибки Telegram Bot API `BUTTON_URL_INVALID` при листании анкет без `@username` в админ-панели (**Admin Moderation BUTTON_URL_INVALID Fix**):
   1. **Анализ первопричины (Root Cause)**:
-     - При листании анкет в админ-панели (вызов `adm_s_next`, `adm_search_gen`, `adm_s_ban`, `adm_s_del`) данные пользователей (`Name`, `City`, `Greeting`, `AiDescription`, `Username`) интерполировались в HTML-шаблоны без экранирования `WebUtility.HtmlEncode`.
-     - При наличии спецсимволов HTML (`<`, `>`, `&`, смайликов вроде `<3`, тегов вроде `<b>`) Telegram Bot API возвращал ошибку `400 Bad Request: can't parse entities`.
-     - Первичная попытка отправки `SendPhoto` перехватывала ошибку, но fallback `SendMessage` вызывался с тем же неэкранированным HTML текстом и `ParseMode.Html`, что приводило к необработанному `ApiRequestException`.
-     - Так как `AnswerCallbackQuery` уже был выполнен, а сообщение не отправлялось, для администратора это выглядело как полное зависание бота на анкете.
-  2. **Реализация защиты и отказоустойчивости**:
-     - В `AdminPromptService`, `SearchPromptService`, `ProfilePromptService`, `RegistrationPromptService` добавлено безопасное экранирование всех пользовательских полей через `WebUtility.HtmlEncode`.
-     - Реализован двухступенчатый отказоустойчивый fallback при ошибках Telegram API: `SendPhoto (HTML)` -> `SendMessage (HTML)` -> `SendMessage (Plain-Text)` со снятием HTML-тегов через регулярное выражение и `WebUtility.HtmlDecode`.
-     - В `AdminCallbackHandler` все вызовы поиска и листания анкет (`adm_search_gen`, `adm_s_next`, `adm_s_ban`, `adm_s_del`) изолированы блоками `try-catch` с логированием ошибки и выводом локализованного уведомления `Admin_Alert_ErrorDisplayingProfile`.
-     - В `LocalizationService` добавлен ключ `Admin_Alert_ErrorDisplayingProfile` на 6 языках (RU, UK, EN, HI, PT, ID).
+     - Согласно официальной спецификации Telegram Bot API (*https://core.telegram.org/bots/api#inlinekeyboardbutton*), ссылки вида `tg://user?id=<user_id>` строго **запрещены** для использования в инлайн-кнопках `InlineKeyboardButton.WithUrl` (они допустимы только в HTML-тексте сообщений).
+     - В `TelegramUrlHelper.GetUserProfileUrl` для пользователей без `@username` (`username == null`) генерировалась ссылка `tg://user?id={telegramId}`.
+     - При листании анкет в админ-панели (где каждая карточка имеет кнопку «💬 Написать»), если у кандидата нет никнейма `@username`, Telegram Bot API немедленно отклонял запрос с ошибкой `400 Bad Request: BUTTON_URL_INVALID`.
+     - Обычные пользователи при поиске не сталкивались с этим, так как в обычном поиске используется Reply-клавиатура оценок 1–10 (`ReplyKeyboardMarkup`) без инлайн-кнопки URL.
+  2. **Реализация защиты**:
+     - В `TelegramUrlHelper.GetUserProfileUrl` возвращается валидный `https://t.me/{username}` при наличии никнейма и `null`, если никнейма нет.
+     - В `AdminKeyboards.GetAdminProfileCardKeyboard` кнопка «💬 Написать» добавляется только при наличии валидного `userUrl` (при отсутствии никнейма админ может открыть профиль по клику на имя пользователя в тексте карточки через HTML-ссылку `<a href="tg://user?id=...">`).
+     - В `SearchKeyboards` (`GetMutualMatchKeyboard`, `GetRaterCardKeyboard`) и `SearchPromptService` обеспечена корректная проверка на `null` клавиатуры с кнопкой связи.
+     - В `ReferralPromptService` ссылка `tg://user?id=...` для отчета о рефералах формируется напрямую в HTML-тексте сообщения.
   3. **Тестирование и верификация**:
-     - В `AdminRoutingAndCallbackTests` добавлены TDD-тесты на HTML-экранирование спецсимволов, устойчивость к сбоям парсинга с fallback на plain text, экранирование карточек жалоб и изоляцию ошибок в хэндлере.
-     - Все 549 тестов решения (548 unit + 1 integration) пройдены со 100% успехом (0 failures, 0 warnings).
+     - В `InlineSendMessageButtonTests` и `AdminRoutingAndCallbackTests` добавлены тесты на валидацию URL-кнопок, отсутствие невалидных URL при `username == null` и сохранение кнопок действий в админке.
+     - Все 555 тестов решения (554 unit + 1 integration) пройдены со 100% успехом (0 failures, 0 warnings).
 - **Далее**: Ожидание следующих задач от пользователя.
 
 ---

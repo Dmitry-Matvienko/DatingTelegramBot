@@ -128,9 +128,14 @@ public static class SearchKeyboards
     public static InlineKeyboardMarkup GetIncomingRatingNotificationKeyboard(Guid ratingId, AppLanguage language = AppLanguage.Russian)
         => GetIncomingRatingNotificationKeyboard(0, ratingId, language);
 
-    public static InlineKeyboardMarkup GetMutualMatchKeyboard(long telegramId, string? username, AppLanguage language = AppLanguage.Russian)
+    public static InlineKeyboardMarkup? GetMutualMatchKeyboard(long telegramId, string? username, AppLanguage language = AppLanguage.Russian)
     {
         var userUrl = TelegramUrlHelper.GetUserProfileUrl(telegramId, username);
+        if (string.IsNullOrWhiteSpace(userUrl))
+        {
+            return null;
+        }
+
         return new InlineKeyboardMarkup([
             [
                 InlineKeyboardButton.WithUrl(Loc.Get(language, "Btn_SendMessage"), userUrl)
@@ -138,9 +143,14 @@ public static class SearchKeyboards
         ]);
     }
 
-    public static InlineKeyboardMarkup GetRaterCardKeyboard(long telegramId, string? username, AppLanguage language = AppLanguage.Russian)
+    public static InlineKeyboardMarkup? GetRaterCardKeyboard(long telegramId, string? username, AppLanguage language = AppLanguage.Russian)
     {
         var userUrl = TelegramUrlHelper.GetUserProfileUrl(telegramId, username);
+        if (string.IsNullOrWhiteSpace(userUrl))
+        {
+            return null;
+        }
+
         return new InlineKeyboardMarkup([
             [
                 InlineKeyboardButton.WithUrl(Loc.Get(language, "Btn_SendMessage"), userUrl)
