@@ -333,20 +333,33 @@ public class AdminCallbackHandler(
             userRepository.Update(user);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
-            var (profile, totalCount, curIdx) = await adminService.GetAdminProfileByGenderAsync(gender, 0, cancellationToken);
-            if (profile is null || totalCount == 0)
+            try
             {
+                var (profile, totalCount, curIdx) = await adminService.GetAdminProfileByGenderAsync(gender, 0, cancellationToken);
+                if (profile is null || totalCount == 0)
+                {
+                    await botClient.SendMessage(
+                        chatId: chatId,
+                        text: loc.Get(lang, "Admin_Search_Empty"),
+                        parseMode: ParseMode.Html,
+                        replyMarkup: AdminKeyboards.GetAdminSearchGenderKeyboard(lang),
+                        cancellationToken: cancellationToken
+                    );
+                    return true;
+                }
+
+                await adminPromptService.SendAdminCandidateCardAsync(chatId, profile, gender, curIdx, totalCount, 1, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Ошибка при первичном поиске анкет администратором {AdminId} для пола {Gender}", callbackQuery.From.Id, gender);
                 await botClient.SendMessage(
                     chatId: chatId,
-                    text: loc.Get(lang, "Admin_Search_Empty"),
-                    parseMode: ParseMode.Html,
+                    text: loc.Get(lang, "Admin_Alert_ErrorDisplayingProfile"),
                     replyMarkup: AdminKeyboards.GetAdminSearchGenderKeyboard(lang),
                     cancellationToken: cancellationToken
                 );
-                return true;
             }
-
-            await adminPromptService.SendAdminCandidateCardAsync(chatId, profile, gender, curIdx, totalCount, 1, cancellationToken);
             return true;
         }
 
@@ -358,20 +371,34 @@ public class AdminCallbackHandler(
             var gender = parts[1] == "male" ? Gender.Male : Gender.Female;
             var offset = int.TryParse(parts[2], out var o) ? o : 0;
 
-            var (profile, totalCount, curIdx) = await adminService.GetAdminProfileByGenderAsync(gender, offset, cancellationToken);
-            if (profile is null || totalCount == 0)
+            try
             {
+                var (profile, totalCount, curIdx) = await adminService.GetAdminProfileByGenderAsync(gender, offset, cancellationToken);
+                if (profile is null || totalCount == 0)
+                {
+                    await botClient.SendMessage(
+                        chatId: chatId,
+                        text: loc.Get(lang, "Admin_Search_Empty"),
+                        parseMode: ParseMode.Html,
+                        replyMarkup: AdminKeyboards.GetAdminSearchGenderKeyboard(lang),
+                        cancellationToken: cancellationToken
+                    );
+                    return true;
+                }
+
+                var nextOffset = totalCount > 0 ? (offset + 1) % totalCount : offset + 1;
+                await adminPromptService.SendAdminCandidateCardAsync(chatId, profile, gender, curIdx, totalCount, nextOffset, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Ошибка при перелистывании анкеты в админ-поиске (Gender: {Gender}, Offset: {Offset}) для администратора {AdminId}", gender, offset, callbackQuery.From.Id);
                 await botClient.SendMessage(
                     chatId: chatId,
-                    text: loc.Get(lang, "Admin_Search_Empty"),
-                    parseMode: ParseMode.Html,
+                    text: loc.Get(lang, "Admin_Alert_ErrorDisplayingProfile"),
                     replyMarkup: AdminKeyboards.GetAdminSearchGenderKeyboard(lang),
                     cancellationToken: cancellationToken
                 );
-                return true;
             }
-
-            await adminPromptService.SendAdminCandidateCardAsync(chatId, profile, gender, curIdx, totalCount, offset + 1, cancellationToken);
             return true;
         }
 
@@ -400,14 +427,23 @@ public class AdminCallbackHandler(
                 await botClient.AnswerCallbackQuery(callbackQuery.Id, loc.Get(lang, "Admin_Alert_ErrorBanUser"), showAlert: true, cancellationToken: cancellationToken);
             }
 
-            var (profile, totalCount, curIdx) = await adminService.GetAdminProfileByGenderAsync(gender, offset, cancellationToken);
-            if (profile is not null && totalCount > 0)
+            try
             {
-                await adminPromptService.SendAdminCandidateCardAsync(chatId, profile, gender, curIdx, totalCount, offset + 1, cancellationToken);
+                var (profile, totalCount, curIdx) = await adminService.GetAdminProfileByGenderAsync(gender, offset, cancellationToken);
+                if (profile is not null && totalCount > 0)
+                {
+                    var nextOffset = totalCount > 0 ? (offset + 1) % totalCount : offset + 1;
+                    await adminPromptService.SendAdminCandidateCardAsync(chatId, profile, gender, curIdx, totalCount, nextOffset, cancellationToken);
+                }
+                else
+                {
+                    await botClient.SendMessage(chatId, loc.Get(lang, "Admin_Search_Empty"), cancellationToken: cancellationToken);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                await botClient.SendMessage(chatId, loc.Get(lang, "Admin_Search_Empty"), cancellationToken: cancellationToken);
+                logger.LogError(ex, "Ошибка при загрузке следующей анкеты после бана (Gender: {Gender}, Offset: {Offset}) для администратора {AdminId}", gender, offset, callbackQuery.From.Id);
+                await botClient.SendMessage(chatId, loc.Get(lang, "Admin_Alert_ErrorDisplayingProfile"), cancellationToken: cancellationToken);
             }
             return true;
         }
@@ -437,14 +473,23 @@ public class AdminCallbackHandler(
                 await botClient.AnswerCallbackQuery(callbackQuery.Id, loc.Get(lang, "Admin_Alert_ErrorDeleteProfile"), showAlert: true, cancellationToken: cancellationToken);
             }
 
-            var (profile, totalCount, curIdx) = await adminService.GetAdminProfileByGenderAsync(gender, offset, cancellationToken);
-            if (profile is not null && totalCount > 0)
+            try
             {
-                await adminPromptService.SendAdminCandidateCardAsync(chatId, profile, gender, curIdx, totalCount, offset + 1, cancellationToken);
+                var (profile, totalCount, curIdx) = await adminService.GetAdminProfileByGenderAsync(gender, offset, cancellationToken);
+                if (profile is not null && totalCount > 0)
+                {
+                    var nextOffset = totalCount > 0 ? (offset + 1) % totalCount : offset + 1;
+                    await adminPromptService.SendAdminCandidateCardAsync(chatId, profile, gender, curIdx, totalCount, nextOffset, cancellationToken);
+                }
+                else
+                {
+                    await botClient.SendMessage(chatId, loc.Get(lang, "Admin_Search_Empty"), cancellationToken: cancellationToken);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                await botClient.SendMessage(chatId, loc.Get(lang, "Admin_Search_Empty"), cancellationToken: cancellationToken);
+                logger.LogError(ex, "Ошибка при загрузке следующей анкеты после удаления (Gender: {Gender}, Offset: {Offset}) для администратора {AdminId}", gender, offset, callbackQuery.From.Id);
+                await botClient.SendMessage(chatId, loc.Get(lang, "Admin_Alert_ErrorDisplayingProfile"), cancellationToken: cancellationToken);
             }
             return true;
         }
